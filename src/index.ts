@@ -8,11 +8,14 @@ import { AJVQuote } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
 	validateDeleteQuotes,
-	validateFillQuotes, validateGetAllQuotes,
-	validateGetFillableQuotes, validateGetRFQQuotes,
-	validatePostQuotes
-} from "./helpers/validators";
-import {getPoolAddress} from "./helpers/utils";
+	validateFillQuotes,
+	validateGetAllQuotes,
+	validateGetFillableQuotes,
+	validateGetRFQQuotes,
+	validatePostQuotes,
+} from './helpers/validators';
+import { getPoolAddress } from './helpers/utils';
+import { proxyHTTPRequest } from './helpers/proxy';
 
 dotenv.config();
 
@@ -21,7 +24,8 @@ if (
 	!process.env.WEB3_RPC_URL ||
 	!process.env.WALLET_PRIVATE_KEY ||
 	!process.env.API_KEY ||
-	!process.env.POOL_FACTORY_ADDRESS
+	!process.env.POOL_FACTORY_ADDRESS ||
+	!process.env.BASE_URL
 ) {
 	throw new Error(`Missing Premia V3 contract credentials or ENV`);
 }
@@ -55,7 +59,13 @@ app.post('/orderbook/quotes', async (req, res) => {
 	}
 
 	const requestBody: AJVQuote[] = req.body;
-	//TODO: proxy to cloud POST /quotes
+	const proxyResponse = await proxyHTTPRequest(
+		'quotes',
+		'GET',
+		null,
+		requestBody
+	);
+	return res.sendStatus(proxyResponse.status);
 });
 
 app.patch('/orderbook/quotes', async (req, res) => {
@@ -68,7 +78,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		return res.send(validateFillQuotes.errors);
 	}
 	//TODO: invoke Web3 fillQuoteOB
-})
+});
 
 app.delete('/orderbook/quotes', async (req, res) => {
 	const valid = validateDeleteQuotes(req.body);
@@ -82,7 +92,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	const poolAddr = await getPoolAddress(req.body.poolKey);
 	// TODO: new Contract invocation can be inefficient
-	const poolContract= new Contract(poolAddr, poolABI, signer);
+	const poolContract = new Contract(poolAddr, poolABI, signer);
 	try {
 		const cancelTx = await poolContract.cancelQuotesOB(req.body);
 		await provider.waitForTransaction(cancelTx.hash, 1);
@@ -91,7 +101,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		return res.status(500).json({ message: 'RPC provider error' });
 	}
 
-	res.status(201).json("Quotes deleted");
+	res.status(201).json('Quotes deleted');
 });
 
 app.get('/orderbook/quotes', async (req, res) => {
@@ -103,7 +113,13 @@ app.get('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validateGetFillableQuotes.errors);
 	}
-	//TODO: proxy to cloud GET quotes
+	const proxyResponse = await proxyHTTPRequest(
+		'quotes',
+		'GET',
+		req.query,
+		null
+	);
+	return res.sendStatus(proxyResponse.status);
 });
 
 app.get('/orderbook/orders', async (req, res) => {
@@ -115,7 +131,13 @@ app.get('/orderbook/orders', async (req, res) => {
 		);
 		return res.send(validateGetAllQuotes.errors);
 	}
-	//TODO: proxy to cloud GET /orders
+	const proxyResponse = await proxyHTTPRequest(
+		'orders',
+		'GET',
+		req.query,
+		null
+	);
+	return res.sendStatus(proxyResponse.status);
 });
 
 app.get('/orderbook/rfqs', async (req, res) => {
@@ -127,7 +149,13 @@ app.get('/orderbook/rfqs', async (req, res) => {
 		);
 		return res.send(validateGetRFQQuotes.errors);
 	}
-	//TODO: proxy to cloud GET /rfq_quotes
+	const proxyResponse = await proxyHTTPRequest(
+		'rfq_quotes',
+		'GET',
+		req.query,
+		null
+	);
+	return res.sendStatus(proxyResponse.status);
 });
 
 app.listen(process.env.HTTP_PORT, () => {
