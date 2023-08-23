@@ -25,7 +25,6 @@ if (
 	!process.env.WALLET_PRIVATE_KEY ||
 	!process.env.WALLET_ADDRESS ||
 	!process.env.API_KEY ||
-	!process.env.POOL_FACTORY_ADDRESS ||
 	!process.env.BASE_URL
 ) {
 	throw new Error(`Missing Premia V3 credentials or ENV`);
@@ -161,7 +160,6 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 	return res.sendStatus(proxyResponse.status);
 });
 
-
 //TODO: Settle Expired Positions
 //TODO: Exercise Expired Position
 
@@ -169,7 +167,6 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 //TODO: Get Current positions (my positions -> expired vs. unexpired) -> check Moralis funcitonality (host in our own cloud) -> use orderbook proxy
 //TODO: Get active orders (my open orders) use orderbook proxy
 //TODO: Wallet Balances (ETH, USDC) use orderbook proxy
-
 
 app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`);

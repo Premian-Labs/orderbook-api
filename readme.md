@@ -7,4 +7,4 @@ from the developer, shortening integration time.
 
 
 ## Architecture
-![](src/img/architecture.png)
+![](img/architecture.png)
