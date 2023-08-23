@@ -23,11 +23,12 @@ if (
 	!process.env.ENV ||
 	!process.env.WEB3_RPC_URL ||
 	!process.env.WALLET_PRIVATE_KEY ||
+	!process.env.WALLET_ADDRESS ||
 	!process.env.API_KEY ||
 	!process.env.POOL_FACTORY_ADDRESS ||
 	!process.env.BASE_URL
 ) {
-	throw new Error(`Missing Premia V3 contract credentials or ENV`);
+	throw new Error(`Missing Premia V3 credentials or ENV`);
 }
 
 const rpc_url = process.env.WEB3_RPC_URL;
@@ -103,7 +104,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	res.status(201).json('Quotes deleted');
 });
-
+// gets best quotes for a given market up to a specific size (orderbook proxy)
 app.get('/orderbook/quotes', async (req, res) => {
 	const valid = validateGetFillableQuotes(req.query);
 	if (!valid) {
