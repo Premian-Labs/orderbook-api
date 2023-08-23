@@ -48,6 +48,8 @@ app.use(
 );
 
 app.use(checkTestApiKey);
+
+// publish quote to orderbook (orderbook proxy)
 app.post('/orderbook/quotes', async (req, res) => {
 	const valid = validatePostQuotes(req.body);
 	Logger.debug(`Post request body: ${JSON.stringify(req.body)}`);
@@ -68,7 +70,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 	);
 	return res.sendStatus(proxyResponse.status);
 });
-
+// fill quote in the orderbook (goes to arbitrum one)
 app.patch('/orderbook/quotes', async (req, res) => {
 	const valid = validateFillQuotes(req.body);
 	if (!valid) {
@@ -80,7 +82,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	}
 	//TODO: invoke Web3 fillQuoteOB
 });
-
+// cancels quote in both redis and onchain on arbitrum one
 app.delete('/orderbook/quotes', async (req, res) => {
 	const valid = validateDeleteQuotes(req.body);
 	if (!valid) {
@@ -122,7 +124,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 	);
 	return res.sendStatus(proxyResponse.status);
 });
-
+// gets all quotes for a given market (returns  bid/ask quotes) (orderbook proxy)
 app.get('/orderbook/orders', async (req, res) => {
 	const valid = validateGetAllQuotes(req.query);
 	if (!valid) {
@@ -140,8 +142,8 @@ app.get('/orderbook/orders', async (req, res) => {
 	);
 	return res.sendStatus(proxyResponse.status);
 });
-
-app.get('/orderbook/rfqs', async (req, res) => {
+// get personalized/private quotes for accounts (orderbook proxy)
+app.get('/orderbook/private_quotes', async (req, res) => {
 	const valid = validateGetRFQQuotes(req.query);
 	if (!valid) {
 		res.status(400);
@@ -158,6 +160,16 @@ app.get('/orderbook/rfqs', async (req, res) => {
 	);
 	return res.sendStatus(proxyResponse.status);
 });
+
+
+//TODO: Settle Expired Positions
+//TODO: Exercise Expired Position
+
+// functionality lives in our cloud and used proxy to reach out cloud
+//TODO: Get Current positions (my positions -> expired vs. unexpired) -> check Moralis funcitonality (host in our own cloud) -> use orderbook proxy
+//TODO: Get active orders (my open orders) use orderbook proxy
+//TODO: Wallet Balances (ETH, USDC) use orderbook proxy
+
 
 app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`);
