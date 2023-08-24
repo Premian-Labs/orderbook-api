@@ -16,40 +16,42 @@ import {
 } from './helpers/validators';
 import { getPoolAddress } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
+import orderbookUrl from './config/constants.json'
 
 dotenv.config();
 
 if (
 	!process.env.ENV ||
-	!process.env.WEB3_RPC_URL ||
 	!process.env.WALLET_PRIVATE_KEY ||
 	!process.env.WALLET_ADDRESS ||
-	!process.env.API_KEY ||
 	!process.env.BASE_URL
 ) {
-	throw new Error(`Missing Premia V3 credentials or ENV`);
+	throw new Error(`Missing Core Credentials`);
 }
 
-const rpc_url = process.env.WEB3_RPC_URL;
-const privateKey = process.env.WALLET_PRIVATE_KEY;
+if (process.env.ENV == 'development' && (!process.env.TESTNET_RPC_URL || !process.env.TESTNET_ORDERBOOK_API_KEY)){
+	throw new Error(`Missing Testnet Credentials`);
+}
 
+if (process.env.ENV == 'production' && (!process.env.MAINNET_RPC_URL || !process.env.MAINNET_ORDERBOOK_API_KEY)){
+	throw new Error(`Missing Mainnet Credentials`);
+}
+
+const orderbook_url = process.env.ENV == 'production'? orderbookUrl.ArbOrderbookUrl : orderbookUrl.ArbGoerliOrderbookUrl
+const rpc_url = process.env.ENV == 'production'? process.env.TESTNET_RPC_URL: process.env.TESTNET_RPC_URL;
+const privateKey = process.env.WALLET_PRIVATE_KEY;
 const provider = new ethers.JsonRpcProvider(rpc_url);
 const signer = new ethers.Wallet(privateKey, provider);
 
 const app = express();
 app.use(cors());
-
 app.use(express.json());
-app.use(
-	express.urlencoded({
-		extended: true,
-	})
-);
-
+app.use(express.urlencoded({ extended: true, }));
 app.use(checkTestApiKey);
 
-// publish quote to orderbook (orderbook proxy)
+
 app.post('/orderbook/quotes', async (req, res) => {
+	// TODO: publish quote to orderbook (orderbook proxy)
 	const valid = validatePostQuotes(req.body);
 	Logger.debug(`Post request body: ${JSON.stringify(req.body)}`);
 	if (!valid) {
@@ -69,7 +71,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 	);
 	return res.sendStatus(proxyResponse.status);
 });
-// fill quote in the orderbook (goes to arbitrum one)
+
 app.patch('/orderbook/quotes', async (req, res) => {
 	const valid = validateFillQuotes(req.body);
 	if (!valid) {
@@ -79,10 +81,12 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validateFillQuotes.errors);
 	}
+	//TODO: Approve tokens for trading
 	//TODO: invoke Web3 fillQuoteOB
 });
-// cancels quote in both redis and onchain on arbitrum one
+
 app.delete('/orderbook/quotes', async (req, res) => {
+	// TODO: cancel quote directly onchain (no orderbook proxy)
 	const valid = validateDeleteQuotes(req.body);
 	if (!valid) {
 		res.status(400);
@@ -91,9 +95,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validateDeleteQuotes.errors);
 	}
-
 	const poolAddr = await getPoolAddress(req.body.poolKey);
-	// TODO: new Contract invocation can be inefficient
 	const poolContract = new Contract(poolAddr, poolABI, signer);
 	try {
 		const cancelTx = await poolContract.cancelQuotesOB(req.body);
@@ -105,8 +107,9 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	res.status(201).json('Quotes deleted');
 });
-// gets best quotes for a given market up to a specific size (orderbook proxy)
+
 app.get('/orderbook/quotes', async (req, res) => {
+	//TODO: orderbook proxy
 	const valid = validateGetFillableQuotes(req.query);
 	if (!valid) {
 		res.status(400);
@@ -123,8 +126,9 @@ app.get('/orderbook/quotes', async (req, res) => {
 	);
 	return res.sendStatus(proxyResponse.status);
 });
-// gets all quotes for a given market (returns  bid/ask quotes) (orderbook proxy)
+
 app.get('/orderbook/orders', async (req, res) => {
+	// TODO: gets all quotes for a given market (returns  bid/ask quotes) (orderbook proxy)
 	const valid = validateGetAllQuotes(req.query);
 	if (!valid) {
 		res.status(400);
@@ -141,8 +145,9 @@ app.get('/orderbook/orders', async (req, res) => {
 	);
 	return res.sendStatus(proxyResponse.status);
 });
-// get personalized/private quotes for accounts (orderbook proxy)
+
 app.get('/orderbook/private_quotes', async (req, res) => {
+	//TODO: use proxy to get get personalized/private quotes for accounts
 	const valid = validateGetRFQQuotes(req.query);
 	if (!valid) {
 		res.status(400);
@@ -160,15 +165,25 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 	return res.sendStatus(proxyResponse.status);
 });
 
-//TODO: Settle Expired Positions
-//TODO: Exercise Expired Position
+app.post('/pool/settle', async  (req, res) => {
+	//TODO: check that account has a short position before attempting to settle
+})
 
-// functionality lives in our cloud and used proxy to reach out cloud
-//TODO: Get Current positions (my positions -> expired vs. unexpired) -> check Moralis funcitonality (host in our own cloud) -> use orderbook proxy
-//TODO: Get active orders (my open orders) use orderbook proxy
-//TODO: Wallet Balances (ETH, USDC) use orderbook proxy
-//TODO: Approve tokens for trading (or embed into api call)
-//TODO: for cancelling quotes, we need to verify the api call is coming from the address owner (signature verification)
+app.post('/pool/exercise', async  (req, res) => {
+	//TODO: check that account has a long position before attempting to exercise
+})
+
+app.get('/account/positions', async  (req, res) => {
+	//TODO: Get Current positions (my positions -> expired vs. unexpired) -> check Moralis funcitonality (host in our own cloud) -> use orderbook proxy
+})
+
+app.get('/account/orders', async  (req, res) => {
+	//TODO: Get active orders (my open orders) use orderbook proxy
+})
+
+app.get('/account/balances', async  (req, res) => {
+	//TODO: Wallet Balances (ETH, USDC) use orderbook proxy (Moralis)
+})
 
 app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`);
