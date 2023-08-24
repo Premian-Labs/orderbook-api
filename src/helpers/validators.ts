@@ -2,67 +2,30 @@ import Ajv from 'ajv';
 
 const ajv = new Ajv();
 
-// Follows the typings of QuoteRequest
+
+//FIXME: correct typings for float values and make product string more strict
 export const validatePostQuotes = ajv.compile({
 	type: 'array',
 	items: {
 		type: 'object',
 		properties: {
-			poolKey: {
-				type: 'object',
-				properties: {
-					base: { type: 'string', pattern: '^0x[a-fA-F0-9]{40}$' },
-					quote: { type: 'string', pattern: '^0x[a-fA-F0-9]{40}$' },
-					oracleAdapter: { type: 'string', pattern: '^0x[a-fA-F0-9]{40}$' },
-					strike: { type: 'string' },
-					maturity: { type: 'integer' },
-					isCallPool: { type: 'boolean' },
-				},
-				required: [
-					'base',
-					'quote',
-					'oracleAdapter',
-					'strike',
-					'maturity',
-					'isCallPool',
-				],
-				additionalProperties: false,
-			},
-			chainId: {
+			product: { type: 'string' },
+			side: {
 				type: 'string',
-				pattern: '^42161$|^421613$',
+				pattern: '^buy$|^sell$'
 			},
-			provider: { type: 'string', pattern: '^0x[a-fA-F0-9]{40}$' },
-			taker: { type: 'string', pattern: '^0x[a-fA-F0-9]{40}$' },
-			price: { type: 'string' }, // serialized bigint representation
-			size: { type: 'string' }, // serialized bigint representation
-			isBuy: { type: 'boolean' },
 			deadline: { type: 'integer' },
-			salt: { type: 'integer' },
-			signature: {
-				type: 'object',
-				properties: {
-					r: { type: 'string' },
-					s: { type: 'string' },
-					v: { type: 'integer' },
-				},
-				required: ['r', 's', 'v'],
-				additionalProperties: false,
-			},
+			size: { type: 'number' },
+			price: { type: 'number' },
 		},
 		required: [
-			'poolKey',
-			'chainId',
-			'provider',
-			'taker',
-			'price',
+			'product',
+			'side',
 			'size',
-			'isBuy',
-			'deadline',
-			'salt',
-			'signature',
+			'price',
+			'deadline'
 		],
-		additionalProperties: false,
+		additionalProperties: false
 	},
 	minItems: 1,
 	maxItems: 1000,

@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import Logger from './lib/logger';
-import { ethers, Contract } from 'ethers';
+import { ethers, Contract, parseEther } from 'ethers';
 import poolABI from './abi/IPool.json';
 import { AJVQuote } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
@@ -16,7 +16,8 @@ import {
 } from './helpers/validators';
 import { getPoolAddress } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
-import orderbookUrl from './config/constants.json'
+import arbAddresses from './config/arbitrum.json'
+import arbGoerliAddresses from './config/arbitrumGoerli.json'
 
 dotenv.config();
 
@@ -37,8 +38,7 @@ if (process.env.ENV == 'production' && (!process.env.MAINNET_RPC_URL || !process
 	throw new Error(`Missing Mainnet Credentials`);
 }
 
-const orderbook_url = process.env.ENV == 'production'? orderbookUrl.ArbOrderbookUrl : orderbookUrl.ArbGoerliOrderbookUrl
-const rpc_url = process.env.ENV == 'production'? process.env.TESTNET_RPC_URL: process.env.TESTNET_RPC_URL;
+const rpc_url = process.env.ENV == 'production'? process.env.MAINNET_RPC_URL : process.env.TESTNET_RPC_URL;
 const privateKey = process.env.WALLET_PRIVATE_KEY;
 const provider = new ethers.JsonRpcProvider(rpc_url);
 const signer = new ethers.Wallet(privateKey, provider);
@@ -51,21 +51,71 @@ app.use(checkTestApiKey);
 
 
 app.post('/orderbook/quotes', async (req, res) => {
-	// TODO: publish quote to orderbook (orderbook proxy)
+	/*
+	NOTE: sample object array in req.body
+		[
+			{
+				product: WETH-USDC-22FEB19-1700-C
+				side => 'buy' or 'sell'
+				size => 1.5
+				price -> 0.21
+				deadline -> 300 (seconds)
+			},
+			{
+				product: WETH-USDC-22FEB19-1600-C
+				side => 'buy' or 'sell'
+				size => 1.5
+				price -> 0.21
+				deadline -> 300 (seconds)
+			},
+		]
+*/
+
+	// 1. Validate incoming object array
 	const valid = validatePostQuotes(req.body);
-	Logger.debug(`Post request body: ${JSON.stringify(req.body)}`);
 	if (!valid) {
 		res.status(400);
 		Logger.error(
-			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
+			`Validation error: ${JSON.stringify(validateFillQuotes.errors)}`
 		);
-		return res.send(validatePostQuotes.errors);
+		return res.send(validateFillQuotes.errors);
 	}
+
+	// 2. Loop through each order and convert to signed quote object
+	for (const quote of req.body) {
+		// 2.1 Check that deadline is valid
+		const ts = Math.trunc(new Date().getTime() / 1000);
+		const ttl = quote.deadline - ts;
+		if (ttl < 60) {
+			return res.status(400).json({
+				message: 'Quote deadline is invalid (cannot be less than 60 sec)',
+				quote: quote,
+			});
+		}
+		// 2.2 parse product name and generate Pool Key
+		const parsedProduct: string[] = quote.product.split("-")
+		// ie. ['WETH', 'USDC', '22FEB19', '1600', 'C']
+
+		//FIXME: use parsed product to get token address and maturity
+		const poolKey = {
+			base: process.env.ENV == 'production'? arbAddresses.tokens['WETH']: arbGoerliAddresses.tokens['WETH'],
+			quote: 'production'? arbAddresses.tokens['USDC']: arbGoerliAddresses.tokens['USDC'],
+			oracleAdapter: 'production'? arbAddresses.ChainlinkAdapterProxy: arbGoerliAddresses.ChainlinkAdapterProxy,
+			strike: parseEther(quote.strike),
+			maturity: '',
+			isCallPool: parsedProduct[4] == 'C',
+		}
+	}
+
+	// TODO: create quote object(s) locally (and generate signature for quote)
+	// TODO: approve necessary qty for trade
+	// TODO: check that balance exists to do trade? (help eliminate erroneous trades)
+	// TODO: publish quote to orderbook via orderbook proxy
 
 	const requestBody: AJVQuote[] = req.body;
 	const proxyResponse = await proxyHTTPRequest(
 		'quotes',
-		'GET',
+		'POST',
 		null,
 		requestBody
 	);
@@ -144,6 +194,10 @@ app.get('/orderbook/orders', async (req, res) => {
 		null
 	);
 	return res.sendStatus(proxyResponse.status);
+});
+
+app.get('/orderbook/valid_quote', async (req, res) => {
+// TODO: check if a quote is valid (maybe  this can just be done in fillQuote endpoint?
 });
 
 app.get('/orderbook/private_quotes', async (req, res) => {

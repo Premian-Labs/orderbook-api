@@ -4,7 +4,7 @@
   ],
   "compilerOptions": {
     "target": "es2020",
-    "module": "es2015",
+    "module": "commonjs",
     "importHelpers": true,
     "declaration": true,
     "sourceMap": true,
