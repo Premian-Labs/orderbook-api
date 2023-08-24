@@ -17,6 +17,7 @@
     "market-making"
   ],
   "scripts": {
+    "build": "tsc --build",
     "postinstall": "npx src/typechain --target ethers-v6 --out-dir \"./src/typechain\" \"src/abi/*.json\"",
     "start": "node ./dist/index.js",
     "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**"
