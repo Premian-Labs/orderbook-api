@@ -9,22 +9,32 @@ if (!process.env.MORALIS_KEY || !process.env.ENV) {
 }
 
 // TODO: test to see if arb goerli works (likely not)
-const chain = process.env.ENV === 'production' ? EvmChain.ARBITRUM : EvmChain.GOERLI;
+const chain =
+	process.env.ENV === 'production' ? EvmChain.ARBITRUM : EvmChain.GOERLI;
 
 export async function getOptionPositions(_address: string) {
 	await Moralis.start({
-		apiKey: process.env.MORALIS_KEY
+		apiKey: process.env.MORALIS_KEY,
 	});
 
-	const response =  await Moralis.EvmApi.nft.getWalletNFTs({
-		"chain": chain,
-		"format": "decimal",
-		"mediaItems": false,
-		"address": _address
+	const nativeBalance = await Moralis.EvmApi.balance.getNativeBalance({
+		chain: chain,
+		address: _address,
 	});
 
-	console.log(response.toJSON());
+	const tokenBalances = await Moralis.EvmApi.token.getWalletTokenBalances({
+		chain: chain,
+		address: _address,
+	});
 
-	return response
+	const optionBalances = await Moralis.EvmApi.nft.getWalletNFTs({
+		chain: chain,
+		format: 'decimal',
+		mediaItems: false,
+		address: _address,
+	});
 
+	console.log(nativeBalance.toJSON());
+	console.log(tokenBalances.toJSON());
+	console.log(optionBalances.toJSON());
 }

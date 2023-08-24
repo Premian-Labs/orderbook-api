@@ -1,4 +1,4 @@
-import { BigNumberish, TypedDataDomain } from 'ethers';
+import { BigNumberish, TypedDataDomain, AddressLike } from 'ethers';
 
 export interface SignatureDomain extends TypedDataDomain {
 	name: string;
@@ -27,10 +27,11 @@ export interface Quote {
 	salt: bigint;
 }
 
+//TODO: Possible for 'v' to be a 'number'. Double check typing is correct
 export interface RSV {
 	r: string;
 	s: string;
-	v: bigint;
+	v: number;
 }
 
 // typings used to publish quote on-chain
@@ -121,4 +122,99 @@ export interface GetAllQuotesRequest {
 	side?: string;
 	provider?: string;
 	size?: string;
+}
+
+export enum TokenType {
+	SHORT = 0,
+	LONG = 1,
+}
+export enum OrderType {
+	CSUP,
+	CS,
+	LC,
+}
+export interface PoolKey {
+	base: string;
+	quote: string;
+	oracleAdapter: string;
+	strike: BigNumberish;
+	maturity: BigNumberish;
+	isCallPool: boolean;
+}
+
+export interface PosKey {
+	owner: AddressLike;
+	operator: AddressLike;
+	lower: BigNumberish;
+	upper: BigNumberish;
+	orderType: OrderType; // Collateral <-> Long Option
+}
+
+export interface EventSignatures {
+	[index: string]: string;
+}
+export interface QuoteOB {
+	provider: string;
+	taker: string;
+	price: BigNumberish;
+	size: BigNumberish;
+	isBuy: boolean;
+	deadline: BigNumberish;
+	salt: BigNumberish;
+}
+export interface QuoteOBMessage {
+	provider: string;
+	taker: string;
+	price: string;
+	size: string;
+	isBuy: boolean;
+	deadline: string;
+	salt: string;
+}
+
+export interface Domain {
+	name: string;
+	version: string;
+	chainId: string;
+	verifyingContract: string;
+}
+
+export const EIP712Domain = [
+	{ name: 'name', type: 'string' },
+	{ name: 'version', type: 'string' },
+	{ name: 'chainId', type: 'uint256' },
+	{ name: 'verifyingContract', type: 'address' },
+];
+
+export interface PublishOBQuote {
+	poolKey: PoolKey;
+	provider: string;
+	taker: string;
+	price: BigNumberish;
+	size: BigNumberish;
+	isBuy: boolean;
+	deadline: BigNumberish;
+	salt: BigNumberish;
+	signature: RSV;
+}
+
+export interface TokenIdParams {
+	version: number;
+	orderType: OrderType;
+	operator: string;
+	upper: BigNumberish;
+	lower: BigNumberish;
+}
+
+export interface SignedQuote {
+	provider: string;
+	taker: string;
+	price: string;
+	size: string;
+	isBuy: boolean;
+	deadline: string;
+	salt: string;
+	r: string;
+	s: string;
+	v: number;
 }
