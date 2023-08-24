@@ -2,7 +2,7 @@
   "name": "@premia/v3-quotes",
   "scripts": {
     "build": "npx tsdx build --target node --transpileOnly",
-    "postinstall": "npx typechain --target ethers-v6 --out-dir \"./typechain\" \"./src/abis/*.json\"",
+    "postinstall": "npx src/typechain --target ethers-v6 --out-dir \"./src/typechain\" \"src/abi/*.json\"",
     "start": "node ./dist/index.js",
     "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**"
   },
@@ -19,6 +19,7 @@
     "@moralisweb3/common-evm-utils": "^2.22.5",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
+    "@types/mocha": "^10.0.1",
     "@types/node": "^18.13.0",
     "axios": "^1.4.0",
     "cors": "^2.8.5",
@@ -30,6 +31,7 @@
     "prettier": "^2.8.8",
     "ts-node": "^10.9.1",
     "tsdx": "^0.14.1",
+    "typechain": "^8.3.1",
     "typechain-target-ethers-v6": "^0.1.0",
     "web3-utils": "^1.9.0",
     "winston": "^3.9.0"

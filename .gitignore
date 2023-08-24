@@ -4,3 +4,4 @@ node_modules
 .npmrc
 /yarn.lock
 dist
+src/typechain

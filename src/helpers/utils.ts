@@ -1,7 +1,7 @@
 import { PoolKey } from './types';
 import { Contract, JsonRpcProvider, ZeroAddress } from 'ethers';
 import Logger from '../lib/logger';
-import PoolFactoryABI from '../abis/IPoolFactory.json';
+import PoolFactoryABI from '../abi/IPoolFactory.json';
 
 const provider = new JsonRpcProvider(process.env.WEB3_RPC_URL);
 const poolFactory = new Contract(

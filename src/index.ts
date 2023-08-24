@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import Logger from './lib/logger';
 import { ethers, Contract } from 'ethers';
-import poolABI from './abis/IPool.json';
+import poolABI from './abi/IPool.json';
 import { AJVQuote } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
@@ -168,6 +168,7 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 //TODO: Get active orders (my open orders) use orderbook proxy
 //TODO: Wallet Balances (ETH, USDC) use orderbook proxy
 //TODO: Approve tokens for trading (or embed into api call)
+//TODO: for cancelling quotes, we need to verify the api call is coming from the address owner (signature verification)
 
 app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`);

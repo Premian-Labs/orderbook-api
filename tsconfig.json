@@ -1,28 +1,14 @@
 {
-  "include": [
-    "src"
-  ],
   "compilerOptions": {
     "target": "es2020",
-    "module": "es2015",
-    "importHelpers": true,
-    "declaration": true,
-    "sourceMap": true,
+    "module": "commonjs",
     "strict": true,
-    "noImplicitAny": true,
-    "strictNullChecks": true,
-    "strictFunctionTypes": true,
-    "strictPropertyInitialization": true,
-    "noImplicitThis": true,
-    "alwaysStrict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noImplicitReturns": false,
-    "noFallthroughCasesInSwitch": true,
-    "moduleResolution": "node",
     "esModuleInterop": true,
+    "outDir": "dist",
     "resolveJsonModule": true,
-    "experimentalDecorators": true,
-    "outDir": "./dist"
-  }
+    "noImplicitThis": false,
+    "skipLibCheck": true
+  },
+  "include": ["./src"]
 }
+
