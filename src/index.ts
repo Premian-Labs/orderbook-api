@@ -313,7 +313,7 @@ app.post('/pool/settle', async  (req, res) => {
 		return res.status(500).json({ message: e });
 	}
 
-	res.status(201);
+	res.sendStatus(201);
 })
 
 app.post('/pool/exercise', async  (req, res) => {
@@ -336,7 +336,7 @@ app.post('/pool/exercise', async  (req, res) => {
 		return res.status(500).json({ message: e });
 	}
 
-	res.status(201);
+	res.sendStatus(201);
 })
 
 app.post('/pool/annihilate', async  (req, res) => {
@@ -359,7 +359,7 @@ app.post('/pool/annihilate', async  (req, res) => {
 		return res.status(500).json({ message: e });
 	}
 
-	res.status(201);
+	res.sendStatus(201);
 
 
 
@@ -406,7 +406,7 @@ app.post('/account/token_approval', async  (req, res) => {
 		return res.status(500).json({ message: e });
 	}
 
-	res.status(201);
+	res.sendStatus(201);
 
 })
 
