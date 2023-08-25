@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import moment from 'moment';
 import Logger from './lib/logger';
-import { ethers, Contract, parseEther } from 'ethers';
+import {ethers, Contract, parseEther, MaxUint256, parseUnits} from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
     PoolKey,
@@ -24,6 +24,7 @@ import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json'
 import arbGoerli from './config/arbitrumGoerli.json'
 import { getQuote, signQuote, createQuote, serializeQuote } from './helpers/quote';
+import {ERC20Base__factory} from "./typechain";
 
 dotenv.config();
 
@@ -49,6 +50,7 @@ const privateKey = process.env.WALLET_PRIVATE_KEY;
 export const provider = new ethers.JsonRpcProvider(rpc_url);
 export const chainId = process.env.ENV == 'production' ? '42161' : '421613'
 const signer = new ethers.Wallet(privateKey, provider);
+const routerAddress = process.env.ENV == 'production' ?  arb.ERC20Router : arbGoerli.ERC20Router;
 
 const app = express();
 app.use(cors());
@@ -271,6 +273,10 @@ app.post('/pool/exercise', async  (req, res) => {
 	//TODO: check that account has a long position before attempting to exercise
 })
 
+app.post('/pool/annihilate', async  (req, res) => {
+    //TODO: take two opposing positions and release collateral
+})
+
 app.get('/account/positions', async  (req, res) => {
 	//TODO: Get Current positions (my positions -> expired vs. unexpired) -> check Moralis funcitonality (host in our own cloud) -> use orderbook proxy
 })
@@ -283,12 +289,41 @@ app.get('/account/balances', async  (req, res) => {
 	//TODO: Wallet Balances (ETH, USDC) use orderbook proxy (Moralis)
 })
 
-app.post('/account/approve', async  (req, res) => {
-		// TODO add or remove approvals
-		// TODO array of tokens to approve and optionally an amount (default will be max)
-		// TODO return approval values
+app.post('/account/token_approval', async  (req, res) => {
+
+	// TODO: convert to req.body. Just an example.
+	const approvals = { WETH: 17, USDC: 'max'}
+
+	//TODO: validate that tokens in req body exist in token object for specified chain
+	//TODO: validate that approval qty is either a number or 'max'
+
+	try{
+		for (const token in approvals){
+			const erc20Addr =  process.env.ENV == 'production' ? arb.tokens[token] : arbGoerli.tokens[token]
+			const erc20 = ERC20Base__factory.connect(erc20Addr, signer);
+
+			if (approvals[token] === 'max'){
+				const response = await erc20.approve(routerAddress, MaxUint256.toString());
+				await provider.waitForTransaction(response.hash, 1);
+				Logger.info(`${token} approval set to MAX`);
+			}else{
+				const qty = approvals[token] == 'USDC'? parseUnits(approvals[token].toString(), 6): parseEther(approvals[token].toString())
+				const response =  await erc20.approve(routerAddress, qty);
+				await provider.waitForTransaction(response.hash, 1);
+				Logger.info(`${token} approval  set to ${approvals[token]}`);
+			}
+		}
+	} catch(e) {
+		return res.status(500).json({ message: e });
+	}
+
+	res.status(201);
+	
 })
 
+app.post('/account/option_approval', async  (req, res) => {
+
+})
 app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`);
 });
