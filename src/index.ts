@@ -254,7 +254,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 		req.query,
 		null
 	);
-	return res.sendStatus(proxyResponse.status);
+	return res.status(proxyResponse.status).json(proxyResponse.data);
 });
 
 app.get('/orderbook/orders', async (req, res) => {
@@ -272,7 +272,7 @@ app.get('/orderbook/orders', async (req, res) => {
 		req.query,
 		null
 	);
-	return res.sendStatus(proxyResponse.status);
+	return res.status(proxyResponse.status).json(proxyResponse.data);
 });
 
 app.get('/orderbook/private_quotes', async (req, res) => {
@@ -290,7 +290,7 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 		req.query,
 		null
 	);
-	return res.sendStatus(proxyResponse.status);
+	return res.status(proxyResponse.status).json(proxyResponse.data);
 });
 
 app.post('/pool/settle', async  (req, res) => {
