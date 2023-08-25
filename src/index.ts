@@ -5,7 +5,11 @@ import moment from 'moment';
 import Logger from './lib/logger';
 import { ethers, Contract, parseEther } from 'ethers';
 import poolABI from './abi/IPool.json';
-import { AJVQuote } from './helpers/types';
+import {
+    PoolKey,
+		PublishQuoteProxyRequest,
+    PublishQuoteRequest,
+} from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
 	validateDeleteQuotes,
@@ -40,7 +44,7 @@ if (process.env.ENV == 'production' && (!process.env.MAINNET_RPC_URL || !process
 	throw new Error(`Missing Mainnet Credentials`);
 }
 
-const rpc_url = process.env.ENV == 'production'? process.env.MAINNET_RPC_URL : process.env.TESTNET_RPC_URL;
+const rpc_url = process.env.ENV == 'production' ? process.env.MAINNET_RPC_URL : process.env.TESTNET_RPC_URL;
 const privateKey = process.env.WALLET_PRIVATE_KEY;
 export const provider = new ethers.JsonRpcProvider(rpc_url);
 export const chainId = process.env.ENV == 'production' ? '42161' : '421613'
@@ -93,10 +97,10 @@ app.post('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validateFillQuotes.errors);
 	}
-
+	let serializedQuotes: PublishQuoteProxyRequest[] = []
 	// 2. Loop through each order and convert to signed quote object
-	for (const quote of req.body) {
-		// 2.1 Check that deadline is valid
+	for (const quote of req.body as PublishQuoteRequest[]) {
+		// 2.1 Check that deadline is valid and generate deadline timestamp
 		const ts = Math.trunc(new Date().getTime() / 1000);
 		let deadline: number
 		if (quote.deadline < 60) {
@@ -159,9 +163,9 @@ app.post('/orderbook/quotes', async (req, res) => {
 		'quotes',
 		'POST',
 		null,
-		requestBody
+		serializedQuotes
 	);
-	return res.sendStatus(proxyResponse.status);
+	return res.status(proxyResponse.status).json(proxyResponse.data);
 });
 
 app.patch('/orderbook/quotes', async (req, res) => {

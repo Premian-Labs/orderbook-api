@@ -1,11 +1,14 @@
 import { PoolKey } from './types';
-import { Contract, JsonRpcProvider, ZeroAddress } from 'ethers';
+import { Contract } from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
+import { provider } from '../index';
+import arb from '../config/arbitrum.json'
+import arbGoerli from '../config/arbitrumGoerli.json'
 
-const provider = new JsonRpcProvider(process.env.WEB3_RPC_URL);
+const poolFactoryAddr = process.env.ENV == 'production' ? arb.PoolFactoryProxy : arbGoerli.PoolFactoryProxy
 const poolFactory = new Contract(
-	process.env.POOL_FACTORY_ADDRESS!,
+	poolFactoryAddr,
 	PoolFactoryABI,
 	provider
 );
@@ -16,21 +19,21 @@ export async function getPoolAddress(poolKey: PoolKey) {
 	if (memPoolAddress) return memPoolAddress;
 
 	let poolAddress: string;
+	let isDeployed: boolean;
 
 	try {
 		[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey);
 	} catch (e) {
 		try {
-			[poolAddress] = await poolFactory.getPoolAddress(poolKey);
+			[poolAddress, isDeployed]  = await poolFactory.getPoolAddress(poolKey);
 		} catch (e) {
 			Logger.error(`Can not get pool address: ${JSON.stringify(e)}`);
 			throw new Error(`Can not get pool address`);
 		}
 	}
 	poolAddress = poolAddress.toLowerCase();
-	if (poolAddress === ZeroAddress) {
-		Logger.warn(`Pool is not deployable: ${JSON.stringify(poolKey)}`);
-		throw new Error(`Pool is not deployable`);
+	if (!isDeployed) {
+		Logger.warn(`Pool is not deployed: ${JSON.stringify(poolKey)}`);
 	}
 	poolMap.set(poolKey, poolAddress);
 	return poolAddress;

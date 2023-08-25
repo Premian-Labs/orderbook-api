@@ -1,6 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
-import { AJVQuote } from './types';
+import {PublishQuoteProxyRequest} from './types';
 import orderbookUrl from '../config/constants.json';
 
 dotenv.config();
@@ -14,7 +14,7 @@ export async function proxyHTTPRequest(
 	path: string,
 	method: 'GET' | 'POST',
 	params?: any,
-	body?: AJVQuote[] | null
+	body?: PublishQuoteProxyRequest[] | null
 ) {
 	switch (method) {
 		case 'POST': {

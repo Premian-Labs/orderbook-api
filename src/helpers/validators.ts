@@ -9,7 +9,25 @@ export const validatePostQuotes = ajv.compile({
 	items: {
 		type: 'object',
 		properties: {
-			product: { type: 'string' },
+			base: {
+				type: 'string',
+				//TODO: reda from config 'tokens'
+				pattern: ['WETH', 'WBTC'].join('|')
+			},
+			quote: {
+				type: 'string',
+				//TODO: reda from config 'tokens'
+				pattern: ['WETH', 'WBTC'].join('|')
+			},
+			expiration: {
+				type: 'string'
+				// TODO: regexp for '22FEB19'
+			},
+			strike:  { type: 'number' },
+			type: {
+				type: 'string',
+				pattern: '^C|^P'
+			},
 			side: {
 				type: 'string',
 				pattern: '^buy$|^sell$'
@@ -19,7 +37,11 @@ export const validatePostQuotes = ajv.compile({
 			price: { type: 'number' },
 		},
 		required: [
-			'product',
+			'base',
+			'quote',
+			'expiration',
+			'strike',
+			'type',
 			'side',
 			'size',
 			'price',

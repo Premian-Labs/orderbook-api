@@ -1,12 +1,13 @@
 import {
-	Domain,
-	EIP712Domain,
-	QuoteOB,
-	QuoteOBMessage,
-	RSV,
-	PoolKey,
-	PublishOBQuote,
-	SignedQuote,
+    Domain,
+    EIP712Domain,
+    QuoteOB,
+    QuoteOBMessage,
+    RSV,
+    PoolKey,
+    PublishOBQuote,
+    SignedQuote,
+		SerializedQuote,
 } from './types';
 import { ZeroAddress } from 'ethers';
 
@@ -16,7 +17,6 @@ import {
 	keccak256,
 	Provider,
 	AbiCoder,
-	JsonRpcResult,
 } from 'ethers';
 //TODO: remove hardhat and keep typing
 import { JsonRpcRequest } from 'hardhat/types';
@@ -25,17 +25,18 @@ import { chainId } from '../index'
 const abiCoder = AbiCoder.defaultAbiCoder();
 const randomId = () => Math.floor(Math.random() * 10000000000);
 
-export async function getQuoteOB(
-	obMakerAddr: string,
+export async function getQuote(
+	makerAddr: string,
 	tradeSize: bigint,
 	isBuy: boolean,
-	price: bigint
+	price: bigint,
+	deadline: number,
+	takerAddr = ZeroAddress
 ): Promise<QuoteOB> {
 	const ts = Math.trunc(new Date().getTime() / 1000);
-	const TWO_HOURS = 7200;
 	return {
-		provider: obMakerAddr,
-		taker: ZeroAddress,
+		provider: makerAddr,
+		taker: takerAddr,
 		price: price,
 		size: tradeSize,
 		isBuy: isBuy,
@@ -44,13 +45,11 @@ export async function getQuoteOB(
 	};
 }
 
-export async function OBQuoteSig(
+export async function signQuote(
 	provider: Provider,
 	poolAddress: string,
 	quoteOB: QuoteOB
 ): Promise<SignedQuote> {
-	const chainId = (await provider.getNetwork()).chainId.toString();
-
 	const domain: Domain = {
 		name: 'Premia',
 		version: '1',

@@ -1,5 +1,17 @@
 import { BigNumberish, TypedDataDomain, AddressLike } from 'ethers';
 
+export interface PublishQuoteRequest {
+	base: string
+	quote: string
+	expiration: string
+	strike: number
+	type: 'C' | 'P'
+	side: 'buy' | 'sell'
+	size: number
+	price: number
+	deadline: number
+}
+
 export interface SignatureDomain extends TypedDataDomain {
 	name: string;
 	version: string;
@@ -34,27 +46,8 @@ export interface RSV {
 	v: number;
 }
 
-// typings used to publish quote on-chain
-export interface DeSerializedOBQuote extends Quote {
-	signature: RSV;
-}
-
-export interface AJVQuote extends OBQuoteSerialized {
+export interface PublishQuoteProxyRequest extends SerializedQuote {
 	chainId: string;
-}
-
-// typings used in req body for POST '/quotes'
-export interface PostQuoteRequest extends AJVQuote {
-	poolAddress: string;
-}
-
-export interface RedisPostQuoteRequest extends PostQuoteRequest {
-	quoteId: string;
-}
-// final Typings to submit quotes to redis
-export interface RedisQuote extends RedisPostQuoteRequest {
-	fillableSize: string;
-	ts: number;
 }
 
 export interface DeleteRequest {
@@ -66,7 +59,7 @@ export interface FillRequest {
 	size: string;
 }
 
-export interface OBQuoteSerialized {
+export interface SerializedQuote {
 	poolKey: {
 		base: string;
 		quote: string;
