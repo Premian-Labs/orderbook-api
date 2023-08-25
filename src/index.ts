@@ -50,13 +50,11 @@ export const provider = new ethers.JsonRpcProvider(rpc_url);
 export const chainId = process.env.ENV == 'production' ? '42161' : '421613'
 const signer = new ethers.Wallet(privateKey, provider);
 
-
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true, }));
 app.use(checkTestApiKey);
-
 
 app.post('/orderbook/quotes', async (req, res) => {
 	/*
@@ -204,6 +202,10 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	res.status(201).json('Quotes deleted');
 });
 
+app.post('/orderbook/validate_quote', async (req, res) => {
+// TODO: check if a quote is valid - Web3 call
+});
+
 app.get('/orderbook/quotes', async (req, res) => {
 	//TODO: orderbook proxy
 	const valid = validateGetFillableQuotes(req.query);
@@ -240,10 +242,6 @@ app.get('/orderbook/orders', async (req, res) => {
 		null
 	);
 	return res.sendStatus(proxyResponse.status);
-});
-
-app.get('/orderbook/valid_quote', async (req, res) => {
-// TODO: check if a quote is valid (maybe  this can just be done in fillQuote endpoint?
 });
 
 app.get('/orderbook/private_quotes', async (req, res) => {
