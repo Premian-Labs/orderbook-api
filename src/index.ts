@@ -114,6 +114,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 			deadline = ts + quote.deadline
 		}
 
+		// TODO: abstract as a function createExpiration
 		const expirationMoment = moment.utc(quote.expiration, 'DDMMMYY');
 
 		// check if option expiration is a valid date
@@ -146,6 +147,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		// Set time to 8:00 AM
 		const expiration = expirationMoment.add(8, 'hours').unix()
 
+		// TODO: abstract as a function createPoolKey
 		// 2.3 Create Pool Key
 		const poolKey: PoolKey = {
 			base: process.env.ENV == 'production' ? arb.tokens[quote.base] : arbGoerli.tokens[quote.base],
@@ -197,6 +199,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 });
 
 app.patch('/orderbook/quotes', async (req, res) => {
+	// TODO: request object must have pool key components
 	const valid = validateFillQuotes(req.body);
 	if (!valid) {
 		res.status(400);
@@ -210,7 +213,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 });
 
 app.delete('/orderbook/quotes', async (req, res) => {
-	// TODO: cancel quote directly onchain (no orderbook proxy)
+	// TODO: request object must have pool key components
 	const valid = validateDeleteQuotes(req.body);
 	if (!valid) {
 		res.status(400);
@@ -229,7 +232,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		return res.status(500).json({ message: 'RPC provider error' });
 	}
 
-	res.status(201).json('Quotes deleted');
+	res.status(201).json({ message : `Quote ${req.body.quoteId} deleted` });
 });
 
 app.post('/orderbook/validate_quote', async (req, res) => {
@@ -237,7 +240,6 @@ app.post('/orderbook/validate_quote', async (req, res) => {
 });
 
 app.get('/orderbook/quotes', async (req, res) => {
-	//TODO: orderbook proxy
 	const valid = validateGetFillableQuotes(req.query);
 	if (!valid) {
 		res.status(400);
@@ -256,7 +258,6 @@ app.get('/orderbook/quotes', async (req, res) => {
 });
 
 app.get('/orderbook/orders', async (req, res) => {
-	// TODO: gets all quotes for a given market (returns  bid/ask quotes) (orderbook proxy)
 	const valid = validateGetAllQuotes(req.query);
 	if (!valid) {
 		res.status(400);
@@ -275,7 +276,6 @@ app.get('/orderbook/orders', async (req, res) => {
 });
 
 app.get('/orderbook/private_quotes', async (req, res) => {
-	//TODO: use proxy to get get personalized/private quotes for accounts
 	const valid = validateGetRFQQuotes(req.query);
 	if (!valid) {
 		res.status(400);
