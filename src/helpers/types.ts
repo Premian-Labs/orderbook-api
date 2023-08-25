@@ -211,3 +211,11 @@ export interface SignedQuote {
 	s: string;
 	v: number;
 }
+
+export interface ExpiredOption {
+	base: string
+	quote: string
+	expiration: string
+	strike: number
+	type: 'C' | 'P'
+}

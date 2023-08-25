@@ -3,12 +3,14 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import moment from 'moment';
 import Logger from './lib/logger';
-import {ethers, Contract, parseEther, MaxUint256, parseUnits} from 'ethers';
+import {ethers, Contract, parseEther, MaxUint256, parseUnits, formatEther} from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
-    PoolKey,
-		PublishQuoteProxyRequest,
-    PublishQuoteRequest,
+	ExpiredOption,
+	PoolKey,
+	PublishQuoteProxyRequest,
+	PublishQuoteRequest,
+	TokenType
 } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
@@ -19,12 +21,12 @@ import {
 	validateGetRFQQuotes,
 	validatePostQuotes,
 } from './helpers/validators';
-import { getPoolAddress } from './helpers/utils';
+import { getPoolAddress, processExpiredOptions } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json'
 import arbGoerli from './config/arbitrumGoerli.json'
 import { getQuote, signQuote, createQuote, serializeQuote } from './helpers/quote';
-import {ERC20Base__factory} from "./typechain";
+import {ERC20Base__factory, IPool__factory} from "./typechain";
 
 dotenv.config();
 
@@ -47,9 +49,10 @@ if (process.env.ENV == 'production' && (!process.env.MAINNET_RPC_URL || !process
 
 const rpc_url = process.env.ENV == 'production' ? process.env.MAINNET_RPC_URL : process.env.TESTNET_RPC_URL;
 const privateKey = process.env.WALLET_PRIVATE_KEY;
+export const walletAddr = process.env.WALLET_ADDRESS
 export const provider = new ethers.JsonRpcProvider(rpc_url);
 export const chainId = process.env.ENV == 'production' ? '42161' : '421613'
-const signer = new ethers.Wallet(privateKey, provider);
+export const signer = new ethers.Wallet(privateKey, provider);
 const routerAddress = process.env.ENV == 'production' ?  arb.ERC20Router : arbGoerli.ERC20Router;
 
 const app = express();
@@ -266,11 +269,47 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 });
 
 app.post('/pool/settle', async  (req, res) => {
-	//TODO: check that account has a short position before attempting to settle
+	/*
+	[
+		{
+			base: 'WETH'
+			quote: 'USDC'
+			expiration: '22FEB19'
+			strike: 1700
+			type: 'C' | 'P'
+		}
+	]
+	*/
+
+	try {
+		await processExpiredOptions(req.body as ExpiredOption[], TokenType.SHORT)
+	} catch(e) {
+		return res.status(500).json({ message: e });
+	}
+
+	res.status(201);
 })
 
 app.post('/pool/exercise', async  (req, res) => {
-	//TODO: check that account has a long position before attempting to exercise
+	/*
+	[
+		{
+			base: 'WETH'
+			quote: 'USDC'
+			expiration: '22FEB19'
+			strike: 1700
+			type: 'C' | 'P'
+		}
+	]
+	*/
+
+	try {
+		await processExpiredOptions(req.body as ExpiredOption[], TokenType.LONG)
+	} catch(e) {
+		return res.status(500).json({ message: e });
+	}
+
+	res.status(201);
 })
 
 app.post('/pool/annihilate', async  (req, res) => {
@@ -318,7 +357,7 @@ app.post('/account/token_approval', async  (req, res) => {
 	}
 
 	res.status(201);
-	
+
 })
 
 app.post('/account/option_approval', async  (req, res) => {
