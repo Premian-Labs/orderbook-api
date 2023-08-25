@@ -6,7 +6,7 @@ import Logger from './lib/logger';
 import {ethers, Contract, parseEther, MaxUint256, parseUnits, formatEther} from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
-	ExpiredOption,
+	Option,
 	PoolKey,
 	PublishQuoteProxyRequest,
 	PublishQuoteRequest,
@@ -21,7 +21,7 @@ import {
 	validateGetRFQQuotes,
 	validatePostQuotes,
 } from './helpers/validators';
-import { getPoolAddress, processExpiredOptions } from './helpers/utils';
+import { getPoolAddress, processExpiredOptions, annihilateOptions } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json'
 import arbGoerli from './config/arbitrumGoerli.json'
@@ -269,6 +269,7 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 });
 
 app.post('/pool/settle', async  (req, res) => {
+	//TODO: validate req.body
 	/*
 	[
 		{
@@ -282,7 +283,7 @@ app.post('/pool/settle', async  (req, res) => {
 	*/
 
 	try {
-		await processExpiredOptions(req.body as ExpiredOption[], TokenType.SHORT)
+		await processExpiredOptions(req.body as Option[], TokenType.SHORT)
 	} catch(e) {
 		return res.status(500).json({ message: e });
 	}
@@ -291,6 +292,7 @@ app.post('/pool/settle', async  (req, res) => {
 })
 
 app.post('/pool/exercise', async  (req, res) => {
+	//TODO: validate req.body
 	/*
 	[
 		{
@@ -304,7 +306,7 @@ app.post('/pool/exercise', async  (req, res) => {
 	*/
 
 	try {
-		await processExpiredOptions(req.body as ExpiredOption[], TokenType.LONG)
+		await processExpiredOptions(req.body as Option[], TokenType.LONG)
 	} catch(e) {
 		return res.status(500).json({ message: e });
 	}
@@ -313,7 +315,30 @@ app.post('/pool/exercise', async  (req, res) => {
 })
 
 app.post('/pool/annihilate', async  (req, res) => {
-    //TODO: take two opposing positions and release collateral
+	//TODO: validate req.body
+	/*
+[
+    {
+        base: 'WETH'
+        quote: 'USDC'
+        expiration: '22FEB19'
+        strike: 1700
+        type: 'C' | 'P'
+    }
+]
+*/
+
+	try {
+		await annihilateOptions(req.body as Option[])
+	} catch(e) {
+		return res.status(500).json({ message: e });
+	}
+
+	res.status(201);
+
+
+
+
 })
 
 app.get('/account/positions', async  (req, res) => {
@@ -361,7 +386,7 @@ app.post('/account/token_approval', async  (req, res) => {
 })
 
 app.post('/account/option_approval', async  (req, res) => {
-
+ //TODO: what is the best way to deal with this?
 })
 app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`);

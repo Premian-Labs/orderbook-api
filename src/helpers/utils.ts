@@ -1,4 +1,4 @@
-import {PoolKey, ExpiredOption, TokenType, PublishQuoteRequest} from './types';
+import {PoolKey, Option, TokenType} from './types';
 import {Contract, formatEther, parseEther} from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
@@ -41,7 +41,7 @@ export async function getPoolAddress(poolKey: PoolKey) {
 	return poolAddress;
 }
 
-export async function processExpiredOptions(expiredOptions: ExpiredOption[], type: number){
+export async function processExpiredOptions(expiredOptions: Option[], type: number){
 	for (const expOption of expiredOptions) {
 		// TODO: validate that option has expired
 		// TODO: use moment to validate expiration and create timestamp
@@ -67,5 +67,45 @@ export async function processExpiredOptions(expiredOptions: ExpiredOption[], typ
 
 		const settleTx = await pool.settle();
 		await provider.waitForTransaction(settleTx.hash, 1);
+	}
+}
+
+export async function annihilateOptions(annihilateOptions: Option[]) {
+	for (const option of annihilateOptions) {
+		// TODO: validate that option has expired
+		// TODO: use moment to validate expiration and create timestamp
+		const expirationMoment = moment(option.expiration, 'DD-mm-YY')
+
+		// Create Pool Key
+		const poolKey: PoolKey = {
+			base: process.env.ENV == 'production' ? arb.tokens[option.base] : arbGoerli.tokens[option.base],
+			quote: process.env.ENV == 'production' ? arb.tokens[option.quote] : arbGoerli.tokens[option.quote],
+			oracleAdapter: process.env.ENV == 'production' ? arb.ChainlinkAdapterProxy : arbGoerli.ChainlinkAdapterProxy,
+			strike: parseEther(option.strike.toString()),
+			maturity: expirationMoment.unix(),
+			isCallPool: option.type === 'C',
+		}
+
+		// Get PoolAddress
+		const poolAddr = await getPoolAddress(poolKey);
+
+		const pool = IPool__factory.connect(poolAddr, signer)
+
+		const shortBalance = parseFloat(formatEther(await pool.balanceOf(walletAddr, TokenType.SHORT)))
+		const longBalance = parseFloat(formatEther(await pool.balanceOf(walletAddr, TokenType.LONG)))
+
+		Logger.info(
+			'short token balance:',
+			shortBalance,
+			'\n',
+			'long token balance:',
+			longBalance
+		)
+
+		const annihilateSize = parseEther(Math.min(shortBalance,longBalance).toString())
+		const annihilateTx = await pool.annihilate(annihilateSize, {
+			gasLimit: 1400000,
+		});
+		await provider.waitForTransaction(annihilateTx.hash, 1);
 	}
 }

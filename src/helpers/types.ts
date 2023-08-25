@@ -212,7 +212,7 @@ export interface SignedQuote {
 	v: number;
 }
 
-export interface ExpiredOption {
+export interface Option {
 	base: string
 	quote: string
 	expiration: string
