@@ -1,9 +1,12 @@
 import Ajv from 'ajv';
 
 const ajv = new Ajv();
+import arb from '../config/arbitrum.json'
+import arbGoerli from '../config/arbitrumGoerli.json'
 
+const chainConfig = process.env.ENV == 'production' ? arb : arbGoerli
+const supportedTokens = Object.keys(chainConfig.tokens)
 
-//FIXME: correct typings for float values and make product string more strict
 export const validatePostQuotes = ajv.compile({
 	type: 'array',
 	items: {
@@ -11,22 +14,20 @@ export const validatePostQuotes = ajv.compile({
 		properties: {
 			base: {
 				type: 'string',
-				//TODO: reda from config 'tokens'
-				pattern: ['WETH', 'WBTC'].join('|')
+				pattern: supportedTokens.map(token => `^${token}$`).join('|')
 			},
 			quote: {
 				type: 'string',
-				//TODO: reda from config 'tokens'
-				pattern: ['WETH', 'WBTC'].join('|')
+				pattern: supportedTokens.map(token => `^${token}$`).join('|')
 			},
 			expiration: {
-				type: 'string'
-				// TODO: regexp for '22FEB19'
+				type: 'string',
+				pattern: '^\\d\\d\\w\\w\\w\\d\\d$'
 			},
 			strike:  { type: 'number' },
 			type: {
 				type: 'string',
-				pattern: '^C|^P'
+				pattern: '^C$|^P$'
 			},
 			side: {
 				type: 'string',
@@ -35,6 +36,7 @@ export const validatePostQuotes = ajv.compile({
 			deadline: { type: 'integer' },
 			size: { type: 'number' },
 			price: { type: 'number' },
+			taker: { type: 'string', pattern: '^0x[a-fA-F0-9]{40}$' },
 		},
 		required: [
 			'base',

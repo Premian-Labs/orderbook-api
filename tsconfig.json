@@ -4,7 +4,7 @@
   ],
   "compilerOptions": {
     "target": "es2020",
-    "module": "es2015",
+    "module": "commonjs",
     "importHelpers": true,
     "declaration": true,
     "sourceMap": true,
@@ -25,7 +25,8 @@
     "experimentalDecorators": true,
     "skipLibCheck": true,
     "outDir": "./dist",
-    "suppressImplicitAnyIndexErrors": true
+    "suppressImplicitAnyIndexErrors": true,
+    "ignoreDeprecations": "5.0"
   }
 }
 

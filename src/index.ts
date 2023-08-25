@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import moment from 'moment';
 import Logger from './lib/logger';
-import {ethers, Contract, parseEther, MaxUint256, parseUnits, formatEther} from 'ethers';
+import {ethers, Contract, parseEther, MaxUint256, parseUnits, ZeroAddress} from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
 	Option,
@@ -26,7 +26,7 @@ import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json'
 import arbGoerli from './config/arbitrumGoerli.json'
 import { getQuote, signQuote, createQuote, serializeQuote } from './helpers/quote';
-import {ERC20Base__factory, IPool__factory} from "./typechain";
+import {ERC20Base__factory} from "./typechain";
 
 dotenv.config();
 
@@ -90,13 +90,12 @@ app.post('/orderbook/quotes', async (req, res) => {
 		]
 */
 
-	// TODO: update schema to reflect the above object array
 	// 1. Validate incoming object array
 	const valid = validatePostQuotes(req.body);
 	if (!valid) {
 		res.status(400);
 		Logger.error(
-			`Validation error: ${JSON.stringify(validateFillQuotes.errors)}`
+			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
 		);
 		return res.send(validateFillQuotes.errors);
 	}
@@ -114,12 +113,38 @@ app.post('/orderbook/quotes', async (req, res) => {
 		} else {
 			deadline = ts + quote.deadline
 		}
-		// 2.2 Validate maturity and generate timestamp
-		// TODO: use moment to validate expiration and create timestamp
-		const expirationMoment = moment(quote.expiration, 'DD-mm-YY')
-		// check expirationMoment.day() == 5
-		// if expiration is > 30 days, then only valid friday is the last friday of the month
-		// set 8AM if valid
+
+		const expirationMoment = moment.utc(quote.expiration, 'DDMMMYY');
+
+		// check if option expiration is a valid date
+		if (!expirationMoment.isValid()) {
+			const err = `Invalid expiration date: ${quote.expiration}`
+			Logger.error(err);
+			return res.status(400).json({ message: err });
+		}
+
+		// check if option expiration is Friday
+		if (expirationMoment.day() !== 5)  {
+			const err = `${expirationMoment.toJSON()} is not Friday!`
+			Logger.error(err);
+			return res.status(400).json({ message: err });
+		}
+
+		// check if option maturity is more than 30 days, than it can only expire last Friday of that month
+		const daysToExpiration = expirationMoment.diff(moment().startOf('day'), 'days');
+		if (daysToExpiration > 30) {
+			const lastDay = expirationMoment.clone().endOf('month').startOf('day');
+			lastDay.subtract((lastDay.day() + 2) % 7, 'days')
+
+			if (!lastDay.isSame(expirationMoment)) {
+				const err = `${expirationMoment.toJSON()} is not the last Friday of the month!`;
+				Logger.error(err);
+				return res.status(400).json({ message: err });
+			}
+		}
+
+		// Set time to 8:00 AM
+		const expiration = expirationMoment.add(8, 'hours').unix()
 
 		// 2.3 Create Pool Key
 		const poolKey: PoolKey = {
@@ -127,14 +152,13 @@ app.post('/orderbook/quotes', async (req, res) => {
 			quote: process.env.ENV == 'production' ? arb.tokens[quote.quote]: arbGoerli.tokens[quote.quote],
 			oracleAdapter:process.env.ENV == 'production' ? arb.ChainlinkAdapterProxy: arbGoerli.ChainlinkAdapterProxy,
 			strike: parseEther(quote.strike.toString()),
-			maturity: expirationMoment.unix(),
+			maturity: expiration,
 			isCallPool: quote.type === 'C',
 		}
 
 		// 2.4 Get PoolAddress
 		const poolAddr = await getPoolAddress(poolKey);
 
-		// TODO: pass takerAddress [optional]
 		// 2.5 Generate a initial quote object
 		const quoteOB = await getQuote(
 			process.env.WALLET_ADDRESS!,
@@ -142,6 +166,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 			quote.side === 'buy',
 			parseEther(quote.price.toString()),
 			deadline,
+			quote.taker
 		);
 
 		// 2.6 Sign quote object

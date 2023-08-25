@@ -10,6 +10,7 @@ export interface PublishQuoteRequest {
 	size: number
 	price: number
 	deadline: number
+	taker?: string
 }
 
 export interface SignatureDomain extends TypedDataDomain {
