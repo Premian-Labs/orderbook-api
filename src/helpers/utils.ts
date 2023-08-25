@@ -18,7 +18,7 @@ export async function getPoolAddress(poolKey: PoolKey) {
 	let poolAddress: string;
 
 	try {
-		[poolAddress] = await poolFactory.getPoolAddress(poolKey);
+		[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey);
 	} catch (e) {
 		try {
 			[poolAddress] = await poolFactory.getPoolAddress(poolKey);

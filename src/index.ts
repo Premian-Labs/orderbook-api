@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import moment from 'moment';
 import Logger from './lib/logger';
 import { ethers, Contract, parseEther } from 'ethers';
 import poolABI from './abi/IPool.json';
@@ -16,8 +17,9 @@ import {
 } from './helpers/validators';
 import { getPoolAddress } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
-import arbAddresses from './config/arbitrum.json'
-import arbGoerliAddresses from './config/arbitrumGoerli.json'
+import arb from './config/arbitrum.json'
+import arbGoerli from './config/arbitrumGoerli.json'
+import { getQuote, signQuote, createQuote, serializeQuote } from './helpers/quote';
 
 dotenv.config();
 
@@ -40,8 +42,10 @@ if (process.env.ENV == 'production' && (!process.env.MAINNET_RPC_URL || !process
 
 const rpc_url = process.env.ENV == 'production'? process.env.MAINNET_RPC_URL : process.env.TESTNET_RPC_URL;
 const privateKey = process.env.WALLET_PRIVATE_KEY;
-const provider = new ethers.JsonRpcProvider(rpc_url);
+export const provider = new ethers.JsonRpcProvider(rpc_url);
+export const chainId = process.env.ENV == 'production' ? '42161' : '421613'
 const signer = new ethers.Wallet(privateKey, provider);
+
 
 const app = express();
 app.use(cors());
@@ -55,22 +59,31 @@ app.post('/orderbook/quotes', async (req, res) => {
 	NOTE: sample object array in req.body
 		[
 			{
-				product: WETH-USDC-22FEB19-1700-C
-				side => 'buy' or 'sell'
-				size => 1.5
-				price -> 0.21
-				deadline -> 300 (seconds)
+				base: 'WETH'
+				quote: 'USDC'
+				expiration: '22FEB19'
+				strike: 1700
+				type: 'C' | 'P'
+				side: 'buy' | 'sell'
+				size: 1.5
+				price: 0.21
+				deadline: 300 (seconds)
 			},
 			{
-				product: WETH-USDC-22FEB19-1600-C
-				side => 'buy' or 'sell'
-				size => 1.5
-				price -> 0.21
-				deadline -> 300 (seconds)
+				base: 'WETH'
+				quote: 'USDC
+				expiration: 22FEB19
+				strike: 1400
+				type: 'C' | 'P'
+				side: 'buy' | 'sell'
+				size: 1.9
+				price: 0.15
+				deadline: 300 (seconds)
 			},
 		]
 */
 
+	// TODO: update schema to reflect the above object array
 	// 1. Validate incoming object array
 	const valid = validatePostQuotes(req.body);
 	if (!valid) {
@@ -85,34 +98,63 @@ app.post('/orderbook/quotes', async (req, res) => {
 	for (const quote of req.body) {
 		// 2.1 Check that deadline is valid
 		const ts = Math.trunc(new Date().getTime() / 1000);
-		const ttl = quote.deadline - ts;
-		if (ttl < 60) {
+		let deadline: number
+		if (quote.deadline < 60) {
 			return res.status(400).json({
 				message: 'Quote deadline is invalid (cannot be less than 60 sec)',
 				quote: quote,
 			});
+		} else {
+			deadline = ts + quote.deadline
 		}
-		// 2.2 parse product name and generate Pool Key
-		const parsedProduct: string[] = quote.product.split("-")
-		// ie. ['WETH', 'USDC', '22FEB19', '1600', 'C']
+		// 2.2 Validate maturity and generate timestamp
+		// TODO: use moment to validate expiration and create timestamp
+		const expirationMoment = moment(quote.expiration, 'DD-mm-YY')
+		// check expirationMoment.day() == 5
+		// if expiration is > 30 days, then only valid friday is the last friday of the month
+		// set 8AM if valid
 
-		//FIXME: use parsed product to get token address and maturity
-		const poolKey = {
-			base: process.env.ENV == 'production'? arbAddresses.tokens['WETH']: arbGoerliAddresses.tokens['WETH'],
-			quote: 'production'? arbAddresses.tokens['USDC']: arbGoerliAddresses.tokens['USDC'],
-			oracleAdapter: 'production'? arbAddresses.ChainlinkAdapterProxy: arbGoerliAddresses.ChainlinkAdapterProxy,
-			strike: parseEther(quote.strike),
-			maturity: '',
-			isCallPool: parsedProduct[4] == 'C',
+		// 2.3 Create Pool Key
+		const poolKey: PoolKey = {
+			base: process.env.ENV == 'production' ? arb.tokens[quote.base] : arbGoerli.tokens[quote.base],
+			quote: process.env.ENV == 'production' ? arb.tokens[quote.quote]: arbGoerli.tokens[quote.quote],
+			oracleAdapter:process.env.ENV == 'production' ? arb.ChainlinkAdapterProxy: arbGoerli.ChainlinkAdapterProxy,
+			strike: parseEther(quote.strike.toString()),
+			maturity: expirationMoment.unix(),
+			isCallPool: quote.type === 'C',
 		}
-	}
 
-	// TODO: create quote object(s) locally (and generate signature for quote)
-	// TODO: approve necessary qty for trade
-	// TODO: check that balance exists to do trade? (help eliminate erroneous trades)
-	// TODO: publish quote to orderbook via orderbook proxy
+		// 2.4 Get PoolAddress
+		const poolAddr = await getPoolAddress(poolKey);
 
-	const requestBody: AJVQuote[] = req.body;
+		// TODO: pass takerAddress [optional]
+		// 2.5 Generate a initial quote object
+		const quoteOB = await getQuote(
+			process.env.WALLET_ADDRESS!,
+			parseEther(quote.size.toString()),
+			quote.side === 'buy',
+			parseEther(quote.price.toString()),
+			deadline,
+		);
+
+		// 2.6 Sign quote object
+		const signedQuote = await signQuote(provider, poolAddr, quoteOB);
+		const publishQuote = createQuote(poolKey, quoteOB, signedQuote);
+
+		// 2.7 Serialize quote
+		const serializedQuote = serializeQuote(publishQuote)
+
+		// 2.8 Add chain id to quote object
+		const publishQuoteRequest = {
+			...serializedQuote,
+			chainId: chainId
+		}
+
+		// 2.9 Add quote the object array
+		serializedQuotes.push(publishQuoteRequest)
+  }
+
+	// 3 Submit quote object array to orderbook API
 	const proxyResponse = await proxyHTTPRequest(
 		'quotes',
 		'POST',
@@ -237,6 +279,12 @@ app.get('/account/orders', async  (req, res) => {
 
 app.get('/account/balances', async  (req, res) => {
 	//TODO: Wallet Balances (ETH, USDC) use orderbook proxy (Moralis)
+})
+
+app.post('/account/approve', async  (req, res) => {
+		// TODO add or remove approvals
+		// TODO array of tokens to approve and optionally an amount (default will be max)
+		// TODO return approval values
 })
 
 app.listen(process.env.HTTP_PORT, () => {
