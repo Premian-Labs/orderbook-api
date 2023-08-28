@@ -227,4 +227,9 @@ export interface NFTObject {
 	name: string
 }
 
+export interface OptionPositions {
+	open: NFTObject []
+	expired: NFTObject []
+}
+
 

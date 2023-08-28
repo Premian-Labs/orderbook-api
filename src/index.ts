@@ -9,15 +9,14 @@ import {
 	parseEther,
 	MaxUint256,
 	parseUnits,
-	ZeroAddress,
 } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
-	Option,
+	Option, OptionPositions,
 	PoolKey,
 	PublishQuoteProxyRequest,
 	PublishQuoteRequest,
-	TokenType,
+	TokenType
 } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
@@ -43,6 +42,8 @@ import {
 	serializeQuote,
 } from './helpers/quote';
 import { ERC20Base__factory } from './typechain';
+import Moralis from 'moralis';
+import { EvmChain } from '@moralisweb3/common-evm-utils';
 
 dotenv.config();
 
@@ -69,14 +70,24 @@ if (
 	throw new Error(`Missing Mainnet Credentials`);
 }
 
+// TODO: remove when moralis migration to cloud happens
+if (!process.env.MORALIS_KEY || !process.env.ENV) {
+	throw new Error(`Balance Credentials Missing`);
+}
+
 const rpc_url =
 	process.env.ENV == 'production'
 		? process.env.MAINNET_RPC_URL
 		: process.env.TESTNET_RPC_URL;
+
 const privateKey = process.env.WALLET_PRIVATE_KEY;
 export const walletAddr = process.env.WALLET_ADDRESS;
 export const provider = new ethers.JsonRpcProvider(rpc_url);
 export const chainId = process.env.ENV == 'production' ? '42161' : '421613';
+
+// FIXME: Moralis Wallet API does not work for ARBITRUM_TESTNET. This is Patch for testing
+export const moralisChainId = process.env.ENV === 'production' ? EvmChain.ARBITRUM : EvmChain.GOERLI;
+export const availableTokens = process.env.ENV === 'production' ? Object.keys(arb.tokens) : Object.keys(arbGoerli.tokens)
 export const signer = new ethers.Wallet(privateKey, provider);
 const routerAddress =
 	process.env.ENV == 'production' ? arb.ERC20Router : arbGoerli.ERC20Router;
@@ -400,19 +411,128 @@ app.post('/pool/annihilate', async (req, res) => {
 	res.sendStatus(201);
 });
 
-app.get('/account/positions', async (req, res) => {
-	//TODO: Get Current positions (my positions -> expired vs. unexpired) -> check Moralis funcitonality (host in our own cloud) -> use orderbook proxy
+app.get('/account/option_balances', async (req, res) => {
+	//FIXME: in production, we can not return balances for arbitrum goerli
+	await Moralis.start({
+		apiKey: process.env.MORALIS_KEY,
+	});
+
+	// TODO: Check for moralis update to `disable_total` in comings days
+	const moralisResponse = await Moralis.EvmApi.nft.getWalletNFTs({
+		chain: moralisChainId,
+		format: 'decimal',
+		disableTotal: false,
+		mediaItems: false,
+		address: walletAddr,
+	});
+
+	const NFTBalances= moralisResponse.toJSON().result
+	if (NFTBalances === undefined)
+		return []
+
+	let optionBalances: OptionPositions  = {
+		open: [],
+		expired: []
+	}
+
+	NFTBalances.forEach(NFTBalance => {
+		const product = NFTBalance.name.split('-')
+
+		const approvedTokens = availableTokens.includes(product[0]) && availableTokens.includes(product[1])
+		const approvedOptionType = (product[4] === 'P' || product[4] === 'C')
+		const approvedStrike = !isNaN(Number(product[3]))
+		const approvedExp = moment(product[2], 'DDMMMYYYY').isValid()
+
+		if (approvedTokens && approvedOptionType && approvedStrike && approvedExp){
+
+			const maturity = moment(product[2], 'DDMMMYYYY').set({ hour: 8, minute: 0, second: 0, millisecond: 0 })
+			const maturitySec = maturity.valueOf() / 1000
+			const ts = Math.trunc(new Date().getTime() / 1000);
+
+			if (maturitySec < ts){
+				optionBalances.expired.push({
+					name: NFTBalance.name,
+					token_address: NFTBalance.token_address,
+					amount: NFTBalance.amount!
+				})
+			} else {
+				optionBalances.open.push({
+					name: NFTBalance.name,
+					token_address: NFTBalance.token_address,
+					amount: NFTBalance.amount!
+				})
+			}
+		}
+	})
+
+	//TODO: cover failure cases
+	res.status(200).json(optionBalances);
 });
 
 app.get('/account/orders', async (req, res) => {
-	//TODO: Get active orders (my open orders) use orderbook proxy
+	//TODO: should we be using the params input?
+	const proxyResponse = await proxyHTTPRequest(
+		`orders?${walletAddr}${chainId}`,
+		'GET'
+	);
+	return res.status(proxyResponse.status).json(proxyResponse.data);
 });
 
-app.get('/account/balances', async (req, res) => {
-	//TODO: Wallet Balances (ETH, USDC) use orderbook proxy (Moralis)
+app.get('/account/collateral_balances', async (req, res) => {
+	//FIXME: in production, we can not return balances for arbitrum goerli
+	await Moralis.start({
+		apiKey: process.env.MORALIS_KEY,
+	});
+
+	const tokenBalances = await Moralis.EvmApi.token.getWalletTokenBalances({
+		chain: moralisChainId,
+		address: walletAddr,
+	});
+
+	const filteredTokenBalances = tokenBalances.toJSON().filter (token => {
+		return availableTokens.includes(token.symbol)
+	})
+
+	const finalTokenBalances = filteredTokenBalances.map(
+		({name, logo, thumbnail, possible_spam, decimals, ...item}) => item
+	)
+
+	//TODO: cover failure cases
+	res.status(200).json(finalTokenBalances);
+
+	/*
+	[
+		{
+			token_address: '0x326c977e6efc84e512bb9c30f76e30c160ed06fb',
+			symbol: 'LINK',
+			balance: '20000000000000000000'
+		},
+	]
+	 */
 });
 
-app.post('/account/token_approval', async (req, res) => {
+app.get('/account/native_balance', async (req, res) => {
+	//FIXME: in production, we can not return balances for arbitrum goerli
+	await Moralis.start({
+		apiKey: process.env.MORALIS_KEY,
+	});
+
+
+	const nativeBalance = await Moralis.EvmApi.balance.getNativeBalance({
+		chain: moralisChainId,
+		address: walletAddr,
+	});
+
+	//TODO: cover failure cases
+	res.status(200).json(nativeBalance);
+
+	/*
+	 { balance: '16252939612884666622' }
+	 */
+
+});
+
+app.post('/account/collateral_approval', async (req, res) => {
 	// TODO: convert to req.body. Just an example.
 	const approvals = { WETH: 17, USDC: 'max' };
 
@@ -451,9 +571,6 @@ app.post('/account/token_approval', async (req, res) => {
 	res.sendStatus(201);
 });
 
-app.post('/account/option_approval', async (req, res) => {
-	//TODO: what is the best way to deal with this?
-});
 app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`);
 });
