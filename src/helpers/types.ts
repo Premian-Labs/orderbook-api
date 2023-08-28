@@ -1,16 +1,16 @@
 import { BigNumberish, TypedDataDomain, AddressLike } from 'ethers';
 
 export interface PublishQuoteRequest {
-	base: string
-	quote: string
-	expiration: string
-	strike: number
-	type: 'C' | 'P'
-	side: 'buy' | 'sell'
-	size: number
-	price: number
-	deadline: number
-	taker?: string
+	base: string;
+	quote: string;
+	expiration: string;
+	strike: number;
+	type: 'C' | 'P';
+	side: 'buy' | 'sell';
+	size: number;
+	price: number;
+	deadline: number;
+	taker?: string;
 }
 
 export interface SignatureDomain extends TypedDataDomain {
@@ -214,9 +214,17 @@ export interface SignedQuote {
 }
 
 export interface Option {
-	base: string
-	quote: string
-	expiration: string
-	strike: number
-	type: 'C' | 'P'
+	base: string;
+	quote: string;
+	expiration: string;
+	strike: number;
+	type: 'C' | 'P';
 }
+
+export interface NFTObject {
+	token_address: string;
+	amount: string,
+	name: string
+}
+
+

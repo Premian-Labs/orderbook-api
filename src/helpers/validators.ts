@@ -1,11 +1,11 @@
 import Ajv from 'ajv';
 
 const ajv = new Ajv();
-import arb from '../config/arbitrum.json'
-import arbGoerli from '../config/arbitrumGoerli.json'
+import arb from '../config/arbitrum.json';
+import arbGoerli from '../config/arbitrumGoerli.json';
 
-const chainConfig = process.env.ENV == 'production' ? arb : arbGoerli
-const supportedTokens = Object.keys(chainConfig.tokens)
+const chainConfig = process.env.ENV == 'production' ? arb : arbGoerli;
+const supportedTokens = Object.keys(chainConfig.tokens);
 
 export const validatePostQuotes = ajv.compile({
 	type: 'array',
@@ -14,24 +14,24 @@ export const validatePostQuotes = ajv.compile({
 		properties: {
 			base: {
 				type: 'string',
-				pattern: supportedTokens.map(token => `^${token}$`).join('|')
+				pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
 			},
 			quote: {
 				type: 'string',
-				pattern: supportedTokens.map(token => `^${token}$`).join('|')
+				pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
 			},
 			expiration: {
 				type: 'string',
-				pattern: '^\\d\\d\\w\\w\\w\\d\\d$'
+				pattern: '^\\d\\d\\w\\w\\w\\d\\d$',
 			},
-			strike:  { type: 'number' },
+			strike: { type: 'number' },
 			type: {
 				type: 'string',
-				pattern: '^C$|^P$'
+				pattern: '^C$|^P$',
 			},
 			side: {
 				type: 'string',
-				pattern: '^buy$|^sell$'
+				pattern: '^buy$|^sell$',
 			},
 			deadline: { type: 'integer' },
 			size: { type: 'number' },
@@ -47,9 +47,9 @@ export const validatePostQuotes = ajv.compile({
 			'side',
 			'size',
 			'price',
-			'deadline'
+			'deadline',
 		],
-		additionalProperties: false
+		additionalProperties: false,
 	},
 	minItems: 1,
 	maxItems: 1000,

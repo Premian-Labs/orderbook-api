@@ -1,13 +1,13 @@
 import {
-    Domain,
-    EIP712Domain,
-    QuoteOB,
-    QuoteOBMessage,
-    RSV,
-    PoolKey,
-    PublishOBQuote,
-    SignedQuote,
-		SerializedQuote,
+	Domain,
+	EIP712Domain,
+	QuoteOB,
+	QuoteOBMessage,
+	RSV,
+	PoolKey,
+	PublishOBQuote,
+	SignedQuote,
+	SerializedQuote,
 } from './types';
 import { ZeroAddress } from 'ethers';
 
@@ -20,7 +20,7 @@ import {
 } from 'ethers';
 //TODO: remove hardhat and keep typing
 import { JsonRpcRequest } from 'hardhat/types';
-import { chainId } from '../index'
+import { chainId } from '../index';
 
 const abiCoder = AbiCoder.defaultAbiCoder();
 const randomId = () => Math.floor(Math.random() * 10000000000);
@@ -278,27 +278,26 @@ export function createQuote(
 }
 
 export function serializeQuote(quote: PublishOBQuote): SerializedQuote {
-    return {
-        poolKey: {
-            base: quote.poolKey.base,
-            quote: quote.poolKey.quote,
-            oracleAdapter: quote.poolKey.oracleAdapter,
-            strike: quote.poolKey.strike.toString(),
-            maturity: Number(quote.poolKey.maturity),
-            isCallPool: quote.poolKey.isCallPool,
-        },
-        provider: quote.provider,
-        taker: quote.taker,
-        price: quote.price.toString(),
-        size: quote.size.toString(),
-        isBuy: quote.isBuy,
-        deadline: Number(quote.deadline),
-        salt: Number(quote.salt),
-        signature: {
-            r: quote.signature.r,
-            s: quote.signature.s,
-            v: Number(quote.signature.v),
-        },
-    };
+	return {
+		poolKey: {
+			base: quote.poolKey.base,
+			quote: quote.poolKey.quote,
+			oracleAdapter: quote.poolKey.oracleAdapter,
+			strike: quote.poolKey.strike.toString(),
+			maturity: Number(quote.poolKey.maturity),
+			isCallPool: quote.poolKey.isCallPool,
+		},
+		provider: quote.provider,
+		taker: quote.taker,
+		price: quote.price.toString(),
+		size: quote.size.toString(),
+		isBuy: quote.isBuy,
+		deadline: Number(quote.deadline),
+		salt: Number(quote.salt),
+		signature: {
+			r: quote.signature.r,
+			s: quote.signature.s,
+			v: Number(quote.signature.v),
+		},
+	};
 }
-

@@ -1,4 +1,4 @@
 {
-  "ArbGoerliOrderbookUrl": "https://test.orderbook.premia.finance",
-  "ArbOrderbookUrl": "https://orderbook.premia.finance"
+	"ArbGoerliOrderbookUrl": "https://test.orderbook.premia.finance",
+	"ArbOrderbookUrl": "https://orderbook.premia.finance"
 }
