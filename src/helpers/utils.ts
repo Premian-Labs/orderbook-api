@@ -1,4 +1,4 @@
-import { PoolKey, Option, TokenType } from './types';
+import { PoolKey, Option, TokenType, PublishQuoteRequest } from './types';
 import { Contract, formatEther, parseEther } from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
@@ -83,7 +83,6 @@ export async function processExpiredOptions(
 
 export async function annihilateOptions(annihilateOptions: Option[]) {
 	for (const option of annihilateOptions) {
-		// TODO: validate that option has expired
 		// TODO: use moment to validate expiration and create timestamp
 		const expirationMoment = moment(option.expiration, 'DD-mm-YY');
 
@@ -129,9 +128,67 @@ export async function annihilateOptions(annihilateOptions: Option[]) {
 		const annihilateSize = parseEther(
 			Math.min(shortBalance, longBalance).toString()
 		);
-		const annihilateTx = await pool.annihilate(annihilateSize, {
-			gasLimit: 1400000,
-		});
-		await provider.waitForTransaction(annihilateTx.hash, 1);
+
+		if (annihilateSize > 0n){
+			const annihilateTx = await pool.annihilate(annihilateSize, {
+				gasLimit: 1400000,
+			});
+			await provider.waitForTransaction(annihilateTx.hash, 1);
+		} else {
+			throw new Error(`No positions to annihilate: ${option}`)
+		}
+
 	}
+}
+
+export function createExpiration(exp: string): number {
+	const expirationMoment = moment.utc(exp, 'DDMMMYY');
+
+	// 1. check if option expiration is a valid date
+	if (!expirationMoment.isValid()) {
+		throw new Error(`Invalid expiration date: ${exp}`)
+	}
+
+	// 2. check if option expiration is Friday
+	if (expirationMoment.day() !== 5) {
+		throw new Error( `${expirationMoment.toJSON()} is not Friday!`)
+	}
+
+	// 3. if option maturity > 30 days, validate expire is last Friday of the month
+	const daysToExpiration = expirationMoment.diff(
+		moment().startOf('day'),
+		'days'
+	);
+
+	if (daysToExpiration > 30) {
+		const lastDay = expirationMoment.clone().endOf('month').startOf('day');
+		lastDay.subtract((lastDay.day() + 2) % 7, 'days');
+
+		if (!lastDay.isSame(expirationMoment)) {
+			throw new Error(`${expirationMoment.toJSON()} is not the last Friday of the month!`)
+		}
+	}
+
+	// Set time to 8:00 AM
+	return  expirationMoment.add(8, 'hours').unix();
+}
+
+export function createPoolKey(quote: PublishQuoteRequest, expiration: number): PoolKey {
+	return {
+		base:
+			process.env.ENV == 'production'
+				? arb.tokens[quote.base]
+				: arbGoerli.tokens[quote.base],
+		quote:
+			process.env.ENV == 'production'
+				? arb.tokens[quote.quote]
+				: arbGoerli.tokens[quote.quote],
+		oracleAdapter:
+			process.env.ENV == 'production'
+				? arb.ChainlinkAdapterProxy
+				: arbGoerli.ChainlinkAdapterProxy,
+		strike: parseEther(quote.strike.toString()),
+		maturity: expiration,
+		isCallPool: quote.type === 'C',
+	};
 }

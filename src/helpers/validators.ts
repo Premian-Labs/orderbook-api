@@ -33,9 +33,9 @@ export const validatePostQuotes = ajv.compile({
 				type: 'string',
 				pattern: '^buy$|^sell$',
 			},
-			deadline: { type: 'integer' },
 			size: { type: 'number' },
 			price: { type: 'number' },
+			deadline: { type: 'integer' },
 			taker: { type: 'string', pattern: '^0x[a-fA-F0-9]{40}$' },
 		},
 		required: [
@@ -48,6 +48,42 @@ export const validatePostQuotes = ajv.compile({
 			'size',
 			'price',
 			'deadline',
+		],
+		additionalProperties: false,
+	},
+	minItems: 1,
+	maxItems: 1000,
+});
+
+export const validateManagePos = ajv.compile({
+	type: 'array',
+	items: {
+		type: 'object',
+		properties: {
+			base: {
+				type: 'string',
+				pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+			},
+			quote: {
+				type: 'string',
+				pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+			},
+			expiration: {
+				type: 'string',
+				pattern: '^\\d\\d\\w\\w\\w\\d\\d$',
+			},
+			strike: { type: 'number' },
+			type: {
+				type: 'string',
+				pattern: '^C$|^P$',
+			}
+		},
+		required: [
+			'base',
+			'quote',
+			'expiration',
+			'strike',
+			'type'
 		],
 		additionalProperties: false,
 	},

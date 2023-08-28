@@ -26,11 +26,12 @@ import {
 	validateGetFillableQuotes,
 	validateGetRFQQuotes,
 	validatePostQuotes,
+	validateManagePos
 } from './helpers/validators';
 import {
 	getPoolAddress,
 	processExpiredOptions,
-	annihilateOptions,
+	annihilateOptions, createExpiration, createPoolKey
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
@@ -99,34 +100,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(checkTestApiKey);
 
 app.post('/orderbook/quotes', async (req, res) => {
-	/*
-	NOTE: sample object array in req.body
-		[
-			{
-				base: 'WETH'
-				quote: 'USDC'
-				expiration: '22FEB19'
-				strike: 1700
-				type: 'C' | 'P'
-				side: 'buy' | 'sell'
-				size: 1.5
-				price: 0.21
-				deadline: 300 (seconds)
-			},
-			{
-				base: 'WETH'
-				quote: 'USDC
-				expiration: 22FEB19
-				strike: 1400
-				type: 'C' | 'P'
-				side: 'buy' | 'sell'
-				size: 1.9
-				price: 0.15
-				deadline: 300 (seconds)
-			},
-		]
-*/
-
 	// 1. Validate incoming object array
 	const valid = validatePostQuotes(req.body);
 	if (!valid) {
@@ -139,6 +112,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 	let serializedQuotes: PublishQuoteProxyRequest[] = [];
 	// 2. Loop through each order and convert to signed quote object
 	for (const quote of req.body as PublishQuoteRequest[]) {
+
 		// 2.1 Check that deadline is valid and generate deadline timestamp
 		const ts = Math.trunc(new Date().getTime() / 1000);
 		let deadline: number;
@@ -151,61 +125,20 @@ app.post('/orderbook/quotes', async (req, res) => {
 			deadline = ts + quote.deadline;
 		}
 
-		// TODO: abstract as a function createExpiration
-		const expirationMoment = moment.utc(quote.expiration, 'DDMMMYY');
-
-		// check if option expiration is a valid date
-		if (!expirationMoment.isValid()) {
-			const err = `Invalid expiration date: ${quote.expiration}`;
-			Logger.error(err);
-			return res.status(400).json({ message: err });
+		// 2.2 validate/create timestamp expiration
+		let expiration: number
+		try{
+			expiration = createExpiration(quote.expiration)
+		} catch(e){
+			Logger.error(e);
+			return res.status(400).json({
+				message: e ,
+				quote: quote
+			});
 		}
 
-		// check if option expiration is Friday
-		if (expirationMoment.day() !== 5) {
-			const err = `${expirationMoment.toJSON()} is not Friday!`;
-			Logger.error(err);
-			return res.status(400).json({ message: err });
-		}
-
-		// check if option maturity is more than 30 days, than it can only expire last Friday of that month
-		const daysToExpiration = expirationMoment.diff(
-			moment().startOf('day'),
-			'days'
-		);
-		if (daysToExpiration > 30) {
-			const lastDay = expirationMoment.clone().endOf('month').startOf('day');
-			lastDay.subtract((lastDay.day() + 2) % 7, 'days');
-
-			if (!lastDay.isSame(expirationMoment)) {
-				const err = `${expirationMoment.toJSON()} is not the last Friday of the month!`;
-				Logger.error(err);
-				return res.status(400).json({ message: err });
-			}
-		}
-
-		// Set time to 8:00 AM
-		const expiration = expirationMoment.add(8, 'hours').unix();
-
-		// TODO: abstract as a function createPoolKey
 		// 2.3 Create Pool Key
-		const poolKey: PoolKey = {
-			base:
-				process.env.ENV == 'production'
-					? arb.tokens[quote.base]
-					: arbGoerli.tokens[quote.base],
-			quote:
-				process.env.ENV == 'production'
-					? arb.tokens[quote.quote]
-					: arbGoerli.tokens[quote.quote],
-			oracleAdapter:
-				process.env.ENV == 'production'
-					? arb.ChainlinkAdapterProxy
-					: arbGoerli.ChainlinkAdapterProxy,
-			strike: parseEther(quote.strike.toString()),
-			maturity: expiration,
-			isCallPool: quote.type === 'C',
-		};
+		const poolKey = createPoolKey(quote, expiration)
 
 		// 2.4 Get PoolAddress
 		const poolAddr = await getPoolAddress(poolKey);
@@ -257,7 +190,6 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validateFillQuotes.errors);
 	}
-	//TODO: Approve tokens for trading
 	//TODO: invoke Web3 fillQuoteOB
 });
 
@@ -343,18 +275,15 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 });
 
 app.post('/pool/settle', async (req, res) => {
-	//TODO: validate req.body
-	/*
-	[
-		{
-			base: 'WETH'
-			quote: 'USDC'
-			expiration: '22FEB19'
-			strike: 1700
-			type: 'C' | 'P'
-		}
-	]
-	*/
+	// 1. Validate incoming object array
+	const valid = validateManagePos(req.body);
+	if (!valid) {
+		res.status(400);
+		Logger.error(
+			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
+		);
+		return res.send(validateFillQuotes.errors);
+	}
 
 	try {
 		await processExpiredOptions(req.body as Option[], TokenType.SHORT);
@@ -366,18 +295,15 @@ app.post('/pool/settle', async (req, res) => {
 });
 
 app.post('/pool/exercise', async (req, res) => {
-	//TODO: validate req.body
-	/*
-	[
-		{
-			base: 'WETH'
-			quote: 'USDC'
-			expiration: '22FEB19'
-			strike: 1700
-			type: 'C' | 'P'
-		}
-	]
-	*/
+	// 1. Validate incoming object array
+	const valid = validateManagePos(req.body);
+	if (!valid) {
+		res.status(400);
+		Logger.error(
+			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
+		);
+		return res.send(validateFillQuotes.errors);
+	}
 
 	try {
 		await processExpiredOptions(req.body as Option[], TokenType.LONG);
@@ -389,19 +315,17 @@ app.post('/pool/exercise', async (req, res) => {
 });
 
 app.post('/pool/annihilate', async (req, res) => {
-	//TODO: validate req.body
-	/*
-[
-    {
-        base: 'WETH'
-        quote: 'USDC'
-        expiration: '22FEB19'
-        strike: 1700
-        type: 'C' | 'P'
-    }
-]
-*/
+	// 1. Validate incoming object array
+	const valid = validateManagePos(req.body);
+	if (!valid) {
+		res.status(400);
+		Logger.error(
+			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
+		);
+		return res.send(validateFillQuotes.errors);
+	}
 
+	// 2. Annihilate
 	try {
 		await annihilateOptions(req.body as Option[]);
 	} catch (e) {
