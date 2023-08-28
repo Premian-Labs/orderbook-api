@@ -129,15 +129,14 @@ export async function annihilateOptions(annihilateOptions: Option[]) {
 			Math.min(shortBalance, longBalance).toString()
 		);
 
-		if (annihilateSize > 0n){
+		if (annihilateSize > 0n) {
 			const annihilateTx = await pool.annihilate(annihilateSize, {
 				gasLimit: 1400000,
 			});
 			await provider.waitForTransaction(annihilateTx.hash, 1);
 		} else {
-			throw new Error(`No positions to annihilate: ${option}`)
+			throw new Error(`No positions to annihilate: ${option}`);
 		}
-
 	}
 }
 
@@ -146,12 +145,12 @@ export function createExpiration(exp: string): number {
 
 	// 1. check if option expiration is a valid date
 	if (!expirationMoment.isValid()) {
-		throw new Error(`Invalid expiration date: ${exp}`)
+		throw new Error(`Invalid expiration date: ${exp}`);
 	}
 
 	// 2. check if option expiration is Friday
 	if (expirationMoment.day() !== 5) {
-		throw new Error( `${expirationMoment.toJSON()} is not Friday!`)
+		throw new Error(`${expirationMoment.toJSON()} is not Friday!`);
 	}
 
 	// 3. if option maturity > 30 days, validate expire is last Friday of the month
@@ -165,15 +164,20 @@ export function createExpiration(exp: string): number {
 		lastDay.subtract((lastDay.day() + 2) % 7, 'days');
 
 		if (!lastDay.isSame(expirationMoment)) {
-			throw new Error(`${expirationMoment.toJSON()} is not the last Friday of the month!`)
+			throw new Error(
+				`${expirationMoment.toJSON()} is not the last Friday of the month!`
+			);
 		}
 	}
 
 	// Set time to 8:00 AM
-	return  expirationMoment.add(8, 'hours').unix();
+	return expirationMoment.add(8, 'hours').unix();
 }
 
-export function createPoolKey(quote: PublishQuoteRequest, expiration: number): PoolKey {
+export function createPoolKey(
+	quote: PublishQuoteRequest,
+	expiration: number
+): PoolKey {
 	return {
 		base:
 			process.env.ENV == 'production'

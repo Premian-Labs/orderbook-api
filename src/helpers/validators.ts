@@ -55,7 +55,7 @@ export const validatePostQuotes = ajv.compile({
 	maxItems: 1000,
 });
 
-export const validateManagePos = ajv.compile({
+export const validatePositionManagement = ajv.compile({
 	type: 'array',
 	items: {
 		type: 'object',
@@ -76,15 +76,9 @@ export const validateManagePos = ajv.compile({
 			type: {
 				type: 'string',
 				pattern: '^C$|^P$',
-			}
+			},
 		},
-		required: [
-			'base',
-			'quote',
-			'expiration',
-			'strike',
-			'type'
-		],
+		required: ['base', 'quote', 'expiration', 'strike', 'type'],
 		additionalProperties: false,
 	},
 	minItems: 1,
@@ -92,27 +86,39 @@ export const validateManagePos = ajv.compile({
 });
 
 export const validateFillQuotes = ajv.compile({
-	type: 'object',
-	properties: {
-		quoteId: {
-			type: 'string',
-			pattern: '[a-fA-F0-9]{64}$',
+	type: 'array',
+	items: {
+		type: 'object',
+		properties: {
+			quoteId: {
+				type: 'string',
+				pattern: '[a-fA-F0-9]{64}$',
+			},
+			size: {
+				type: 'string',
+				pattern: '^[0-9]*$',
+			},
 		},
-		size: {
-			type: 'string',
-			pattern: '^[0-9]*$',
-		},
+		required: ['quoteId', 'size'],
+		additionalProperties: false,
 	},
-	required: ['quoteId', 'size'],
-	additionalProperties: false,
+	minItems: 1,
+	maxItems: 1000,
 });
 
 export const validateDeleteQuotes = ajv.compile({
 	type: 'object',
 	properties: {
-		quoteId: { type: 'string', pattern: '[a-fA-F0-9]{64}$' },
+		poolAddress: {
+			type: 'string',
+			pattern: '^0x[a-fA-F0-9]{40}$',
+		},
+		quoteId: {
+			type: 'string',
+			pattern: '[a-fA-F0-9]{64}$',
+		},
 	},
-	required: ['quoteId'],
+	required: ['poolAddress', 'quoteId'],
 	additionalProperties: false,
 });
 

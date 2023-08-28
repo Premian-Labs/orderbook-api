@@ -1,4 +1,11 @@
-import { BigNumberish, TypedDataDomain, AddressLike } from 'ethers';
+import { BigNumberish } from 'ethers';
+
+export interface Domain {
+	name: string;
+	version: string;
+	chainId: string;
+	verifyingContract: string;
+}
 
 export interface PublishQuoteRequest {
 	base: string;
@@ -13,13 +20,6 @@ export interface PublishQuoteRequest {
 	taker?: string;
 }
 
-export interface SignatureDomain extends TypedDataDomain {
-	name: string;
-	version: string;
-	chainId: string;
-	verifyingContract: string;
-}
-
 export interface PoolKey {
 	base: string;
 	quote: string;
@@ -29,18 +29,6 @@ export interface PoolKey {
 	isCallPool: boolean;
 }
 
-export interface Quote {
-	poolKey: PoolKey;
-	provider: string;
-	taker: string;
-	price: bigint;
-	size: bigint;
-	isBuy: boolean;
-	deadline: bigint;
-	salt: bigint;
-}
-
-//TODO: Possible for 'v' to be a 'number'. Double check typing is correct
 export interface RSV {
 	r: string;
 	s: string;
@@ -52,12 +40,8 @@ export interface PublishQuoteProxyRequest extends SerializedQuote {
 }
 
 export interface DeleteRequest {
+	poolAddress: string;
 	quoteId: string;
-}
-
-export interface FillRequest {
-	quoteId: string;
-	size: string;
 }
 
 export interface SerializedQuote {
@@ -76,28 +60,7 @@ export interface SerializedQuote {
 	isBuy: boolean;
 	deadline: number;
 	salt: number;
-	signature: {
-		r: string;
-		s: string;
-		v: number;
-	};
-}
-
-export interface GetFillableQuoteRequest {
-	poolAddress: string;
-	size: string;
-	side: string;
-	chainId: string;
-	provider?: string;
-	taker?: string;
-}
-
-export interface GetRFQRequest {
-	poolAddress: string;
-	side: string;
-	chainId: string;
-	taker: string;
-	provider?: string;
+	signature: RSV;
 }
 
 export interface UnkeyAuthRequest {
@@ -110,22 +73,9 @@ export interface UnkeyAuthResponse {
 	meta: any;
 }
 
-export interface GetAllQuotesRequest {
-	chainId: string;
-	poolAddress?: string;
-	side?: string;
-	provider?: string;
-	size?: string;
-}
-
 export enum TokenType {
 	SHORT = 0,
 	LONG = 1,
-}
-export enum OrderType {
-	CSUP,
-	CS,
-	LC,
 }
 export interface PoolKey {
 	base: string;
@@ -136,17 +86,6 @@ export interface PoolKey {
 	isCallPool: boolean;
 }
 
-export interface PosKey {
-	owner: AddressLike;
-	operator: AddressLike;
-	lower: BigNumberish;
-	upper: BigNumberish;
-	orderType: OrderType; // Collateral <-> Long Option
-}
-
-export interface EventSignatures {
-	[index: string]: string;
-}
 export interface QuoteOB {
 	provider: string;
 	taker: string;
@@ -166,13 +105,6 @@ export interface QuoteOBMessage {
 	salt: string;
 }
 
-export interface Domain {
-	name: string;
-	version: string;
-	chainId: string;
-	verifyingContract: string;
-}
-
 export const EIP712Domain = [
 	{ name: 'name', type: 'string' },
 	{ name: 'version', type: 'string' },
@@ -190,14 +122,6 @@ export interface PublishOBQuote {
 	deadline: BigNumberish;
 	salt: BigNumberish;
 	signature: RSV;
-}
-
-export interface TokenIdParams {
-	version: number;
-	orderType: OrderType;
-	operator: string;
-	upper: BigNumberish;
-	lower: BigNumberish;
 }
 
 export interface SignedQuote {
@@ -221,15 +145,27 @@ export interface Option {
 	type: 'C' | 'P';
 }
 
-export interface NFTObject {
+export interface NFTBalance {
 	token_address: string;
-	amount: string,
-	name: string
+	amount: string;
+	name: string;
 }
 
 export interface OptionPositions {
-	open: NFTObject []
-	expired: NFTObject []
+	open: NFTBalance[];
+	expired: NFTBalance[];
 }
 
+export interface MoralisTokenBalance extends TokenBalance {
+	name: string;
+	logo?: string | undefined;
+	thumbnail?: string | undefined;
+	decimals: number;
+	possible_spam: boolean;
+}
 
+export interface TokenBalance {
+	token_address: string;
+	symbol: string;
+	balance: string;
+}

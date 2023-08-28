@@ -3,20 +3,18 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import moment from 'moment';
 import Logger from './lib/logger';
-import {
-	ethers,
-	Contract,
-	parseEther,
-	MaxUint256,
-	parseUnits,
-} from 'ethers';
+import { ethers, Contract, parseEther, MaxUint256, parseUnits } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
-	Option, OptionPositions,
+	DeleteRequest,
+	MoralisTokenBalance,
+	Option,
+	OptionPositions,
 	PoolKey,
 	PublishQuoteProxyRequest,
 	PublishQuoteRequest,
-	TokenType
+	TokenBalance,
+	TokenType,
 } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
@@ -26,12 +24,14 @@ import {
 	validateGetFillableQuotes,
 	validateGetRFQQuotes,
 	validatePostQuotes,
-	validateManagePos
+	validatePositionManagement,
 } from './helpers/validators';
 import {
 	getPoolAddress,
 	processExpiredOptions,
-	annihilateOptions, createExpiration, createPoolKey
+	annihilateOptions,
+	createExpiration,
+	createPoolKey,
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
@@ -87,8 +87,12 @@ export const provider = new ethers.JsonRpcProvider(rpc_url);
 export const chainId = process.env.ENV == 'production' ? '42161' : '421613';
 
 // FIXME: Moralis Wallet API does not work for ARBITRUM_TESTNET. This is Patch for testing
-export const moralisChainId = process.env.ENV === 'production' ? EvmChain.ARBITRUM : EvmChain.GOERLI;
-export const availableTokens = process.env.ENV === 'production' ? Object.keys(arb.tokens) : Object.keys(arbGoerli.tokens)
+export const moralisChainId =
+	process.env.ENV === 'production' ? EvmChain.ARBITRUM : EvmChain.GOERLI;
+export const availableTokens =
+	process.env.ENV === 'production'
+		? Object.keys(arb.tokens)
+		: Object.keys(arbGoerli.tokens);
 export const signer = new ethers.Wallet(privateKey, provider);
 const routerAddress =
 	process.env.ENV == 'production' ? arb.ERC20Router : arbGoerli.ERC20Router;
@@ -112,7 +116,6 @@ app.post('/orderbook/quotes', async (req, res) => {
 	let serializedQuotes: PublishQuoteProxyRequest[] = [];
 	// 2. Loop through each order and convert to signed quote object
 	for (const quote of req.body as PublishQuoteRequest[]) {
-
 		// 2.1 Check that deadline is valid and generate deadline timestamp
 		const ts = Math.trunc(new Date().getTime() / 1000);
 		let deadline: number;
@@ -126,19 +129,19 @@ app.post('/orderbook/quotes', async (req, res) => {
 		}
 
 		// 2.2 validate/create timestamp expiration
-		let expiration: number
-		try{
-			expiration = createExpiration(quote.expiration)
-		} catch(e){
+		let expiration: number;
+		try {
+			expiration = createExpiration(quote.expiration);
+		} catch (e) {
 			Logger.error(e);
 			return res.status(400).json({
-				message: e ,
-				quote: quote
+				message: e,
+				quote: quote,
 			});
 		}
 
 		// 2.3 Create Pool Key
-		const poolKey = createPoolKey(quote, expiration)
+		const poolKey = createPoolKey(quote, expiration);
 
 		// 2.4 Get PoolAddress
 		const poolAddr = await getPoolAddress(poolKey);
@@ -177,6 +180,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		null,
 		serializedQuotes
 	);
+
 	return res.status(proxyResponse.status).json(proxyResponse.data);
 });
 
@@ -194,7 +198,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 });
 
 app.delete('/orderbook/quotes', async (req, res) => {
-	// TODO: request object must have pool key components
+	// 1. Validate incoming object array
 	const valid = validateDeleteQuotes(req.body);
 	if (!valid) {
 		res.status(400);
@@ -203,19 +207,28 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validateDeleteQuotes.errors);
 	}
-	const poolAddr = await getPoolAddress(req.body.poolKey);
-	const poolContract = new Contract(poolAddr, poolABI, signer);
-	try {
-		const cancelTx = await poolContract.cancelQuotesOB(req.body);
-		await provider.waitForTransaction(cancelTx.hash, 1);
-	} catch (e) {
-		Logger.error(e);
-		return res.status(500).json({ message: 'RPC provider error' });
+
+	//TODO: 2. Batch cancel requests by poolAddress
+
+	// TODO: 3. Loop through each cancel request batch
+	for (const quote of req.body as DeleteRequest[]) {
+		const poolContract = new Contract(quote.poolAddress, poolABI, signer);
+
+		try {
+			const cancelTx = await poolContract.cancelQuotesOB(req.body);
+			await provider.waitForTransaction(cancelTx.hash, 1);
+		} catch (e) {
+			Logger.error(e);
+			return res.status(500).json({ message: e });
+		}
 	}
 
 	res.status(201).json({ message: `Quote ${req.body.quoteId} deleted` });
 });
 
+app.delete('/orderbook/all_quotes', async (req, res) => {
+	//TODO: delete all quotes in orderbook (no quote hash required)
+});
 app.post('/orderbook/validate_quote', async (req, res) => {
 	// TODO: check if a quote is valid - Web3 call
 });
@@ -276,7 +289,7 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 
 app.post('/pool/settle', async (req, res) => {
 	// 1. Validate incoming object array
-	const valid = validateManagePos(req.body);
+	const valid = validatePositionManagement(req.body);
 	if (!valid) {
 		res.status(400);
 		Logger.error(
@@ -296,7 +309,7 @@ app.post('/pool/settle', async (req, res) => {
 
 app.post('/pool/exercise', async (req, res) => {
 	// 1. Validate incoming object array
-	const valid = validateManagePos(req.body);
+	const valid = validatePositionManagement(req.body);
 	if (!valid) {
 		res.status(400);
 		Logger.error(
@@ -316,7 +329,7 @@ app.post('/pool/exercise', async (req, res) => {
 
 app.post('/pool/annihilate', async (req, res) => {
 	// 1. Validate incoming object array
-	const valid = validateManagePos(req.body);
+	const valid = validatePositionManagement(req.body);
 	if (!valid) {
 		res.status(400);
 		Logger.error(
@@ -350,44 +363,49 @@ app.get('/account/option_balances', async (req, res) => {
 		address: walletAddr,
 	});
 
-	const NFTBalances= moralisResponse.toJSON().result
-	if (NFTBalances === undefined)
-		return []
+	const NFTBalances = moralisResponse.toJSON().result;
+	if (NFTBalances === undefined) return [];
 
-	let optionBalances: OptionPositions  = {
+	let optionBalances: OptionPositions = {
 		open: [],
-		expired: []
-	}
+		expired: [],
+	};
 
-	NFTBalances.forEach(NFTBalance => {
-		const product = NFTBalance.name.split('-')
+	NFTBalances.forEach((NFTBalance) => {
+		const product = NFTBalance.name.split('-');
 
-		const approvedTokens = availableTokens.includes(product[0]) && availableTokens.includes(product[1])
-		const approvedOptionType = (product[4] === 'P' || product[4] === 'C')
-		const approvedStrike = !isNaN(Number(product[3]))
-		const approvedExp = moment(product[2], 'DDMMMYYYY').isValid()
+		const approvedTokens =
+			availableTokens.includes(product[0]) &&
+			availableTokens.includes(product[1]);
+		const approvedOptionType = product[4] === 'P' || product[4] === 'C';
+		const approvedStrike = !isNaN(Number(product[3]));
+		const approvedExp = moment(product[2], 'DDMMMYYYY').isValid();
 
-		if (approvedTokens && approvedOptionType && approvedStrike && approvedExp){
-
-			const maturity = moment(product[2], 'DDMMMYYYY').set({ hour: 8, minute: 0, second: 0, millisecond: 0 })
-			const maturitySec = maturity.valueOf() / 1000
+		if (approvedTokens && approvedOptionType && approvedStrike && approvedExp) {
+			const maturity = moment(product[2], 'DDMMMYYYY').set({
+				hour: 8,
+				minute: 0,
+				second: 0,
+				millisecond: 0,
+			});
+			const maturitySec = maturity.valueOf() / 1000;
 			const ts = Math.trunc(new Date().getTime() / 1000);
 
-			if (maturitySec < ts){
+			if (maturitySec < ts) {
 				optionBalances.expired.push({
 					name: NFTBalance.name,
 					token_address: NFTBalance.token_address,
-					amount: NFTBalance.amount!
-				})
+					amount: NFTBalance.amount!,
+				});
 			} else {
 				optionBalances.open.push({
 					name: NFTBalance.name,
 					token_address: NFTBalance.token_address,
-					amount: NFTBalance.amount!
-				})
+					amount: NFTBalance.amount!,
+				});
 			}
 		}
-	})
+	});
 
 	//TODO: cover failure cases
 	res.status(200).json(optionBalances);
@@ -413,26 +431,16 @@ app.get('/account/collateral_balances', async (req, res) => {
 		address: walletAddr,
 	});
 
-	const filteredTokenBalances = tokenBalances.toJSON().filter (token => {
-		return availableTokens.includes(token.symbol)
-	})
+	const filteredTokenBalances = tokenBalances.toJSON().filter((token) => {
+		return availableTokens.includes(token.symbol);
+	}) as MoralisTokenBalance[];
 
 	const finalTokenBalances = filteredTokenBalances.map(
-		({name, logo, thumbnail, possible_spam, decimals, ...item}) => item
-	)
+		({ name, logo, thumbnail, possible_spam, decimals, ...item }) => item
+	) as TokenBalance[];
 
 	//TODO: cover failure cases
 	res.status(200).json(finalTokenBalances);
-
-	/*
-	[
-		{
-			token_address: '0x326c977e6efc84e512bb9c30f76e30c160ed06fb',
-			symbol: 'LINK',
-			balance: '20000000000000000000'
-		},
-	]
-	 */
 });
 
 app.get('/account/native_balance', async (req, res) => {
@@ -440,7 +448,6 @@ app.get('/account/native_balance', async (req, res) => {
 	await Moralis.start({
 		apiKey: process.env.MORALIS_KEY,
 	});
-
 
 	const nativeBalance = await Moralis.EvmApi.balance.getNativeBalance({
 		chain: moralisChainId,
@@ -453,7 +460,6 @@ app.get('/account/native_balance', async (req, res) => {
 	/*
 	 { balance: '16252939612884666622' }
 	 */
-
 });
 
 app.post('/account/collateral_approval', async (req, res) => {
