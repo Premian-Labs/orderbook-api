@@ -336,7 +336,7 @@ app.post('/pool/exercise', async (req, res) => {
 		return res.status(500).json({ message: e });
 	}
 
-	res.sendStatus(201);
+	res.sendStatus(200);
 });
 
 // TODO: update annihilateOptions()
