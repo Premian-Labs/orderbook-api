@@ -315,7 +315,7 @@ app.post('/pool/settle', async (req, res) => {
 		return res.status(500).json({ message: e });
 	}
 
-	res.sendStatus(201);
+	res.sendStatus(200);
 });
 
 //TODO: update processExpiredOptions()
@@ -358,7 +358,7 @@ app.post('/pool/annihilate', async (req, res) => {
 		return res.status(500).json({ message: e });
 	}
 
-	res.sendStatus(201);
+	res.sendStatus(200);
 });
 
 app.get('/account/option_balances', async (req, res) => {
@@ -478,10 +478,6 @@ app.get('/account/native_balance', async (req, res) => {
 	}
 
 	res.status(200).json(nativeBalance);
-
-	/*
-	 { balance: '16252939612884666622' }
-	 */
 });
 
 app.post('/account/collateral_approval', async (req, res) => {
@@ -526,7 +522,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 		return res.status(500).json({ message: e });
 	}
 
-	res.sendStatus(201);
+	res.sendStatus(200);
 });
 
 app.listen(process.env.HTTP_PORT, () => {
