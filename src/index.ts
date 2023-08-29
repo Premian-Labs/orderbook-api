@@ -7,14 +7,12 @@ import Logger from './lib/logger';
 import { ethers, Contract, parseEther, MaxUint256, parseUnits } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
-	CancelQuotesOB,
-	DeleteRequest, GroupedDeleteRequest,
+	GroupedDeleteRequest,
 	MoralisTokenBalance,
 	Option,
 	OptionPositions,
-	PoolKey,
 	PublishQuoteProxyRequest,
-	PublishQuoteRequest,
+	PublishQuoteRequest, TokenApproval,
 	TokenBalance,
 	TokenType
 } from './helpers/types';
@@ -26,7 +24,7 @@ import {
 	validateGetFillableQuotes,
 	validateGetRFQQuotes,
 	validatePostQuotes,
-	validatePositionManagement,
+	validatePositionManagement, validateApprovals,
 } from './helpers/validators';
 import {
 	getPoolAddress,
@@ -306,9 +304,9 @@ app.post('/pool/settle', async (req, res) => {
 	if (!valid) {
 		res.status(400);
 		Logger.error(
-			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
+			`Validation error: ${JSON.stringify(validatePositionManagement.errors)}`
 		);
-		return res.send(validateFillQuotes.errors);
+		return res.send(validatePositionManagement.errors);
 	}
 
 	try {
@@ -327,9 +325,9 @@ app.post('/pool/exercise', async (req, res) => {
 	if (!valid) {
 		res.status(400);
 		Logger.error(
-			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
+			`Validation error: ${JSON.stringify(validatePositionManagement.errors)}`
 		);
-		return res.send(validateFillQuotes.errors);
+		return res.send(validatePositionManagement.errors);
 	}
 
 	try {
@@ -348,9 +346,9 @@ app.post('/pool/annihilate', async (req, res) => {
 	if (!valid) {
 		res.status(400);
 		Logger.error(
-			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
+			`Validation error: ${JSON.stringify(validatePositionManagement.errors)}`
 		);
-		return res.send(validateFillQuotes.errors);
+		return res.send(validatePositionManagement.errors);
 	}
 
 	// 2. Annihilate
@@ -382,7 +380,7 @@ app.get('/account/option_balances', async (req, res) => {
 	}
 
 	const NFTBalances = moralisResponse.toJSON().result;
-	if (NFTBalances === undefined) return res.status(404).json({ message: 'No postions found'});
+	if (NFTBalances === undefined) return res.status(404).json({ message: 'No positions found'});
 
 	let optionBalances: OptionPositions = {
 		open: [],
@@ -487,38 +485,41 @@ app.get('/account/native_balance', async (req, res) => {
 });
 
 app.post('/account/collateral_approval', async (req, res) => {
-	// TODO: AJV and typing
-	// TODO: validate that tokens in req body exist in token object for specified chain
-	// TODO: validate that approval qty is either a number or 'max'
-	const approvals = { WETH: 17, USDC: 'max' };
-	/*
-	[{token: 'WETH', amt: 17}, {token: 'USDC', amt: 'max'}]
-	 */
+	const valid = validateApprovals(req.body);
+	if (!valid) {
+		res.status(400);
+		Logger.error(
+			`Validation error: ${JSON.stringify(validateApprovals.errors)}`
+		);
+		return res.send(validateApprovals.errors);
+	}
+
+	const approvals = req.body as TokenApproval[];
 
 	// TODO: create promise all wrapper (and catch)
 	try {
-		for (const token in approvals) {
+		for (const approval of approvals) {
 			const erc20Addr =
 				process.env.ENV == 'production'
-					? arb.tokens[token]
-					: arbGoerli.tokens[token];
+					? arb.tokens[approval.token]
+					: arbGoerli.tokens[approval.token];
 			const erc20 = ERC20Base__factory.connect(erc20Addr, signer);
 
-			if (approvals[token] === 'max') {
+			if (approval.amt === 'max') {
 				const response = await erc20.approve(
 					routerAddress,
 					MaxUint256.toString()
 				);
 				await provider.waitForTransaction(response.hash, 1);
-				Logger.info(`${token} approval set to MAX`);
+				Logger.info(`${approval.token} approval set to MAX`);
 			} else {
 				const qty =
-					approvals[token] == 'USDC'
-						? parseUnits(approvals[token].toString(), 6)
-						: parseEther(approvals[token].toString());
+					approval.token === 'USDC'
+						? parseUnits(approval.amt.toString(), 6)
+						: parseEther(approval.amt.toString());
 				const response = await erc20.approve(routerAddress, qty);
 				await provider.waitForTransaction(response.hash, 1);
-				Logger.info(`${token} approval  set to ${approvals[token]}`);
+				Logger.info(`${approval.token} approval set to ${approval.amt}`);
 			}
 		}
 	} catch (e) {

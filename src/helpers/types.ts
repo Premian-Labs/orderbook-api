@@ -176,3 +176,8 @@ export interface TokenBalance {
 	symbol: string;
 	balance: string;
 }
+
+export interface TokenApproval {
+	token: string
+	amt: number | 'max'
+}

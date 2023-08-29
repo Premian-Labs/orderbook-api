@@ -209,3 +209,21 @@ export const validateGetRFQQuotes = ajv.compile({
 	required: ['poolAddress', 'side', 'taker', 'chainId'],
 	additionalProperties: false,
 });
+
+export const validateApprovals = ajv.compile({
+	type: 'object',
+	properties: {
+		token: {
+			type: 'string',
+			pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+		},
+		amt: {
+			oneOf: [
+				{ type: 'number' },
+				{ type: 'string', pattern: '^max$' },
+			],
+		}
+	},
+	required: ['token', 'amt'],
+	additionalProperties: false,
+});
