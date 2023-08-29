@@ -10,7 +10,7 @@ import {
 	GroupedDeleteRequest,
 	MoralisTokenBalance,
 	Option,
-	OptionPositions,
+	OptionPositions, PoolKey,
 	PublishQuoteProxyRequest,
 	PublishQuoteRequest, TokenApproval,
 	TokenBalance,
@@ -28,10 +28,10 @@ import {
 } from './helpers/validators';
 import {
 	getPoolAddress,
-	processExpiredOptions,
 	annihilateOptions,
 	createExpiration,
-	createPoolKey
+	createPoolKey,
+	optionExpired, preProcessExpOption
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
@@ -42,9 +42,10 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/quote';
-import { ERC20Base__factory } from './typechain';
+import { ERC20Base__factory, IPool, IPool__factory } from './typechain';
 import Moralis from 'moralis';
 import { EvmChain } from '@moralisweb3/common-evm-utils';
+import { formatEther } from 'ethers/lib.esm';
 
 dotenv.config();
 
@@ -191,7 +192,6 @@ app.post('/orderbook/quotes', async (req, res) => {
 });
 
 app.patch('/orderbook/quotes', async (req, res) => {
-	// TODO: request object must have pool key components
 	const valid = validateFillQuotes(req.body);
 	if (!valid) {
 		res.status(400);
@@ -309,16 +309,33 @@ app.post('/pool/settle', async (req, res) => {
 		return res.send(validatePositionManagement.errors);
 	}
 
-	try {
-		await processExpiredOptions(req.body as Option[], TokenType.SHORT);
-	} catch (e) {
-		return res.status(500).json({ message: e });
+	let options = req.body as Option[]
+	let pool: IPool;
+
+	for (const option of options) {
+		// 2. check all user inputs are valid for option settlement
+		try {
+			pool = await preProcessExpOption(option, TokenType.SHORT)
+		} catch (e) {
+			Logger.error(e);
+			return res.status(400).json({
+				message: e,
+				option: option,
+			});
+		}
+		// 3 invoke onchain settle function for option
+		try {
+			const settleTx = await pool.settle();
+			await provider.waitForTransaction(settleTx.hash, 1);
+		} catch (e) {
+			Logger.error(e);
+			return res.status(500).json({ message: e,  option: option});
+		}
 	}
 
 	res.sendStatus(200);
 });
 
-//TODO: update processExpiredOptions()
 app.post('/pool/exercise', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validatePositionManagement(req.body);
@@ -330,10 +347,29 @@ app.post('/pool/exercise', async (req, res) => {
 		return res.send(validatePositionManagement.errors);
 	}
 
-	try {
-		await processExpiredOptions(req.body as Option[], TokenType.LONG);
-	} catch (e) {
-		return res.status(500).json({ message: e });
+	let options = req.body as Option[]
+	let pool: IPool;
+
+	for (const option of options) {
+		// 2. check all user inputs are valid for option settlement
+		try {
+			pool = await preProcessExpOption(option, TokenType.LONG)
+		} catch (e) {
+			Logger.error(e);
+			return res.status(400).json({
+				message: e,
+				option: option,
+			});
+		}
+
+		// 3. invoke onchain exercise function for option
+		try {
+			const exerciseTx = await pool.exercise();
+			await provider.waitForTransaction(exerciseTx.hash, 1);
+		} catch (e) {
+			Logger.error(e);
+			return res.status(500).json({ message: e,  option: option });
+		}
 	}
 
 	res.sendStatus(200);
@@ -398,16 +434,10 @@ app.get('/account/option_balances', async (req, res) => {
 		const approvedExp = moment.utc(product[2], 'DDMMMYYYY').isValid();
 
 		if (approvedTokens && approvedOptionType && approvedStrike && approvedExp) {
-			const maturity = moment.utc(product[2], 'DDMMMYYYY').set({
-				hour: 8,
-				minute: 0,
-				second: 0,
-				millisecond: 0,
-			});
-			const maturitySec = maturity.valueOf() / 1000;
-			const ts = Math.trunc(new Date().getTime() / 1000);
 
-			if (maturitySec < ts) {
+			const optionHasExpired = optionExpired(product[2])
+
+			if (optionHasExpired) {
 				optionBalances.expired.push({
 					name: NFTBalance.name,
 					token_address: NFTBalance.token_address,

@@ -147,7 +147,7 @@ export interface SignedQuote {
 export interface Option {
 	base: string;
 	quote: string;
-	expiration: string;
+	expiration: string | number;
 	strike: number;
 	type: 'C' | 'P';
 }

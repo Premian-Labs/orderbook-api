@@ -40,45 +40,34 @@ export async function getPoolAddress(poolKey: PoolKey) {
 	return poolAddress;
 }
 
-export async function processExpiredOptions(
-	expiredOptions: Option[],
-	type: number
+export async function preProcessExpOption(
+	expOption: Option,
+	tokenType: number
 ) {
-	for (const expOption of expiredOptions) {
-		// TODO: validate that option has expired
-		// TODO: use moment to validate expiration and create timestamp
-		const expirationMoment = moment(expOption.expiration, 'DD-mm-YY');
+	// NOTE: expiration is an incoming string only value but later converted to number
+	const strExp = expOption.expiration as string
 
-		// Create Pool Key
-		const poolKey: PoolKey = {
-			base:
-				process.env.ENV == 'production'
-					? arb.tokens[expOption.base]
-					: arbGoerli.tokens[expOption.base],
-			quote:
-				process.env.ENV == 'production'
-					? arb.tokens[expOption.quote]
-					: arbGoerli.tokens[expOption.quote],
-			oracleAdapter:
-				process.env.ENV == 'production'
-					? arb.ChainlinkAdapterProxy
-					: arbGoerli.ChainlinkAdapterProxy,
-			strike: parseEther(expOption.strike.toString()),
-			maturity: expirationMoment.unix(),
-			isCallPool: expOption.type === 'C',
-		};
-
-		// Get PoolAddress
-		const poolAddr = await getPoolAddress(poolKey);
-
-		const pool = IPool__factory.connect(poolAddr, signer);
-		const balance = await pool.balanceOf(walletAddr, type);
-		const side = type === 0 ? 'Short' : 'Long';
-		Logger.info(`${side} Balance: `, formatEther(balance));
-
-		const settleTx = await pool.settle();
-		await provider.waitForTransaction(settleTx.hash, 1);
+	// 1. verified the option has expired
+	const optionHasExpired = optionExpired(strExp)
+	if (!optionHasExpired){
+		throw new Error ('Option has not expired')
 	}
+	// 2. validate and convert option exp to timestamp
+	expOption.expiration = createExpiration(strExp);
+
+	// 3. check that there is a balance for the option being settled/exercised
+	const poolKey: PoolKey = createPoolKey(expOption)
+	const poolAddr = await getPoolAddress(poolKey);
+	const pool = IPool__factory.connect(poolAddr, signer);
+	const balance = await pool.balanceOf(walletAddr, tokenType);
+	Logger.info(`${tokenType === 0 ? 'Short' : 'Long'} Balance: `, formatEther(balance));
+
+	//TODO: verify that a zero balance indeed comes as 0n
+	if (balance === 0n) {
+		throw new Error ('No balance to settle')
+	}
+
+	return pool
 }
 
 export async function annihilateOptions(annihilateOptions: Option[]) {
@@ -175,8 +164,8 @@ export function createExpiration(exp: string): number {
 }
 
 export function createPoolKey(
-	quote: PublishQuoteRequest,
-	expiration: number
+	quote: PublishQuoteRequest | Option,
+	expiration?: number
 ): PoolKey {
 	return {
 		base:
@@ -192,7 +181,20 @@ export function createPoolKey(
 				? arb.ChainlinkAdapterProxy
 				: arbGoerli.ChainlinkAdapterProxy,
 		strike: parseEther(quote.strike.toString()),
-		maturity: expiration,
+		maturity: expiration ? expiration: quote.expiration,
 		isCallPool: quote.type === 'C',
 	};
+}
+
+export function optionExpired ( exp: string) {
+	const maturity = moment.utc(exp, 'DDMMMYYYY').set({
+		hour: 8,
+		minute: 0,
+		second: 0,
+		millisecond: 0,
+	});
+	const maturitySec = maturity.valueOf() / 1000;
+	const ts = Math.trunc(new Date().getTime() / 1000);
+
+	return maturitySec < ts
 }

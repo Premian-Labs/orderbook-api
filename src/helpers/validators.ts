@@ -84,6 +84,8 @@ export const validatePositionManagement = ajv.compile({
 	maxItems: 1000,
 });
 
+
+//TODO convert fillquote to match QuoteOBMessage type + PoolKey
 export const validateFillQuotes = ajv.compile({
 	type: 'array',
 	items: {
@@ -105,6 +107,7 @@ export const validateFillQuotes = ajv.compile({
 	maxItems: 1000,
 });
 
+// TODO: remove poolAddress and instead pass in poolKey
 export const validateDeleteQuotes = ajv.compile({
 	type: 'array',
 	items:{
@@ -211,19 +214,24 @@ export const validateGetRFQQuotes = ajv.compile({
 });
 
 export const validateApprovals = ajv.compile({
-	type: 'object',
-	properties: {
-		token: {
-			type: 'string',
-			pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+	type: 'array',
+	items: {
+		type: 'object',
+		properties: {
+			token: {
+				type: 'string',
+				pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+			},
+			amt: {
+				oneOf: [
+					{ type: 'number' },
+					{ type: 'string', pattern: '^max$' },
+				],
+			}
 		},
-		amt: {
-			oneOf: [
-				{ type: 'number' },
-				{ type: 'string', pattern: '^max$' },
-			],
-		}
+		required: ['token', 'amt'],
+		additionalProperties: false,
 	},
-	required: ['token', 'amt'],
-	additionalProperties: false,
+	minItems: 1,
+	maxItems: supportedTokens.length,
 });
