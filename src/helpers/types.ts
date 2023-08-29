@@ -39,10 +39,10 @@ export interface PublishQuoteProxyRequest extends SerializedQuote {
 	chainId: string;
 }
 
-
 export interface CancelQuotesOB {
 	quoteId: string;
 }
+
 export interface DeleteRequest extends CancelQuotesOB {
 	poolAddress: string;
 }
@@ -84,6 +84,7 @@ export enum TokenType {
 	SHORT = 0,
 	LONG = 1,
 }
+
 export interface PoolKey {
 	base: string;
 	quote: string;
@@ -102,6 +103,7 @@ export interface QuoteOB {
 	deadline: BigNumberish;
 	salt: BigNumberish;
 }
+
 export interface QuoteOBMessage {
 	provider: string;
 	taker: string;

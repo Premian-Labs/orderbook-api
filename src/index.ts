@@ -200,9 +200,14 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validateFillQuotes.errors);
 	}
-	//TODO: invoke Web3 fillQuoteOB
+	// TODO: deserialize QuoteOBMessage[] w/ poolKey to QuoteOB[]
+	// TODO: generate (provide) poolKey
+	// TODO: get poolAddress (
+	// TODO: group by collateral type (type C && base + type P && quote)
+	// TODO: check balance to ensure we can do all quotes (parse by collateral type, and ensure we can fill everything)
+	// TODO: invoke Web3 fillQuoteOB
 });
-
+validateGetFillableQuotes
 app.delete('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validateDeleteQuotes(req.body);
