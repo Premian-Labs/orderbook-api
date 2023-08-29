@@ -84,7 +84,6 @@ export const validatePositionManagement = ajv.compile({
 	maxItems: 1000,
 });
 
-
 //TODO convert fillquote to match QuoteOBMessage type + PoolKey
 export const validateFillQuotes = ajv.compile({
 	type: 'array',
@@ -110,7 +109,7 @@ export const validateFillQuotes = ajv.compile({
 // TODO: remove poolAddress and instead pass in poolKey
 export const validateDeleteQuotes = ajv.compile({
 	type: 'array',
-	items:{
+	items: {
 		type: 'object',
 		properties: {
 			poolAddress: {
@@ -223,11 +222,8 @@ export const validateApprovals = ajv.compile({
 				pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
 			},
 			amt: {
-				oneOf: [
-					{ type: 'number' },
-					{ type: 'string', pattern: '^max$' },
-				],
-			}
+				oneOf: [{ type: 'number' }, { type: 'string', pattern: '^max$' }],
+			},
 		},
 		required: ['token', 'amt'],
 		additionalProperties: false,

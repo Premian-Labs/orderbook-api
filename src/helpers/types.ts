@@ -48,7 +48,7 @@ export interface DeleteRequest extends CancelQuotesOB {
 }
 
 export interface GroupedDeleteRequest {
-	[key: string]: DeleteRequest [];
+	[key: string]: DeleteRequest[];
 }
 
 export interface SerializedQuote {
@@ -180,6 +180,6 @@ export interface TokenBalance {
 }
 
 export interface TokenApproval {
-	token: string
-	amt: number | 'max'
+	token: string;
+	amt: number | 'max';
 }

@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import moment from 'moment';
-import * as _ from 'lodash'
+import * as _ from 'lodash';
 import Logger from './lib/logger';
 import { ethers, Contract, parseEther, MaxUint256, parseUnits } from 'ethers';
 import poolABI from './abi/IPool.json';
@@ -10,11 +10,12 @@ import {
 	GroupedDeleteRequest,
 	MoralisTokenBalance,
 	Option,
-	OptionPositions, PoolKey,
+	OptionPositions,
 	PublishQuoteProxyRequest,
-	PublishQuoteRequest, TokenApproval,
+	PublishQuoteRequest,
+	TokenApproval,
 	TokenBalance,
-	TokenType
+	TokenType,
 } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
@@ -24,14 +25,16 @@ import {
 	validateGetFillableQuotes,
 	validateGetRFQQuotes,
 	validatePostQuotes,
-	validatePositionManagement, validateApprovals,
+	validatePositionManagement,
+	validateApprovals,
 } from './helpers/validators';
 import {
 	getPoolAddress,
 	annihilateOptions,
 	createExpiration,
 	createPoolKey,
-	optionExpired, preProcessExpOption
+	optionExpired,
+	preProcessExpOption,
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
@@ -42,10 +45,9 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/quote';
-import { ERC20Base__factory, IPool, IPool__factory } from './typechain';
+import { ERC20Base__factory, IPool } from './typechain';
 import Moralis from 'moralis';
 import { EvmChain } from '@moralisweb3/common-evm-utils';
-import { formatEther } from 'ethers/lib.esm';
 
 dotenv.config();
 
@@ -98,11 +100,10 @@ export const signer = new ethers.Wallet(privateKey, provider);
 const routerAddress =
 	process.env.ENV == 'production' ? arb.ERC20Router : arbGoerli.ERC20Router;
 
-
 // TODO: remove when moralis migrates to cloud
 Moralis.start({
 	apiKey: process.env.MORALIS_KEY,
-}).then(() => console.log('Moralis SDK connected'))
+}).then(() => console.log('Moralis SDK connected'));
 
 const app = express();
 app.use(cors());
@@ -207,7 +208,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	// TODO: check balance to ensure we can do all quotes (parse by collateral type, and ensure we can fill everything)
 	// TODO: invoke Web3 fillQuoteOB
 });
-validateGetFillableQuotes
+
 app.delete('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validateDeleteQuotes(req.body);
@@ -219,14 +220,17 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		return res.send(validateDeleteQuotes.errors);
 	}
 
-	const deleteByPoolAddr = _.groupBy(req.body, "poolAddress") as GroupedDeleteRequest
+	const deleteByPoolAddr = _.groupBy(
+		req.body,
+		'poolAddress'
+	) as GroupedDeleteRequest;
 
 	const promiseAll = Promise.all(
-		Object.keys(deleteByPoolAddr).map(async poolAddress => {
+		Object.keys(deleteByPoolAddr).map(async (poolAddress) => {
 			const poolContract = new Contract(poolAddress, poolABI, signer);
 
 			const quoteIds = deleteByPoolAddr[poolAddress].map(
-				quotes => quotes.quoteId
+				(quotes) => quotes.quoteId
 			);
 
 			Logger.debug(`Cancelling quotes ${quoteIds}...`);
@@ -239,7 +243,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	// TODO: make error display failed quoteIds
 	promiseAll
 		.then(() => res.status(201).json({ message: `Quotes deleted` }))
-		.catch(e => {
+		.catch((e) => {
 			Logger.error(e);
 			res.status(500).json({ message: e });
 		});
@@ -314,13 +318,13 @@ app.post('/pool/settle', async (req, res) => {
 		return res.send(validatePositionManagement.errors);
 	}
 
-	let options = req.body as Option[]
+	let options = req.body as Option[];
 	let pool: IPool;
 
 	for (const option of options) {
 		// 2. check all user inputs are valid for option settlement
 		try {
-			pool = await preProcessExpOption(option, TokenType.SHORT)
+			pool = await preProcessExpOption(option, TokenType.SHORT);
 		} catch (e) {
 			Logger.error(e);
 			return res.status(400).json({
@@ -334,7 +338,7 @@ app.post('/pool/settle', async (req, res) => {
 			await provider.waitForTransaction(settleTx.hash, 1);
 		} catch (e) {
 			Logger.error(e);
-			return res.status(500).json({ message: e,  option: option});
+			return res.status(500).json({ message: e, option: option });
 		}
 	}
 
@@ -352,13 +356,13 @@ app.post('/pool/exercise', async (req, res) => {
 		return res.send(validatePositionManagement.errors);
 	}
 
-	let options = req.body as Option[]
+	let options = req.body as Option[];
 	let pool: IPool;
 
 	for (const option of options) {
 		// 2. check all user inputs are valid for option settlement
 		try {
-			pool = await preProcessExpOption(option, TokenType.LONG)
+			pool = await preProcessExpOption(option, TokenType.LONG);
 		} catch (e) {
 			Logger.error(e);
 			return res.status(400).json({
@@ -373,7 +377,7 @@ app.post('/pool/exercise', async (req, res) => {
 			await provider.waitForTransaction(exerciseTx.hash, 1);
 		} catch (e) {
 			Logger.error(e);
-			return res.status(500).json({ message: e,  option: option });
+			return res.status(500).json({ message: e, option: option });
 		}
 	}
 
@@ -416,12 +420,13 @@ app.get('/account/option_balances', async (req, res) => {
 			address: walletAddr,
 		});
 	} catch (e) {
-		Logger.error(e)
+		Logger.error(e);
 		return res.status(500).json({ message: 'Internal server error' });
 	}
 
 	const NFTBalances = moralisResponse.toJSON().result;
-	if (NFTBalances === undefined) return res.status(404).json({ message: 'No positions found'});
+	if (NFTBalances === undefined)
+		return res.status(404).json({ message: 'No positions found' });
 
 	let optionBalances: OptionPositions = {
 		open: [],
@@ -439,8 +444,7 @@ app.get('/account/option_balances', async (req, res) => {
 		const approvedExp = moment.utc(product[2], 'DDMMMYYYY').isValid();
 
 		if (approvedTokens && approvedOptionType && approvedStrike && approvedExp) {
-
-			const optionHasExpired = optionExpired(product[2])
+			const optionHasExpired = optionExpired(product[2]);
 
 			if (optionHasExpired) {
 				optionBalances.expired.push({
@@ -462,28 +466,24 @@ app.get('/account/option_balances', async (req, res) => {
 });
 
 app.get('/account/orders', async (req, res) => {
-	const proxyResponse = await proxyHTTPRequest(
-		'orders',
-		'GET',
-		{
-			provider: walletAddr,
-			chainId: moralisChainId,
-		}
-	);
+	const proxyResponse = await proxyHTTPRequest('orders', 'GET', {
+		provider: walletAddr,
+		chainId: moralisChainId,
+	});
 	return res.status(proxyResponse.status).json(proxyResponse.data);
 });
 
 app.get('/account/collateral_balances', async (req, res) => {
 	// FIXME: in production, we can not return balances for arbitrum goerli
 	// TODO: parseEther balances
-	let tokenBalances
+	let tokenBalances;
 	try {
 		tokenBalances = await Moralis.EvmApi.token.getWalletTokenBalances({
 			chain: moralisChainId,
 			address: walletAddr,
-		})
+		});
 	} catch (e) {
-		Logger.error(e)
+		Logger.error(e);
 		return res.status(500).json({ message: 'Internal server error' });
 	}
 
@@ -501,14 +501,14 @@ app.get('/account/collateral_balances', async (req, res) => {
 app.get('/account/native_balance', async (req, res) => {
 	// FIXME: in production, we can not return balances for arbitrum goerli
 	// TODO: parseEther balances
-	let nativeBalance
+	let nativeBalance;
 	try {
 		nativeBalance = await Moralis.EvmApi.balance.getNativeBalance({
 			chain: moralisChainId,
 			address: walletAddr,
 		});
 	} catch (e) {
-		Logger.error(e)
+		Logger.error(e);
 		return res.status(500).json({ message: 'Internal server error' });
 	}
 

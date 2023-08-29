@@ -45,29 +45,32 @@ export async function preProcessExpOption(
 	tokenType: number
 ) {
 	// NOTE: expiration is an incoming string only value but later converted to number
-	const strExp = expOption.expiration as string
+	const strExp = expOption.expiration as string;
 
 	// 1. verified the option has expired
-	const optionHasExpired = optionExpired(strExp)
-	if (!optionHasExpired){
-		throw new Error ('Option has not expired')
+	const optionHasExpired = optionExpired(strExp);
+	if (!optionHasExpired) {
+		throw new Error('Option has not expired');
 	}
 	// 2. validate and convert option exp to timestamp
 	expOption.expiration = createExpiration(strExp);
 
 	// 3. check that there is a balance for the option being settled/exercised
-	const poolKey: PoolKey = createPoolKey(expOption)
+	const poolKey: PoolKey = createPoolKey(expOption);
 	const poolAddr = await getPoolAddress(poolKey);
 	const pool = IPool__factory.connect(poolAddr, signer);
 	const balance = await pool.balanceOf(walletAddr, tokenType);
-	Logger.info(`${tokenType === 0 ? 'Short' : 'Long'} Balance: `, formatEther(balance));
+	Logger.info(
+		`${tokenType === 0 ? 'Short' : 'Long'} Balance: `,
+		formatEther(balance)
+	);
 
 	//TODO: verify that a zero balance indeed comes as 0n
 	if (balance === 0n) {
-		throw new Error ('No balance to settle')
+		throw new Error('No balance to settle');
 	}
 
-	return pool
+	return pool;
 }
 
 export async function annihilateOptions(annihilateOptions: Option[]) {
@@ -181,12 +184,12 @@ export function createPoolKey(
 				? arb.ChainlinkAdapterProxy
 				: arbGoerli.ChainlinkAdapterProxy,
 		strike: parseEther(quote.strike.toString()),
-		maturity: expiration ? expiration: quote.expiration,
+		maturity: expiration ? expiration : quote.expiration,
 		isCallPool: quote.type === 'C',
 	};
 }
 
-export function optionExpired ( exp: string) {
+export function optionExpired(exp: string) {
 	const maturity = moment.utc(exp, 'DDMMMYYYY').set({
 		hour: 8,
 		minute: 0,
@@ -196,5 +199,5 @@ export function optionExpired ( exp: string) {
 	const maturitySec = maturity.valueOf() / 1000;
 	const ts = Math.trunc(new Date().getTime() / 1000);
 
-	return maturitySec < ts
+	return maturitySec < ts;
 }
