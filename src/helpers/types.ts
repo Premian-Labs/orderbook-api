@@ -39,9 +39,16 @@ export interface PublishQuoteProxyRequest extends SerializedQuote {
 	chainId: string;
 }
 
-export interface DeleteRequest {
-	poolAddress: string;
+
+export interface CancelQuotesOB {
 	quoteId: string;
+}
+export interface DeleteRequest extends CancelQuotesOB {
+	poolAddress: string;
+}
+
+export interface GroupedDeleteRequest {
+	[key: string]: DeleteRequest [];
 }
 
 export interface SerializedQuote {

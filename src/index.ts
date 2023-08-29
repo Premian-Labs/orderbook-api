@@ -2,11 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import moment from 'moment';
+import * as _ from 'lodash'
 import Logger from './lib/logger';
 import { ethers, Contract, parseEther, MaxUint256, parseUnits } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
-	DeleteRequest,
+	CancelQuotesOB,
+	DeleteRequest, GroupedDeleteRequest,
 	MoralisTokenBalance,
 	Option,
 	OptionPositions,
@@ -14,7 +16,7 @@ import {
 	PublishQuoteProxyRequest,
 	PublishQuoteRequest,
 	TokenBalance,
-	TokenType,
+	TokenType
 } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
@@ -31,7 +33,7 @@ import {
 	processExpiredOptions,
 	annihilateOptions,
 	createExpiration,
-	createPoolKey,
+	createPoolKey
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
@@ -52,7 +54,7 @@ if (
 	!process.env.ENV ||
 	!process.env.WALLET_PRIVATE_KEY ||
 	!process.env.WALLET_ADDRESS ||
-	!process.env.BASE_URL
+	!process.env.LOCAL_URL
 ) {
 	throw new Error(`Missing Core Credentials`);
 }
@@ -208,14 +210,18 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		return res.send(validateDeleteQuotes.errors);
 	}
 
-	//TODO: 2. Batch cancel requests by poolAddress
+	const deleteByPoolAddr = _.groupBy(req.body, "poolAddress") as GroupedDeleteRequest
 
-	// TODO: 3. Loop through each cancel request batch
-	for (const quote of req.body as DeleteRequest[]) {
-		const poolContract = new Contract(quote.poolAddress, poolABI, signer);
+	// TODO: does this need Promise.all to be faster?
+	for (const poolAddress in deleteByPoolAddr) {
+		const poolContract = new Contract(poolAddress, poolABI, signer);
+
+		const quoteIds = deleteByPoolAddr[poolAddress].map(
+			quotes => quotes.quoteId
+		);
 
 		try {
-			const cancelTx = await poolContract.cancelQuotesOB(req.body);
+			const cancelTx = await poolContract.cancelQuotesOB(quoteIds);
 			await provider.waitForTransaction(cancelTx.hash, 1);
 		} catch (e) {
 			Logger.error(e);

@@ -1,9 +1,8 @@
 import Ajv from 'ajv';
-
-const ajv = new Ajv();
 import arb from '../config/arbitrum.json';
 import arbGoerli from '../config/arbitrumGoerli.json';
 
+const ajv = new Ajv();
 const chainConfig = process.env.ENV == 'production' ? arb : arbGoerli;
 const supportedTokens = Object.keys(chainConfig.tokens);
 
@@ -107,19 +106,24 @@ export const validateFillQuotes = ajv.compile({
 });
 
 export const validateDeleteQuotes = ajv.compile({
-	type: 'object',
-	properties: {
-		poolAddress: {
-			type: 'string',
-			pattern: '^0x[a-fA-F0-9]{40}$',
+	type: 'array',
+	items:{
+		type: 'object',
+		properties: {
+			poolAddress: {
+				type: 'string',
+				pattern: '^0x[a-fA-F0-9]{40}$',
+			},
+			quoteId: {
+				type: 'string',
+				pattern: '[a-fA-F0-9]{64}$',
+			},
 		},
-		quoteId: {
-			type: 'string',
-			pattern: '[a-fA-F0-9]{64}$',
-		},
+		required: ['poolAddress', 'quoteId'],
+		additionalProperties: false,
 	},
-	required: ['poolAddress', 'quoteId'],
-	additionalProperties: false,
+	minItems: 1,
+	maxItems: 1000,
 });
 
 export const validateGetFillableQuotes = ajv.compile({
