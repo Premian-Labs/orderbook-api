@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import moment from 'moment';
 import * as _ from 'lodash';
 import Logger from './lib/logger';
+import { GasLimit } from './config/constants';
 import { ethers, Contract, parseEther, MaxUint256, parseUnits } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
@@ -414,7 +415,7 @@ app.post('/pool/annihilate', async (req, res) => {
 		// 3. invoke onchain annihilate function for option
 		try {
 			const annihilateTx = await pool.annihilate(size, {
-				gasLimit: 1400000,
+				gasLimit: GasLimit,
 			});
 			await provider.waitForTransaction(annihilateTx.hash, 1);
 		} catch (e) {
