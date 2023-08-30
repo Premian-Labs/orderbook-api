@@ -194,28 +194,14 @@ export function optionExpired(exp: string) {
 	return maturitySec < ts;
 }
 
-export async function validateBalances(token: string, fillQuoteRequests: FillQuoteRequest[]) {
-	let tokenBalances;
-	try {
-		tokenBalances = await Moralis.EvmApi.token.getWalletTokenBalances({
-			chain: moralisChainId,
-			address: walletAddr,
-		});
-	} catch (e) {
-		Logger.error(e);
-		throw new Error ('Internal server error')
-	}
-
-	const availableTokenBalance= tokenBalances
-		.toJSON()
-		.filter((tokenBalance) => tokenBalance.symbol == token)
-		// TODO: check units conversion
-		// TODO: Catch USDC case
-		.map(tokenBalance => parseFloat(formatEther(tokenBalance.balance)))[0];
+export async function validateBalances(tokenBalances: MoralisTokenBalance[], collateralToken: string, fillQuoteRequests: OrderbookQuoteDeserialized[]) {
+	const [availableTokenBalance, decimals] = tokenBalances
+		.filter((tokenBalance) => tokenBalance.symbol === collateralToken)
+		.map(tokenBalance => [parseFloat(formatUnits(tokenBalance.balance, tokenBalance.decimals)), tokenBalance.decimals])[0];
 
 	// Sums up fillQuoteRequests sizes
 	const tradesTotalSize = fillQuoteRequests
-		.map(fillQuoteRequest => fillQuoteRequest.size)
+		.map(fillQuoteRequest => parseFloat(formatUnits(fillQuoteRequest.fillableSize, decimals)))
 		.reduce((sum, x) => sum + x);
 
 	if (availableTokenBalance < tradesTotalSize) {

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import moment from 'moment';
 import * as _ from 'lodash';
 import Logger from './lib/logger';
-import { GasLimit } from './config/constants';
+import { GasLimit, referral } from './config/constants';
 import { ethers, Contract, parseEther, MaxUint256, parseUnits } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
@@ -16,6 +16,7 @@ import {
 	OrderbookQuote,
 	PublishQuoteProxyRequest,
 	PublishQuoteRequest,
+	QuoteOB,
 	TokenApproval,
 	TokenBalance,
 	TokenType
@@ -291,7 +292,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			}
 		);
 		await provider.waitForTransaction(fillTx.hash, 1);
-		Logger.debug(`Quote ${JSON.stringify(fillQuoteRequest)} filled`);
+		Logger.debug(`Quote ${JSON.stringify(fillableQuoteDeserialized)} filled`);
 	}))
 
 	// TODO: make error display failed quotes
@@ -301,9 +302,9 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			Logger.error(e);
 			res.status(500).json({ message: e });
 		});
-
 });
 
+// TODO: reduce API to provide ONLY quoteIDs (remove poolAddress)
 app.delete('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validateDeleteQuotes(req.body);

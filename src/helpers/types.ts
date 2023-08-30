@@ -29,6 +29,15 @@ export interface PoolKey {
 	isCallPool: boolean;
 }
 
+export interface PoolKeySerialized {
+	base: string;
+	quote: string;
+	oracleAdapter: string;
+	strike: string;
+	maturity: number;
+	isCallPool: boolean;
+}
+
 export interface RSV {
 	r: string;
 	s: string;
@@ -109,6 +118,40 @@ export interface FillQuoteRequest {
 	quoteId: string;
 }
 
+export interface PoolKeySerialized {
+	base: string;
+	quote: string;
+	oracleAdapter: string;
+	strike: string;
+	maturity: number;
+	isCallPool: boolean;
+}
+
+export interface OrderbookQuote {
+	poolKey: PoolKeySerialized
+	provider: string
+	taker: string
+	price: string
+	size: string
+	isBuy: boolean
+	deadline: number
+	salt: number
+	chainId: string
+	signature: RSV
+	quoteId: string
+	poolAddress: string
+	fillableSize: string
+	ts: number
+}
+
+export interface OrderbookQuoteDeserialized extends PublishOBQuote {
+	chainId: string;
+	quoteId: string;
+	poolAddress: string;
+	fillableSize: BigNumberish,
+	ts: number
+}
+
 export interface QuoteOBMessage {
 	provider: string;
 	taker: string;
@@ -126,17 +169,11 @@ export const EIP712Domain = [
 	{ name: 'verifyingContract', type: 'address' },
 ];
 
-export interface PublishOBQuote {
+export interface PublishOBQuote extends QuoteOB {
 	poolKey: PoolKey;
-	provider: string;
-	taker: string;
-	price: BigNumberish;
-	size: BigNumberish;
-	isBuy: boolean;
-	deadline: BigNumberish;
-	salt: BigNumberish;
 	signature: RSV;
 }
+
 
 export interface SignedQuote {
 	provider: string;
