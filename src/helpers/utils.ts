@@ -3,9 +3,12 @@ import {
 	Option,
 	TokenType,
 	PublishQuoteRequest,
-	FillQuoteRequest
+	FillQuoteRequest,
+	OrderbookQuote,
+	OrderbookQuoteDeserialized,
+	MoralisTokenBalance
 } from './types';
-import { Contract, formatEther, parseEther } from 'ethers';
+import { Contract, formatEther, formatUnits, parseEther, toBigInt } from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
 import {moralisChainId, provider, signer, walletAddr} from '../index';
@@ -191,22 +194,6 @@ export function optionExpired(exp: string) {
 	return maturitySec < ts;
 }
 
-export function prepareExpirations(fillQuoteRequests: FillQuoteRequest[]) {
-	return fillQuoteRequests.map(fillQuoteRequest => {
-		// 1.1 Parse expiration
-		let expiration: number;
-		try {
-			expiration = createExpiration(fillQuoteRequest.expiration as string);
-		} catch (e) {
-			Logger.error(e);
-			throw new Error(`Invalid Expiration: ${JSON.stringify(fillQuoteRequest)}`);
-		}
-
-		fillQuoteRequest.expiration = expiration
-		return fillQuoteRequest
-	})
-}
-
 export async function validateBalances(token: string, fillQuoteRequests: FillQuoteRequest[]) {
 	let tokenBalances;
 	try {
@@ -232,6 +219,35 @@ export async function validateBalances(token: string, fillQuoteRequests: FillQuo
 		.reduce((sum, x) => sum + x);
 
 	if (availableTokenBalance < tradesTotalSize) {
-		throw new Error (`Not enough ${token} collateral to fill orders`);
+		throw new Error (`Not enough ${collateralToken} collateral to fill orders`);
+	}
+}
+
+
+export function deserializeOrderbookQuote(quote:OrderbookQuote): OrderbookQuoteDeserialized {
+	const deSerializedPoolKey = {
+		base: quote.poolKey.base,
+		quote: quote.poolKey.quote,
+		oracleAdapter: quote.poolKey.oracleAdapter,
+		strike: toBigInt(quote.poolKey.strike),
+		maturity: toBigInt(quote.poolKey.maturity),
+		isCallPool: quote.poolKey.isCallPool
+	};
+
+	return {
+		poolKey: deSerializedPoolKey,
+		provider: quote.provider,
+		taker: quote.taker,
+		price: toBigInt(quote.price),
+		size: toBigInt(quote.size),
+		isBuy: quote.isBuy,
+		deadline: toBigInt(quote.deadline),
+		salt: toBigInt(quote.salt),
+		chainId: quote.chainId,
+		signature: quote.signature,
+		quoteId: quote.quoteId,
+		poolAddress: quote.poolAddress,
+		fillableSize: toBigInt(quote.fillableSize),
+		ts: quote.ts
 	}
 }

@@ -13,11 +13,12 @@ import {
 	MoralisTokenBalance,
 	Option,
 	OptionPositions,
+	OrderbookQuote,
 	PublishQuoteProxyRequest,
 	PublishQuoteRequest,
 	TokenApproval,
 	TokenBalance,
-	TokenType,
+	TokenType
 } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
@@ -37,7 +38,7 @@ import {
 	optionExpired,
 	preProcessExpOption,
 	preProcessAnnhilate,
-  prepareExpirations,
+ 	deserializeOrderbookQuote,
   validateBalances,
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
@@ -49,7 +50,7 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/quote';
-import { ERC20Base__factory, IPool } from './typechain';
+import { ERC20Base__factory, IPool, IPool__factory } from './typechain';
 import Moralis from 'moralis';
 import { EvmChain } from '@moralisweb3/common-evm-utils';
 
@@ -206,27 +207,68 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		return res.send(validateFillQuotes.errors);
 	}
 
-	// 1.0 Validate and parse expirations
-	const fillQuoteRequests = prepareExpirations(req.body as FillQuoteRequest[])
+	const fillQuoteRequests = req.body as FillQuoteRequest[]
 
-	// 1.1 Group calls by base and puts by quote currency
-	const [callsFillQuoteRequests, putsFillQuoteRequests] = _.partition(fillQuoteRequests, fillQuoteRequest => fillQuoteRequest.type === 'C')
-	const callsFillQuoteRequestsGroupedByCollateral = _.groupBy(callsFillQuoteRequests, 'base')
-	const putsFillQuoteRequestsGroupedByCollateral = _.groupBy(putsFillQuoteRequests, 'quote')
+	// 1. Get quote objects from redis orderbook by quoteId
+	const quoteIds = fillQuoteRequests.map(fillQuoteRequest => fillQuoteRequest.quoteId);
 
-	// 1.2 Check balances available
-	for (const collateral in callsFillQuoteRequestsGroupedByCollateral) {
+	if (quoteIds.length > 31) {
+		Logger.error('Quotes quantity is up to 32 per request!');
+		return res.status(400).json({
+			message: 'Quotes quantity is up to 32 per request!'
+		});
+	}
+
+	let fillableQuotesRequest
+	try {
+		// TODO: add query ability on the cloud side to get quotes from an array of quoteIds
+		fillableQuotesRequest = await proxyHTTPRequest('quote', 'GET', quoteIds);
+	} catch (e) {
+		Logger.error(e);
+		return res.status(500).json({
+			message: e
+		});
+	}
+
+	if (fillableQuotesRequest.status !== 200) {
+		return res.status(fillableQuotesRequest.status).json({
+			message: fillableQuotesRequest.data
+		});
+	}
+
+	const fillableQuotes = fillableQuotesRequest.data as OrderbookQuote[]
+	const fillableQuotesDeserialized = fillableQuotes.map(deserializeOrderbookQuote)
+
+	// 2. Group calls by base and puts by quote currency
+	const [callsFillQuoteRequests, putsFillQuoteRequests] = _.partition(fillableQuotesDeserialized, fillQuoteRequest => fillQuoteRequest.poolKey.isCallPool)
+	const callsFillQuoteRequestsGroupedByCollateral = _.groupBy(callsFillQuoteRequests, 'poolKey.base')
+	const putsFillQuoteRequestsGroupedByCollateral = _.groupBy(putsFillQuoteRequests, 'poolKey.quote')
+
+	// 1.2 Check that we have enough collateral balance to fill orders
+	let tokenBalances;
+	try {
+		tokenBalances = await Moralis.EvmApi.token.getWalletTokenBalances({
+			chain: moralisChainId,
+			address: walletAddr,
+		});
+		tokenBalances = tokenBalances.toJSON();
+	} catch (e) {
+		Logger.error(e);
+		throw new Error ('Internal server error')
+	}
+
+	for (const baseToken in callsFillQuoteRequestsGroupedByCollateral) {
 		try {
-			await validateBalances(collateral, callsFillQuoteRequestsGroupedByCollateral[collateral])
+			await validateBalances(tokenBalances, baseToken, callsFillQuoteRequestsGroupedByCollateral[baseToken])
 		} catch (e) {
 			Logger.error(e)
 			res.status(400).json({ message: e });
 		}
 	}
 
-	for (const collateral in putsFillQuoteRequestsGroupedByCollateral) {
+	for (const quoteToken in putsFillQuoteRequestsGroupedByCollateral) {
 		try {
-			await validateBalances(collateral, putsFillQuoteRequestsGroupedByCollateral[collateral])
+			await validateBalances(tokenBalances, quoteToken, putsFillQuoteRequestsGroupedByCollateral[quoteToken])
 		} catch (e) {
 			Logger.error(e)
 			res.status(400).json({ message: e });
@@ -234,17 +276,20 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	}
 
 	// 2.0 Process fill quotes
-	const promiseAll = Promise.all(fillQuoteRequests.map(async fillQuoteRequest => {
-		// 2.1 Create Pool Key
-		const poolKey = createPoolKey(fillQuoteRequest, fillQuoteRequest.expiration as number);
-		// 2.2 Get PoolAddress
-		const poolAddr = await getPoolAddress(poolKey);
-		const poolContract = new Contract(poolAddr, poolABI, signer);
+	const promiseAll = Promise.all(fillableQuotesDeserialized.map(async fillableQuoteDeserialized => {
+		const pool = IPool__factory.connect(fillableQuoteDeserialized.poolAddress, signer);
+		Logger.debug(`Filling quote ${JSON.stringify(fillableQuoteDeserialized)}...`);
+		const quoteOB: QuoteOB = _.pick(fillableQuoteDeserialized, ['provider', 'taker', 'price', 'size', 'isBuy', 'deadline', 'salt'])
 
-		//2.3 Fill Quotes
-		// TODO: satisfy fillQuotesOB args, create QuoteOB object
-		Logger.debug(`Filling quote ${JSON.stringify(fillQuoteRequest)}...`);
-		const fillTx = await poolContract.fillQuotesOB();
+		const fillTx = await pool.fillQuoteOB(
+			quoteOB,
+			fillableQuoteDeserialized.size,
+			fillableQuoteDeserialized.signature,
+			referral,
+			{
+				gasLimit: GasLimit,
+			}
+		);
 		await provider.waitForTransaction(fillTx.hash, 1);
 		Logger.debug(`Quote ${JSON.stringify(fillQuoteRequest)} filled`);
 	}))
@@ -318,6 +363,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 		req.query,
 		null
 	);
+	//TODO: reduce redis quote objects to simplified/readable quotes
 	return res.status(proxyResponse.status).json(proxyResponse.data);
 });
 

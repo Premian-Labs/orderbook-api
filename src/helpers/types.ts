@@ -104,8 +104,7 @@ export interface QuoteOB {
 	salt: BigNumberish;
 }
 
-export interface FillQuoteRequest extends Option {
-	side: 'buy' | 'sell';
+export interface FillQuoteRequest {
 	size: number;
 	quoteId: string;
 }
@@ -189,3 +188,4 @@ export interface TokenApproval {
 	token: string;
 	amt: number | 'max';
 }
+

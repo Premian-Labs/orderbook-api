@@ -89,29 +89,6 @@ export const validateFillQuotes = ajv.compile({
 	items: {
 		type: 'object',
 		properties: {
-			base: {
-				type: 'string',
-				pattern: supportedTokens.map((token) => `^${token}$`).join('|')
-			},
-			quote: {
-				type: 'string',
-				pattern: supportedTokens.map((token) => `^${token}$`).join('|')
-			},
-			expiration: {
-				type: 'string',
-				pattern: '^\\d\\d\\w\\w\\w\\d\\d$'
-			},
-			strike: {
-				type: 'number'
-			},
-			type: {
-				type: 'string',
-				pattern: '^C$|^P$'
-			},
-			side: {
-				type: 'string',
-				pattern: '^buy$|^sell$'
-			},
 			size: {
 				type: 'number'
 			},
@@ -121,12 +98,6 @@ export const validateFillQuotes = ajv.compile({
 			},
 		},
 		required: [
-			'base',
-			'quote',
-			'expiration',
-			'strike',
-			'type',
-			'side',
 			'size',
 			'quoteId',
 		],
@@ -136,7 +107,7 @@ export const validateFillQuotes = ajv.compile({
 	maxItems: 1000,
 });
 
-// TODO: remove poolAddress and instead pass in poolKey
+// TODO: remove poolAddress
 export const validateDeleteQuotes = ajv.compile({
 	type: 'array',
 	items: {
