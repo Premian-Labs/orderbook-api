@@ -90,17 +90,14 @@ export const validateFillQuotes = ajv.compile({
 		type: 'object',
 		properties: {
 			size: {
-				type: 'number'
+				type: 'number',
 			},
 			quoteId: {
 				type: 'string',
 				pattern: '[a-fA-F0-9]{64}$',
 			},
 		},
-		required: [
-			'size',
-			'quoteId',
-		],
+		required: ['size', 'quoteId'],
 		additionalProperties: false,
 	},
 	minItems: 1,
@@ -130,54 +127,56 @@ export const validateDeleteQuotes = ajv.compile({
 });
 
 export const validateGetFillableQuotes = ajv.compile({
-	oneOf: [{
-		type: 'object',
-		properties: {
-			poolAddress: {
-				type: 'string',
-				pattern: '^0x[a-fA-F0-9]{40}$',
-			},
-			size: {
-				type: 'string',
-				pattern: '^[0-9]*$',
-			},
-			side: {
-				type: 'string',
-				pattern: '^bid$|^ask$',
-			},
-			chainId: {
-				type: 'string',
-				pattern: '^42161$|^421613$',
-			},
-			provider: {
-				type: 'string',
-				pattern: '^0x[a-fA-F0-9]{40}$',
-			},
-			taker: {
-				type: 'string',
-				pattern: '^0x[a-fA-F0-9]{40}$',
-			},
-		},
-		required: ['poolAddress', 'size', 'side', 'chainId'],
-		additionalProperties: false,
-	},
-	{
-		type: 'array',
-		items: {
+	oneOf: [
+		{
 			type: 'object',
 			properties: {
-				quoteId: {
+				poolAddress: {
 					type: 'string',
-					pattern: '[a-fA-F0-9]{64}$',
+					pattern: '^0x[a-fA-F0-9]{40}$',
+				},
+				size: {
+					type: 'string',
+					pattern: '^[0-9]*$',
+				},
+				side: {
+					type: 'string',
+					pattern: '^bid$|^ask$',
+				},
+				chainId: {
+					type: 'string',
+					pattern: '^42161$|^421613$',
+				},
+				provider: {
+					type: 'string',
+					pattern: '^0x[a-fA-F0-9]{40}$',
+				},
+				taker: {
+					type: 'string',
+					pattern: '^0x[a-fA-F0-9]{40}$',
 				},
 			},
-			required: ['quoteId'],
+			required: ['poolAddress', 'size', 'side', 'chainId'],
 			additionalProperties: false,
 		},
-		minItems: 1,
-		// 2048 chars is max params length
-		maxItems: 32,
-	}]
+		{
+			type: 'array',
+			items: {
+				type: 'object',
+				properties: {
+					quoteId: {
+						type: 'string',
+						pattern: '[a-fA-F0-9]{64}$',
+					},
+				},
+				required: ['quoteId'],
+				additionalProperties: false,
+			},
+			minItems: 1,
+			// 2048 chars is max params length
+			maxItems: 32,
+		},
+	],
 });
 
 export const validateGetAllQuotes = ajv.compile({

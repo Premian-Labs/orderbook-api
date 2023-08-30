@@ -6,9 +6,7 @@ import { ArbOrderbookUrl, ArbGoerliOrderbookUrl } from '../config/constants';
 dotenv.config();
 
 const orderbook_url =
-	process.env.ENV == 'production'
-		? ArbOrderbookUrl
-		: ArbGoerliOrderbookUrl;
+	process.env.ENV == 'production' ? ArbOrderbookUrl : ArbGoerliOrderbookUrl;
 // undefined is checked in index
 const api_key =
 	process.env.ENV == 'production'

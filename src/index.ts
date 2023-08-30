@@ -19,7 +19,7 @@ import {
 	QuoteOB,
 	TokenApproval,
 	TokenBalance,
-	TokenType
+	TokenType,
 } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
@@ -39,8 +39,8 @@ import {
 	optionExpired,
 	preProcessExpOption,
 	preProcessAnnhilate,
- 	deserializeOrderbookQuote,
-  validateBalances,
+	deserializeOrderbookQuote,
+	validateBalances,
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
@@ -208,42 +208,55 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		return res.send(validateFillQuotes.errors);
 	}
 
-	const fillQuoteRequests = req.body as FillQuoteRequest[]
+	const fillQuoteRequests = req.body as FillQuoteRequest[];
 
 	// 1. Get quote objects from redis orderbook by quoteId
-	const quoteIds = fillQuoteRequests.map(fillQuoteRequest => fillQuoteRequest.quoteId);
+	const quoteIds = fillQuoteRequests.map(
+		(fillQuoteRequest) => fillQuoteRequest.quoteId
+	);
 
 	if (quoteIds.length > 31) {
 		Logger.error('Quotes quantity is up to 32 per request!');
 		return res.status(400).json({
-			message: 'Quotes quantity is up to 32 per request!'
+			message: 'Quotes quantity is up to 32 per request!',
 		});
 	}
 
-	let fillableQuotesRequest
+	let fillableQuotesRequest;
 	try {
 		// TODO: add query ability on the cloud side to get quotes from an array of quoteIds
 		fillableQuotesRequest = await proxyHTTPRequest('quote', 'GET', quoteIds);
 	} catch (e) {
 		Logger.error(e);
 		return res.status(500).json({
-			message: e
+			message: e,
 		});
 	}
 
 	if (fillableQuotesRequest.status !== 200) {
 		return res.status(fillableQuotesRequest.status).json({
-			message: fillableQuotesRequest.data
+			message: fillableQuotesRequest.data,
 		});
 	}
 
-	const fillableQuotes = fillableQuotesRequest.data as OrderbookQuote[]
-	const fillableQuotesDeserialized = fillableQuotes.map(deserializeOrderbookQuote)
+	const fillableQuotes = fillableQuotesRequest.data as OrderbookQuote[];
+	const fillableQuotesDeserialized = fillableQuotes.map(
+		deserializeOrderbookQuote
+	);
 
 	// 2. Group calls by base and puts by quote currency
-	const [callsFillQuoteRequests, putsFillQuoteRequests] = _.partition(fillableQuotesDeserialized, fillQuoteRequest => fillQuoteRequest.poolKey.isCallPool)
-	const callsFillQuoteRequestsGroupedByCollateral = _.groupBy(callsFillQuoteRequests, 'poolKey.base')
-	const putsFillQuoteRequestsGroupedByCollateral = _.groupBy(putsFillQuoteRequests, 'poolKey.quote')
+	const [callsFillQuoteRequests, putsFillQuoteRequests] = _.partition(
+		fillableQuotesDeserialized,
+		(fillQuoteRequest) => fillQuoteRequest.poolKey.isCallPool
+	);
+	const callsFillQuoteRequestsGroupedByCollateral = _.groupBy(
+		callsFillQuoteRequests,
+		'poolKey.base'
+	);
+	const putsFillQuoteRequestsGroupedByCollateral = _.groupBy(
+		putsFillQuoteRequests,
+		'poolKey.quote'
+	);
 
 	// 1.2 Check that we have enough collateral balance to fill orders
 	let tokenBalances;
@@ -255,45 +268,68 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		tokenBalances = tokenBalances.toJSON();
 	} catch (e) {
 		Logger.error(e);
-		throw new Error ('Internal server error')
+		throw new Error('Internal server error');
 	}
 
 	for (const baseToken in callsFillQuoteRequestsGroupedByCollateral) {
 		try {
-			await validateBalances(tokenBalances, baseToken, callsFillQuoteRequestsGroupedByCollateral[baseToken])
+			await validateBalances(
+				tokenBalances,
+				baseToken,
+				callsFillQuoteRequestsGroupedByCollateral[baseToken]
+			);
 		} catch (e) {
-			Logger.error(e)
+			Logger.error(e);
 			res.status(400).json({ message: e });
 		}
 	}
 
 	for (const quoteToken in putsFillQuoteRequestsGroupedByCollateral) {
 		try {
-			await validateBalances(tokenBalances, quoteToken, putsFillQuoteRequestsGroupedByCollateral[quoteToken])
+			await validateBalances(
+				tokenBalances,
+				quoteToken,
+				putsFillQuoteRequestsGroupedByCollateral[quoteToken]
+			);
 		} catch (e) {
-			Logger.error(e)
+			Logger.error(e);
 			res.status(400).json({ message: e });
 		}
 	}
 
 	// 2.0 Process fill quotes
-	const promiseAll = Promise.all(fillableQuotesDeserialized.map(async fillableQuoteDeserialized => {
-		const pool = IPool__factory.connect(fillableQuoteDeserialized.poolAddress, signer);
-		Logger.debug(`Filling quote ${JSON.stringify(fillableQuoteDeserialized)}...`);
-		const quoteOB: QuoteOB = _.pick(fillableQuoteDeserialized, ['provider', 'taker', 'price', 'size', 'isBuy', 'deadline', 'salt'])
+	const promiseAll = Promise.all(
+		fillableQuotesDeserialized.map(async (fillableQuoteDeserialized) => {
+			const pool = IPool__factory.connect(
+				fillableQuoteDeserialized.poolAddress,
+				signer
+			);
+			Logger.debug(
+				`Filling quote ${JSON.stringify(fillableQuoteDeserialized)}...`
+			);
+			const quoteOB: QuoteOB = _.pick(fillableQuoteDeserialized, [
+				'provider',
+				'taker',
+				'price',
+				'size',
+				'isBuy',
+				'deadline',
+				'salt',
+			]);
 
-		const fillTx = await pool.fillQuoteOB(
-			quoteOB,
-			fillableQuoteDeserialized.size,
-			fillableQuoteDeserialized.signature,
-			referral,
-			{
-				gasLimit: GasLimit,
-			}
-		);
-		await provider.waitForTransaction(fillTx.hash, 1);
-		Logger.debug(`Quote ${JSON.stringify(fillableQuoteDeserialized)} filled`);
-	}))
+			const fillTx = await pool.fillQuoteOB(
+				quoteOB,
+				fillableQuoteDeserialized.size,
+				fillableQuoteDeserialized.signature,
+				referral,
+				{
+					gasLimit: GasLimit,
+				}
+			);
+			await provider.waitForTransaction(fillTx.hash, 1);
+			Logger.debug(`Quote ${JSON.stringify(fillableQuoteDeserialized)} filled`);
+		})
+	);
 
 	// TODO: make error display failed quotes
 	promiseAll

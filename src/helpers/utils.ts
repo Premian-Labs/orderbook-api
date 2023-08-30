@@ -6,17 +6,23 @@ import {
 	FillQuoteRequest,
 	OrderbookQuote,
 	OrderbookQuoteDeserialized,
-	MoralisTokenBalance
+	MoralisTokenBalance,
 } from './types';
-import { Contract, formatEther, formatUnits, parseEther, toBigInt } from 'ethers';
+import {
+	Contract,
+	formatEther,
+	formatUnits,
+	parseEther,
+	toBigInt,
+} from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
-import {moralisChainId, provider, signer, walletAddr} from '../index';
+import { moralisChainId, provider, signer, walletAddr } from '../index';
 import arb from '../config/arbitrum.json';
 import arbGoerli from '../config/arbitrumGoerli.json';
 import moment from 'moment/moment';
 import { IPool, IPool__factory } from '../typechain';
-import Moralis from "moralis";
+import Moralis from 'moralis';
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
@@ -83,8 +89,9 @@ export async function preProcessExpOption(
 	return pool;
 }
 
-
-export async function preProcessAnnhilate(annihilateOption: Option): Promise<[IPool, bigint]> {
+export async function preProcessAnnhilate(
+	annihilateOption: Option
+): Promise<[IPool, bigint]> {
 	// NOTE: expiration is an incoming string only value but later converted to number
 	const strExp = annihilateOption.expiration as string;
 
@@ -92,7 +99,7 @@ export async function preProcessAnnhilate(annihilateOption: Option): Promise<[IP
 	annihilateOption.expiration = createExpiration(strExp);
 
 	// 2. create poolKey
-	const poolKey = createPoolKey(annihilateOption)
+	const poolKey = createPoolKey(annihilateOption);
 
 	// 3. get & check balances
 	const poolAddr = await getPoolAddress(poolKey);
@@ -118,7 +125,7 @@ export async function preProcessAnnhilate(annihilateOption: Option): Promise<[IP
 	);
 
 	if (annihilateSize > 0n) {
-		return [pool, annihilateSize]
+		return [pool, annihilateSize];
 	} else {
 		throw new Error(`No positions to annihilate`);
 	}
@@ -194,30 +201,40 @@ export function optionExpired(exp: string) {
 	return maturitySec < ts;
 }
 
-export async function validateBalances(tokenBalances: MoralisTokenBalance[], collateralToken: string, fillQuoteRequests: OrderbookQuoteDeserialized[]) {
+export async function validateBalances(
+	tokenBalances: MoralisTokenBalance[],
+	collateralToken: string,
+	fillQuoteRequests: OrderbookQuoteDeserialized[]
+) {
 	const [availableTokenBalance, decimals] = tokenBalances
 		.filter((tokenBalance) => tokenBalance.symbol === collateralToken)
-		.map(tokenBalance => [parseFloat(formatUnits(tokenBalance.balance, tokenBalance.decimals)), tokenBalance.decimals])[0];
+		.map((tokenBalance) => [
+			parseFloat(formatUnits(tokenBalance.balance, tokenBalance.decimals)),
+			tokenBalance.decimals,
+		])[0];
 
 	// Sums up fillQuoteRequests sizes
 	const tradesTotalSize = fillQuoteRequests
-		.map(fillQuoteRequest => parseFloat(formatUnits(fillQuoteRequest.fillableSize, decimals)))
+		.map((fillQuoteRequest) =>
+			parseFloat(formatUnits(fillQuoteRequest.fillableSize, decimals))
+		)
 		.reduce((sum, x) => sum + x);
 
 	if (availableTokenBalance < tradesTotalSize) {
-		throw new Error (`Not enough ${collateralToken} collateral to fill orders`);
+		throw new Error(`Not enough ${collateralToken} collateral to fill orders`);
 	}
 }
 
-
-export function deserializeOrderbookQuote(quote:OrderbookQuote): OrderbookQuoteDeserialized {
+export function deserializeOrderbookQuote(
+	quote: OrderbookQuote
+): OrderbookQuoteDeserialized {
 	const deSerializedPoolKey = {
 		base: quote.poolKey.base,
 		quote: quote.poolKey.quote,
 		oracleAdapter: quote.poolKey.oracleAdapter,
 		strike: toBigInt(quote.poolKey.strike),
 		maturity: toBigInt(quote.poolKey.maturity),
-		isCallPool: quote.poolKey.isCallPool
+		isCallPool: quote.poolKey.isCallPool,
 	};
 
 	return {
@@ -234,6 +251,6 @@ export function deserializeOrderbookQuote(quote:OrderbookQuote): OrderbookQuoteD
 		quoteId: quote.quoteId,
 		poolAddress: quote.poolAddress,
 		fillableSize: toBigInt(quote.fillableSize),
-		ts: quote.ts
-	}
+		ts: quote.ts,
+	};
 }

@@ -128,28 +128,28 @@ export interface PoolKeySerialized {
 }
 
 export interface OrderbookQuote {
-	poolKey: PoolKeySerialized
-	provider: string
-	taker: string
-	price: string
-	size: string
-	isBuy: boolean
-	deadline: number
-	salt: number
-	chainId: string
-	signature: RSV
-	quoteId: string
-	poolAddress: string
-	fillableSize: string
-	ts: number
+	poolKey: PoolKeySerialized;
+	provider: string;
+	taker: string;
+	price: string;
+	size: string;
+	isBuy: boolean;
+	deadline: number;
+	salt: number;
+	chainId: string;
+	signature: RSV;
+	quoteId: string;
+	poolAddress: string;
+	fillableSize: string;
+	ts: number;
 }
 
 export interface OrderbookQuoteDeserialized extends PublishOBQuote {
 	chainId: string;
 	quoteId: string;
 	poolAddress: string;
-	fillableSize: BigNumberish,
-	ts: number
+	fillableSize: BigNumberish;
+	ts: number;
 }
 
 export interface QuoteOBMessage {
@@ -173,7 +173,6 @@ export interface PublishOBQuote extends QuoteOB {
 	poolKey: PoolKey;
 	signature: RSV;
 }
-
 
 export interface SignedQuote {
 	provider: string;
@@ -225,4 +224,3 @@ export interface TokenApproval {
 	token: string;
 	amt: number | 'max';
 }
-
