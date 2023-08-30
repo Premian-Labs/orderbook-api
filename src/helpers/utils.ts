@@ -6,7 +6,7 @@ import { provider, signer, walletAddr } from '../index';
 import arb from '../config/arbitrum.json';
 import arbGoerli from '../config/arbitrumGoerli.json';
 import moment from 'moment/moment';
-import { IPool__factory } from '../typechain';
+import { IPool, IPool__factory } from '../typechain';
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
@@ -73,62 +73,44 @@ export async function preProcessExpOption(
 	return pool;
 }
 
-export async function annihilateOptions(annihilateOptions: Option[]) {
-	for (const option of annihilateOptions) {
-		// TODO: use moment to validate expiration and create timestamp
-		const expirationMoment = moment(option.expiration, 'DD-mm-YY');
 
-		// Create Pool Key
-		const poolKey: PoolKey = {
-			base:
-				process.env.ENV == 'production'
-					? arb.tokens[option.base]
-					: arbGoerli.tokens[option.base],
-			quote:
-				process.env.ENV == 'production'
-					? arb.tokens[option.quote]
-					: arbGoerli.tokens[option.quote],
-			oracleAdapter:
-				process.env.ENV == 'production'
-					? arb.ChainlinkAdapterProxy
-					: arbGoerli.ChainlinkAdapterProxy,
-			strike: parseEther(option.strike.toString()),
-			maturity: expirationMoment.unix(),
-			isCallPool: option.type === 'C',
-		};
+export async function preProcessAnnhilate(annihilateOption: Option): Promise<[IPool, bigint]> {
+	// NOTE: expiration is an incoming string only value but later converted to number
+	const strExp = annihilateOption.expiration as string;
 
-		// Get PoolAddress
-		const poolAddr = await getPoolAddress(poolKey);
+	// 1. validate and convert option exp to timestamp
+	annihilateOption.expiration = createExpiration(strExp);
 
-		const pool = IPool__factory.connect(poolAddr, signer);
+	// 2. create poolKey
+	const poolKey = createPoolKey(annihilateOption)
 
-		const shortBalance = parseFloat(
-			formatEther(await pool.balanceOf(walletAddr, TokenType.SHORT))
-		);
-		const longBalance = parseFloat(
-			formatEther(await pool.balanceOf(walletAddr, TokenType.LONG))
-		);
+	// 3. get & check balances
+	const poolAddr = await getPoolAddress(poolKey);
+	const pool = IPool__factory.connect(poolAddr, signer);
 
-		Logger.info(
-			'short token balance:',
-			shortBalance,
-			'\n',
-			'long token balance:',
-			longBalance
-		);
+	const shortBalance = parseFloat(
+		formatEther(await pool.balanceOf(walletAddr, TokenType.SHORT))
+	);
+	const longBalance = parseFloat(
+		formatEther(await pool.balanceOf(walletAddr, TokenType.LONG))
+	);
 
-		const annihilateSize = parseEther(
-			Math.min(shortBalance, longBalance).toString()
-		);
+	Logger.info(
+		'short token balance:',
+		shortBalance,
+		'\n',
+		'long token balance:',
+		longBalance
+	);
 
-		if (annihilateSize > 0n) {
-			const annihilateTx = await pool.annihilate(annihilateSize, {
-				gasLimit: 1400000,
-			});
-			await provider.waitForTransaction(annihilateTx.hash, 1);
-		} else {
-			throw new Error(`No positions to annihilate: ${option}`);
-		}
+	const annihilateSize = parseEther(
+		Math.min(shortBalance, longBalance).toString()
+	);
+
+	if (annihilateSize > 0n) {
+		return [pool, annihilateSize]
+	} else {
+		throw new Error(`No positions to annihilate`);
 	}
 }
 

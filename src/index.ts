@@ -30,11 +30,11 @@ import {
 } from './helpers/validators';
 import {
 	getPoolAddress,
-	annihilateOptions,
 	createExpiration,
 	createPoolKey,
 	optionExpired,
 	preProcessExpOption,
+	preProcessAnnhilate,
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
@@ -384,7 +384,6 @@ app.post('/pool/exercise', async (req, res) => {
 	res.sendStatus(200);
 });
 
-// TODO: update annihilateOptions()
 app.post('/pool/annihilate', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validatePositionManagement(req.body);
@@ -396,11 +395,32 @@ app.post('/pool/annihilate', async (req, res) => {
 		return res.send(validatePositionManagement.errors);
 	}
 
-	// 2. Annihilate
-	try {
-		await annihilateOptions(req.body as Option[]);
-	} catch (e) {
-		return res.status(500).json({ message: e });
+	let options = req.body as Option[];
+	let pool: IPool;
+	let size: bigint;
+
+	for (const option of options) {
+		// 2. check all user inputs are valid for option settlement
+		try {
+			[pool, size] = await preProcessAnnhilate(option);
+		} catch (e) {
+			Logger.error(e);
+			return res.status(400).json({
+				message: e,
+				option: option,
+			});
+		}
+
+		// 3. invoke onchain annihilate function for option
+		try {
+			const annihilateTx = await pool.annihilate(size, {
+				gasLimit: 1400000,
+			});
+			await provider.waitForTransaction(annihilateTx.hash, 1);
+		} catch (e) {
+			Logger.error(e);
+			return res.status(500).json({ message: e, option: option });
+		}
 	}
 
 	res.sendStatus(200);
