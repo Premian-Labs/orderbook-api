@@ -104,6 +104,16 @@ export interface QuoteOB {
 	salt: BigNumberish;
 }
 
+export interface FillQuoteRequest extends Option {
+	price: number;
+	side: 'buy' | 'sell';
+	size: number;
+	deadline: number;
+	provider: string;
+	taker: string;
+	signature: RSV;
+}
+
 export interface QuoteOBMessage {
 	provider: string;
 	taker: string;

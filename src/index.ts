@@ -8,6 +8,7 @@ import { GasLimit } from './config/constants';
 import { ethers, Contract, parseEther, MaxUint256, parseUnits } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
+	FillQuoteRequest,
 	GroupedDeleteRequest,
 	MoralisTokenBalance,
 	Option,
@@ -36,6 +37,8 @@ import {
 	optionExpired,
 	preProcessExpOption,
 	preProcessAnnhilate,
+  prepareExpirations,
+  validateBalances,
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
@@ -120,7 +123,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		Logger.error(
 			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
 		);
-		return res.send(validateFillQuotes.errors);
+		return res.send(validatePostQuotes.errors);
 	}
 	let serializedQuotes: PublishQuoteProxyRequest[] = [];
 	// 2. Loop through each order and convert to signed quote object
@@ -202,12 +205,58 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validateFillQuotes.errors);
 	}
-	// TODO: deserialize QuoteOBMessage[] w/ poolKey to QuoteOB[]
-	// TODO: generate (provide) poolKey
-	// TODO: get poolAddress (
-	// TODO: group by collateral type (type C && base + type P && quote)
-	// TODO: check balance to ensure we can do all quotes (parse by collateral type, and ensure we can fill everything)
-	// TODO: invoke Web3 fillQuoteOB
+
+	// 1.0 Validate and parse expirations
+	const fillQuoteRequests = prepareExpirations(req.body as FillQuoteRequest[])
+
+	// 1.1 Group calls by base and puts by quote currency
+	const [callsFillQuoteRequests, putsFillQuoteRequests] = _.partition(fillQuoteRequests, fillQuoteRequest => fillQuoteRequest.type === 'C')
+	const callsFillQuoteRequestsGroupedByCollateral = _.groupBy(callsFillQuoteRequests, 'base')
+	const putsFillQuoteRequestsGroupedByCollateral = _.groupBy(putsFillQuoteRequests, 'quote')
+
+	// 1.2 Check balances available
+	for (const collateral in callsFillQuoteRequestsGroupedByCollateral) {
+		try {
+			await validateBalances(collateral, callsFillQuoteRequestsGroupedByCollateral[collateral])
+		} catch (e) {
+			Logger.error(e)
+			res.status(400).json({ message: e });
+		}
+	}
+
+	for (const collateral in putsFillQuoteRequestsGroupedByCollateral) {
+		try {
+			await validateBalances(collateral, putsFillQuoteRequestsGroupedByCollateral[collateral])
+		} catch (e) {
+			Logger.error(e)
+			res.status(400).json({ message: e });
+		}
+	}
+
+	// 2.0 Process fill quotes
+	const promiseAll = Promise.all(fillQuoteRequests.map(async fillQuoteRequest => {
+		// 2.1 Create Pool Key
+		const poolKey = createPoolKey(fillQuoteRequest, fillQuoteRequest.expiration as number);
+		// 2.2 Get PoolAddress
+		const poolAddr = await getPoolAddress(poolKey);
+		const poolContract = new Contract(poolAddr, poolABI, signer);
+
+		//2.3 Fill Quotes
+		// TODO: satisfy fillQuotesOB args, create QuoteOB object
+		Logger.debug(`Filling quote ${JSON.stringify(fillQuoteRequest)}...`);
+		const fillTx = await poolContract.fillQuotesOB();
+		await provider.waitForTransaction(fillTx.hash, 1);
+		Logger.debug(`Quote ${JSON.stringify(fillQuoteRequest)} filled`);
+	}))
+
+	// TODO: make error display failed quotes
+	promiseAll
+		.then(() => res.status(200).json({ message: `Quotes filled` }))
+		.catch((e) => {
+			Logger.error(e);
+			res.status(500).json({ message: e });
+		});
+
 });
 
 app.delete('/orderbook/quotes', async (req, res) => {
@@ -243,7 +292,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	// TODO: make error display failed quoteIds
 	promiseAll
-		.then(() => res.status(201).json({ message: `Quotes deleted` }))
+		.then(() => res.status(200).json({ message: `Quotes deleted` }))
 		.catch((e) => {
 			Logger.error(e);
 			res.status(500).json({ message: e });

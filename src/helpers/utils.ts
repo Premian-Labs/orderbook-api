@@ -1,12 +1,19 @@
-import { PoolKey, Option, TokenType, PublishQuoteRequest } from './types';
+import {
+	PoolKey,
+	Option,
+	TokenType,
+	PublishQuoteRequest,
+	FillQuoteRequest
+} from './types';
 import { Contract, formatEther, parseEther } from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
-import { provider, signer, walletAddr } from '../index';
+import {moralisChainId, provider, signer, walletAddr} from '../index';
 import arb from '../config/arbitrum.json';
 import arbGoerli from '../config/arbitrumGoerli.json';
 import moment from 'moment/moment';
 import { IPool, IPool__factory } from '../typechain';
+import Moralis from "moralis";
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
@@ -182,4 +189,47 @@ export function optionExpired(exp: string) {
 	const ts = Math.trunc(new Date().getTime() / 1000);
 
 	return maturitySec < ts;
+}
+
+export function prepareExpirations(fillQuoteRequests: FillQuoteRequest[]) {
+	return fillQuoteRequests.map(fillQuoteRequest => {
+		// 1.1 Parse expiration
+		let expiration: number;
+		try {
+			expiration = createExpiration(fillQuoteRequest.expiration as string);
+		} catch (e) {
+			Logger.error(e);
+			throw new Error(`Invalid Expiration: ${JSON.stringify(fillQuoteRequest)}`);
+		}
+
+		fillQuoteRequest.expiration = expiration
+		return fillQuoteRequest
+	})
+}
+
+export async function validateBalances(token: string, fillQuoteRequests: FillQuoteRequest[]) {
+	let tokenBalances;
+	try {
+		tokenBalances = await Moralis.EvmApi.token.getWalletTokenBalances({
+			chain: moralisChainId,
+			address: walletAddr,
+		});
+	} catch (e) {
+		Logger.error(e);
+		throw new Error ('Internal server error')
+	}
+
+	const availableTokenBalance= tokenBalances
+		.toJSON()
+		.filter((tokenBalance) => tokenBalance.symbol == token)
+		// TODO: check units conversion
+		.map(tokenBalance => parseFloat(formatEther(tokenBalance.balance)))[0];
+
+	const tradesTotalSize = fillQuoteRequests
+		.map(fillQuoteRequest => fillQuoteRequest.size)
+		.reduce((sum, x) => sum + x);
+
+	if (availableTokenBalance < tradesTotalSize) {
+		throw new Error (`Not enough ${token} collateral to fill orders`)
+	}
 }

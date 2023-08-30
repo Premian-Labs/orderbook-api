@@ -84,22 +84,65 @@ export const validatePositionManagement = ajv.compile({
 	maxItems: 1000,
 });
 
-//TODO convert fillquote to match QuoteOBMessage type + PoolKey
 export const validateFillQuotes = ajv.compile({
 	type: 'array',
 	items: {
 		type: 'object',
 		properties: {
-			quoteId: {
+			base: {
 				type: 'string',
-				pattern: '[a-fA-F0-9]{64}$',
+				pattern: supportedTokens.map((token) => `^${token}$`).join('|')
+			},
+			quote: {
+				type: 'string',
+				pattern: supportedTokens.map((token) => `^${token}$`).join('|')
+			},
+			expiration: {
+				type: 'string',
+				pattern: '^\\d\\d\\w\\w\\w\\d\\d$'
+			},
+			strike: {
+				type: 'number'
+			},
+			type: {
+				type: 'string',
+				pattern: '^C$|^P$'
+			},
+			side: {
+				type: 'string',
+				pattern: '^buy$|^sell$'
 			},
 			size: {
-				type: 'string',
-				pattern: '^[0-9]*$',
+				type: 'number'
 			},
+			price: {
+				type: 'number'
+			},
+			deadline: {
+				type: 'integer'
+			},
+			provider: {
+				type: 'string',
+				pattern: '^0x[a-fA-F0-9]{40}$'
+			},
+			taker: {
+				type: 'string',
+				pattern: '^0x[a-fA-F0-9]{40}$'
+			}
 		},
-		required: ['quoteId', 'size'],
+		required: [
+			'base',
+			'quote',
+			'expiration',
+			'strike',
+			'type',
+			'side',
+			'size',
+			'price',
+			'deadline',
+			'provider',
+			'taker'
+		],
 		additionalProperties: false,
 	},
 	minItems: 1,
