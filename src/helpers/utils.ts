@@ -223,13 +223,15 @@ export async function validateBalances(token: string, fillQuoteRequests: FillQuo
 		.toJSON()
 		.filter((tokenBalance) => tokenBalance.symbol == token)
 		// TODO: check units conversion
+		// TODO: Catch USDC case
 		.map(tokenBalance => parseFloat(formatEther(tokenBalance.balance)))[0];
 
+	// Sums up fillQuoteRequests sizes
 	const tradesTotalSize = fillQuoteRequests
 		.map(fillQuoteRequest => fillQuoteRequest.size)
 		.reduce((sum, x) => sum + x);
 
 	if (availableTokenBalance < tradesTotalSize) {
-		throw new Error (`Not enough ${token} collateral to fill orders`)
+		throw new Error (`Not enough ${token} collateral to fill orders`);
 	}
 }

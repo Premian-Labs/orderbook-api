@@ -105,13 +105,9 @@ export interface QuoteOB {
 }
 
 export interface FillQuoteRequest extends Option {
-	price: number;
 	side: 'buy' | 'sell';
 	size: number;
-	deadline: number;
-	provider: string;
-	taker: string;
-	signature: RSV;
+	quoteId: string;
 }
 
 export interface QuoteOBMessage {

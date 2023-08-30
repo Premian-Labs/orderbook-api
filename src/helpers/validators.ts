@@ -115,20 +115,10 @@ export const validateFillQuotes = ajv.compile({
 			size: {
 				type: 'number'
 			},
-			price: {
-				type: 'number'
-			},
-			deadline: {
-				type: 'integer'
-			},
-			provider: {
+			quoteId: {
 				type: 'string',
-				pattern: '^0x[a-fA-F0-9]{40}$'
+				pattern: '[a-fA-F0-9]{64}$',
 			},
-			taker: {
-				type: 'string',
-				pattern: '^0x[a-fA-F0-9]{40}$'
-			}
 		},
 		required: [
 			'base',
@@ -138,10 +128,7 @@ export const validateFillQuotes = ajv.compile({
 			'type',
 			'side',
 			'size',
-			'price',
-			'deadline',
-			'provider',
-			'taker'
+			'quoteId',
 		],
 		additionalProperties: false,
 	},
