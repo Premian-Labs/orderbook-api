@@ -131,25 +131,43 @@ export async function preProcessAnnhilate(
 	}
 }
 
+// All options expire at 8 AM UTC.
+// Maturities over 2 days expire on a Friday (weekly maturities).
+// Maturities over 30 days expire on the last Friday of the calendar month (monthly maturities).
+// Max maturity is 1 year.
 export function createExpiration(exp: string): number {
 	const expirationMoment = moment.utc(exp, 'DDMMMYY');
 
-	// 1. check if option expiration is a valid date
+	// 1.0 check if option expiration is a valid date
 	if (!expirationMoment.isValid()) {
 		throw new Error(`Invalid expiration date: ${exp}`);
 	}
 
-	// 2. check if option expiration is Friday
+	const today = moment.utc().startOf('day');
+	const daysToExpiration = expirationMoment.diff(today, 'days');
+
+	// 1.1 check if option expiration is not in the past
+	if (daysToExpiration <= 0) {
+		throw new Error(`Invalid expiration date: ${exp} is in the past`);
+	}
+
+	// 1.2 check if option expiration is not in the past
+	if (expirationMoment.diff(today, 'years') > 0) {
+		throw new Error(`Invalid expiration date: ${exp} is more then in 1 year`);
+	}
+
+	// 2. DAILY OPTIONS: if option expiration is tomorrow or the day after tomorrow, return as vaild
+	if (daysToExpiration === 1 || daysToExpiration === 2) {
+		// Set time to 8:00 AM
+		return expirationMoment.add(8, 'hours').unix();
+	}
+
+	// 3. WEEKLY OPTIONS: check if option expiration is Friday
 	if (expirationMoment.day() !== 5) {
 		throw new Error(`${expirationMoment.toJSON()} is not Friday!`);
 	}
 
-	// 3. if option maturity > 30 days, validate expire is last Friday of the month
-	const daysToExpiration = expirationMoment.diff(
-		moment().startOf('day'),
-		'days'
-	);
-
+	// 4. MONTHLY OPTIONS: if option maturity > 30 days, validate expire is last Friday of the month
 	if (daysToExpiration > 30) {
 		const lastDay = expirationMoment.clone().endOf('month').startOf('day');
 		lastDay.subtract((lastDay.day() + 2) % 7, 'days');
