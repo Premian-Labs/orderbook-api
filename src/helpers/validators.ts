@@ -152,30 +152,6 @@ export const validateGetAllQuotes = ajv.compile({
 	additionalProperties: false,
 });
 
-export const validateGetRFQQuotes = ajv.compile({
-	type: 'object',
-	properties: {
-		poolAddress: {
-			type: 'string',
-			pattern: '^0x[a-fA-F0-9]{40}$',
-		},
-		side: {
-			type: 'string',
-			pattern: '^bid$|^ask$',
-		},
-		chainId: {
-			type: 'string',
-			pattern: '^42161$|^421613$',
-		},
-		taker: {
-			type: 'string',
-			pattern: '^0x[a-fA-F0-9]{40}$',
-		},
-	},
-	required: ['poolAddress', 'side', 'taker', 'chainId'],
-	additionalProperties: false,
-});
-
 export const validateApprovals = ajv.compile({
 	type: 'array',
 	items: {

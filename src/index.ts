@@ -601,27 +601,6 @@ app.get('/orderbook/orders', async (req, res) => {
 	return res.status(200).json(returnedQuotes);
 });
 
-app.get('/orderbook/private_quotes', async (req, res) => {
-	const valid = validateGetRFQQuotes(req.query);
-	if (!valid) {
-		res.status(400);
-		Logger.error(
-			`Validation error: ${JSON.stringify(validateGetRFQQuotes.errors)}`
-		);
-		return res.send(validateGetRFQQuotes.errors);
-	}
-	const proxyResponse = await proxyHTTPRequest(
-		'rfq_quotes',
-		'GET',
-		{
-			...req.query,
-			chainId: chainId,
-		},
-		null
-	);
-	return res.status(proxyResponse.status).json(proxyResponse.data);
-});
-
 app.post('/pool/settle', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validatePositionManagement(req.body);
