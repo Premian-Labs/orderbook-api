@@ -5,7 +5,14 @@ import moment from 'moment';
 import * as _ from 'lodash';
 import Logger from './lib/logger';
 import { GasLimit, referral } from './config/constants';
-import { ethers, Contract, parseEther, MaxUint256, parseUnits } from 'ethers';
+import {
+	ethers,
+	Contract,
+	parseEther,
+	MaxUint256,
+	parseUnits,
+	formatEther,
+} from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
 	FillQuoteRequest,
@@ -17,6 +24,7 @@ import {
 	PublishQuoteProxyRequest,
 	PublishQuoteRequest,
 	QuoteOB,
+	ReturnedOrderbookQuote,
 	TokenApproval,
 	TokenBalance,
 	TokenType,
@@ -41,6 +49,7 @@ import {
 	preProcessAnnhilate,
 	deserializeOrderbookQuote,
 	validateBalances,
+	getTokenByAddress,
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
@@ -102,6 +111,9 @@ export const availableTokens =
 	process.env.ENV === 'production'
 		? Object.keys(arb.tokens)
 		: Object.keys(arbGoerli.tokens);
+
+const tokenAddresses =
+	process.env.ENV === 'production' ? arb.tokens : arbGoerli.tokens;
 export const signer = new ethers.Wallet(privateKey, provider);
 const routerAddress =
 	process.env.ENV == 'production' ? arb.ERC20Router : arbGoerli.ERC20Router;
@@ -127,8 +139,10 @@ app.post('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validatePostQuotes.errors);
 	}
-	let serializedQuotes: PublishQuoteProxyRequest[] = [];
+
 	// 2. Loop through each order and convert to signed quote object
+	let serializedQuotes: PublishQuoteProxyRequest[] = [];
+
 	for (const quote of req.body as PublishQuoteRequest[]) {
 		// 2.1 Check that deadline is valid and generate deadline timestamp
 		const ts = Math.trunc(new Date().getTime() / 1000);
@@ -142,7 +156,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 			deadline = ts + quote.deadline;
 		}
 
-		// 2.2 validate/create timestamp expiration
+		// 2.2 Validate/create timestamp expiration
 		let expiration: number;
 		try {
 			expiration = createExpiration(quote.expiration);
@@ -164,7 +178,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		const quoteOB = await getQuote(
 			process.env.WALLET_ADDRESS!,
 			parseEther(quote.size.toString()),
-			quote.side === 'buy',
+			quote.side === 'bid',
 			parseEther(quote.price.toString()),
 			deadline,
 			quote.taker
@@ -187,15 +201,107 @@ app.post('/orderbook/quotes', async (req, res) => {
 		serializedQuotes.push(publishQuoteRequest);
 	}
 
-	// 3 Submit quote object array to orderbook API
-	const proxyResponse = await proxyHTTPRequest(
-		'quotes',
-		'POST',
-		null,
-		serializedQuotes
+	let postQuotesRequest;
+	try {
+		// 3 Submit quote object array to orderbook API
+		postQuotesRequest = await proxyHTTPRequest(
+			'quotes',
+			'POST',
+			null,
+			serializedQuotes
+		);
+	} catch (e) {
+		Logger.error(e);
+		return res.status(500).json({
+			message: e,
+		});
+	}
+
+	if (postQuotesRequest.status == 200) {
+		return res.status(postQuotesRequest.status).json({
+			message: postQuotesRequest.data,
+		});
+	}
+
+	// 3 Parse/format orderbook quotes to return
+	const orderbookQuotes = postQuotesRequest.data as OrderbookQuote[];
+	const returnedQuotes: ReturnedOrderbookQuote[] = orderbookQuotes.map(
+		(orderbookQuote) => {
+			return {
+				base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
+				quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
+				expiration: moment
+					.unix(orderbookQuote.poolKey.maturity)
+					.format('DDMMMYY')
+					.toUpperCase(),
+				strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
+				type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
+				side: orderbookQuote.isBuy ? 'bid' : 'ask',
+				size: parseFloat(formatEther(orderbookQuote.fillableSize)),
+				price: parseFloat(formatEther(orderbookQuote.price)),
+				deadline: orderbookQuote.deadline - orderbookQuote.ts,
+				quoteId: orderbookQuote.quoteId,
+				ts: orderbookQuote.ts,
+			};
+		}
 	);
 
-	return res.status(proxyResponse.status).json(proxyResponse.data);
+	return res.status(postQuotesRequest.status).json(returnedQuotes);
+
+	//TODO: User User Data Inputs -> Converted to Cloud Validation and/or web3 format
+	/*
+		base: 'WETH',
+		quote: 'USDC',
+		expiration: 10FEB24,
+		strike: 1700,
+		type: 'P'
+		side: 'bid'
+		size:  4,
+		price: .21,
+		deadline: 300
+ */
+
+	//TODO: Convert raw data OrderbookQuote[] -> to FINAL OUTPUT
+	/*
+	poolKey:{
+	base: string;
+	quote: string;
+	oracleAdapter: string;
+	strike: string;
+	maturity: number;
+	isCallPool: boolean;
+	}
+	provider: string;
+	taker: string;
+	price: string;
+	size: string;
+	isBuy: boolean;
+	deadline: number;
+	salt: number;
+	chainId: string;
+	signature: RSV;
+
+	(additional values returned)
+	quoteId: string;
+	poolAddress: string;
+	fillableSize: string;
+	ts: number;
+	 */
+
+	//TODO: FINAL OUTPUT: Returned User Data Output
+	/*
+		base: 'WETH',
+		quote: 'USDC',
+		expiration: 10FEB24,
+		strike: 1700,
+		type: 'P'
+		side: 'bid'
+		size:  4, -> (fillableSize)
+		price: .21,
+		deadline: 300,
+		quoteId: '0x1235',
+		ts: 1693578178
+	*/
 });
 
 app.patch('/orderbook/quotes', async (req, res) => {
@@ -215,10 +321,10 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		(fillQuoteRequest) => fillQuoteRequest.quoteId
 	);
 
-	if (quoteIds.length > 31) {
-		Logger.error('Quotes quantity is up to 32 per request!');
+	if (quoteIds.length > 25) {
+		Logger.error('Quotes quantity is up to 25 per request!');
 		return res.status(400).json({
-			message: 'Quotes quantity is up to 32 per request!',
+			message: 'Quotes quantity is up to 25 per request!',
 		});
 	}
 
@@ -228,7 +334,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			'orders',
 			'GET',
 			{
-				quoteIds: quoteIds
+				quoteIds: quoteIds,
 			},
 			null
 		);
@@ -323,6 +429,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				'salt',
 			]);
 
+			//FIXME: should we be using size or fillable size? And how to we ensure this is related to the size in the req?
 			const fillTx = await pool.fillQuoteOB(
 				quoteOB,
 				fillableQuoteDeserialized.size,
@@ -391,7 +498,9 @@ app.post('/orderbook/validate_quote', async (req, res) => {
 	// TODO: check if a quote is valid - Web3 call
 });
 
+// returns quotes up to a specific size
 app.get('/orderbook/quotes', async (req, res) => {
+	//TODO: change schema to reflect simplified query
 	const valid = validateGetFillableQuotes(req.query);
 	if (!valid) {
 		res.status(400);
@@ -405,14 +514,33 @@ app.get('/orderbook/quotes', async (req, res) => {
 		'GET',
 		{
 			...req.query,
-			chainId: chainId
+			chainId: chainId,
 		},
 		null
 	);
+
 	//TODO: reduce redis quote objects to simplified/readable quotes
 	return res.status(proxyResponse.status).json(proxyResponse.data);
+
+	/*
+	Return:
+	base: 'WETH',
+	quote: 'USDC',
+	expiration: 10FEB24,
+	strike: 1700,
+	type: 'P'
+	side:
+
+	price: string;
+	size: string; -> fillableSize: string;
+	isBuy: boolean;
+	deadline: number; -> # of seconds left (deadline - ts)
+	quoteId: string;
+	ts: number;
+	 */
 });
 
+// gets quotes using an array of quoteIds
 app.get('/orderbook/orders', async (req, res) => {
 	const valid = validateGetAllQuotes(req.query);
 	if (!valid) {
@@ -422,15 +550,19 @@ app.get('/orderbook/orders', async (req, res) => {
 		);
 		return res.send(validateGetAllQuotes.errors);
 	}
+
+	//TODO: is chainId needed here?
 	const proxyResponse = await proxyHTTPRequest(
 		'orders',
 		'GET',
 		{
 			...req.query,
-			chainId: chainId
+			chainId: chainId,
 		},
 		null
 	);
+
+	//TODO: reduce redis quote objects to simplified/readable quotes
 	return res.status(proxyResponse.status).json(proxyResponse.data);
 });
 
@@ -448,7 +580,7 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 		'GET',
 		{
 			...req.query,
-			chainId: chainId
+			chainId: chainId,
 		},
 		null
 	);

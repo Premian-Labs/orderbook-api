@@ -13,7 +13,7 @@ export interface PublishQuoteRequest {
 	expiration: string;
 	strike: number;
 	type: 'C' | 'P';
-	side: 'buy' | 'sell';
+	side: 'bid' | 'ask';
 	size: number;
 	price: number;
 	deadline: number;
@@ -48,6 +48,18 @@ export interface PublishQuoteProxyRequest extends SerializedQuote {
 	chainId: string;
 }
 
+export interface SerializedQuote {
+	poolKey: PoolKeySerialized;
+	provider: string;
+	taker: string;
+	price: string;
+	size: string;
+	isBuy: boolean;
+	deadline: number;
+	salt: number;
+	signature: RSV;
+}
+
 export interface CancelQuotesOB {
 	quoteId: string;
 }
@@ -58,25 +70,6 @@ export interface DeleteRequest extends CancelQuotesOB {
 
 export interface GroupedDeleteRequest {
 	[key: string]: DeleteRequest[];
-}
-
-export interface SerializedQuote {
-	poolKey: {
-		base: string;
-		quote: string;
-		oracleAdapter: string;
-		strike: string;
-		maturity: number;
-		isCallPool: boolean;
-	};
-	provider: string;
-	taker: string;
-	price: string;
-	size: string;
-	isBuy: boolean;
-	deadline: number;
-	salt: number;
-	signature: RSV;
 }
 
 export interface UnkeyAuthRequest {
@@ -223,4 +216,26 @@ export interface TokenBalance {
 export interface TokenApproval {
 	token: string;
 	amt: number | 'max';
+}
+
+export interface GetQuotesRequest {
+	quoteIds: string[];
+}
+
+export interface ReturnedOrderbookQuote {
+	base: string;
+	quote: string;
+	expiration: string;
+	strike: number;
+	type: 'C' | 'P';
+	side: 'bid' | 'ask';
+	size: number;
+	price: number;
+	deadline: number;
+	quoteId: string;
+	ts: number;
+}
+
+export interface TokenAddresses {
+	[key: string]: string;
 }

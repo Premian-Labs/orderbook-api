@@ -3,10 +3,10 @@ import {
 	Option,
 	TokenType,
 	PublishQuoteRequest,
-	FillQuoteRequest,
 	OrderbookQuote,
 	OrderbookQuoteDeserialized,
 	MoralisTokenBalance,
+	TokenAddresses,
 } from './types';
 import {
 	Contract,
@@ -17,12 +17,11 @@ import {
 } from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
-import { moralisChainId, provider, signer, walletAddr } from '../index';
+import { provider, signer, walletAddr } from '../index';
 import arb from '../config/arbitrum.json';
 import arbGoerli from '../config/arbitrumGoerli.json';
 import moment from 'moment/moment';
 import { IPool, IPool__factory } from '../typechain';
-import Moralis from 'moralis';
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
@@ -144,14 +143,15 @@ export function createExpiration(exp: string): number {
 	}
 
 	const today = moment.utc().startOf('day');
+	// NOTE: this returns a floor integer value for day (ie 1.9 days -> 1)
 	const daysToExpiration = expirationMoment.diff(today, 'days');
 
-	// 1.1 check if option expiration is not in the past
+	// 1.1 check if option alread expired
 	if (daysToExpiration <= 0) {
 		throw new Error(`Invalid expiration date: ${exp} is in the past`);
 	}
 
-	// 1.2 check if option expiration is not in the past
+	// 1.2 check if option expiration is more than 1 year out
 	if (expirationMoment.diff(today, 'years') > 0) {
 		throw new Error(`Invalid expiration date: ${exp} is more then in 1 year`);
 	}
@@ -180,7 +180,7 @@ export function createExpiration(exp: string): number {
 	}
 
 	// Set time to 8:00 AM
-	return expirationMoment.add(8, 'hours').unix();
+	return expirationMoment.unix();
 }
 
 export function createPoolKey(
@@ -271,4 +271,17 @@ export function deserializeOrderbookQuote(
 		fillableSize: toBigInt(quote.fillableSize),
 		ts: quote.ts,
 	};
+}
+
+export function getTokenByAddress(
+	tokenObject: TokenAddresses,
+	address: string
+) {
+	const tokenName = Object.keys(tokenObject).find(
+		(key) => tokenObject[key] === address
+	);
+	if (tokenName == undefined) {
+		return '';
+	}
+	return tokenName;
 }
