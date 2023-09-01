@@ -75,7 +75,7 @@ export const validateFillQuotes = ajv.compile({
 	items: {
 		type: 'object',
 		properties: {
-			size: {
+			tradeSize: {
 				type: 'number',
 			},
 			quoteId: {

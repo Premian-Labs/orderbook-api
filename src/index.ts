@@ -217,7 +217,9 @@ app.post('/orderbook/quotes', async (req, res) => {
 		});
 	}
 
-	if (postQuotesRequest.status == 200) {
+	// NOTE: if at least 1 quote is valid/unique status will be 201
+	// quote exists (200), bad request (400), unauthorized (401).
+	if (postQuotesRequest.status !== 201) {
 		return res.status(postQuotesRequest.status).json({
 			message: postQuotesRequest.data,
 		});
@@ -428,6 +430,8 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				'deadline',
 				'salt',
 			]);
+
+			const signedQuoteObject = await signQuote(provider, fillableQuoteDeserialized.poolAddress, quoteOB);
 
 			//FIXME: should we be using size or fillable size? And how to we ensure this is related to the size in the req?
 			const fillTx = await pool.fillQuoteOB(

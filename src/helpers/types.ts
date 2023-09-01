@@ -107,7 +107,7 @@ export interface QuoteOB {
 }
 
 export interface FillQuoteRequest {
-	size: number;
+	tradeSize: number;
 	quoteId: string;
 }
 
