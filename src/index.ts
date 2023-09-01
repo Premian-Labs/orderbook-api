@@ -16,7 +16,7 @@ import {
 import poolABI from './abi/IPool.json';
 import {
 	FillableQuote,
-	FillQuoteRequest,
+	FillQuoteRequest, GetFillableQuotes,
 	GroupedDeleteRequest,
 	MoralisTokenBalance,
 	Option,
@@ -65,7 +65,7 @@ import {
 import { ERC20Base__factory, IPool, IPool__factory } from './typechain';
 import Moralis from 'moralis';
 import { EvmChain } from '@moralisweb3/common-evm-utils';
-import { find, merge, mergeWith } from 'lodash';
+import { find, merge, mergeWith, omit, pick } from 'lodash';
 
 dotenv.config();
 
@@ -516,7 +516,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[];
 
 	const deleteByPoolAddr = _.groupBy(
-		req.body,
+		activeQuotes,
 		'poolAddress'
 	) as GroupedDeleteRequest;
 
@@ -550,7 +550,6 @@ app.post('/orderbook/validate_quote', async (req, res) => {
 
 // returns quotes up to a specific size
 app.get('/orderbook/quotes', async (req, res) => {
-	//TODO: change schema to reflect simplified query
 	const valid = validateGetFillableQuotes(req.query);
 	if (!valid) {
 		res.status(400);

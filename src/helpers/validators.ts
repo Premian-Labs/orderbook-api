@@ -92,7 +92,6 @@ export const validateFillQuotes = ajv.compile({
 	maxItems: 1000,
 });
 
-// TODO: remove poolAddress
 export const validateDeleteQuotes = ajv.compile({
 	type: 'object',
 	properties: {
@@ -112,21 +111,15 @@ export const validateDeleteQuotes = ajv.compile({
 export const validateGetFillableQuotes = ajv.compile({
 	type: 'object',
 	properties: {
-		poolAddress: {
-			type: 'string',
-			pattern: '^0x[a-fA-F0-9]{40}$',
-		},
+		...validateOptionEntity,
 		size: {
-			type: 'string',
-			pattern: '^[0-9]*$',
+			type: 'number',
+			minimum: 0,
+			exclusiveMinimum: true,
 		},
 		side: {
 			type: 'string',
 			pattern: '^bid$|^ask$',
-		},
-		chainId: {
-			type: 'string',
-			pattern: '^42161$|^421613$',
 		},
 		provider: {
 			type: 'string',
@@ -137,7 +130,15 @@ export const validateGetFillableQuotes = ajv.compile({
 			pattern: '^0x[a-fA-F0-9]{40}$',
 		},
 	},
-	required: ['poolAddress', 'size', 'side', 'chainId'],
+	required: [
+		'base',
+		'quote',
+		'expiration',
+		'strike',
+		'type',
+		'size',
+		'side'
+	],
 	additionalProperties: false,
 });
 

@@ -60,16 +60,8 @@ export interface SerializedQuote {
 	signature: RSV;
 }
 
-export interface CancelQuotesOB {
-	quoteId: string;
-}
-
-export interface DeleteRequest extends CancelQuotesOB {
-	poolAddress: string;
-}
-
 export interface GroupedDeleteRequest {
-	[key: string]: DeleteRequest[];
+	[key: string]: OrderbookQuote[];
 }
 
 export interface UnkeyAuthRequest {
@@ -111,7 +103,7 @@ export interface FillQuoteRequest {
 	quoteId: string;
 }
 
-export type FillableQuote = FillQuoteRequest & OrderbookQuote
+export type FillableQuote = FillQuoteRequest & OrderbookQuote;
 
 export interface PoolKeySerialized {
 	base: string;
@@ -147,7 +139,8 @@ export interface OrderbookQuoteDeserialized extends PublishOBQuote {
 	ts: number;
 }
 
-export interface OrderbookQuoteTradeDeserialized extends OrderbookQuoteDeserialized {
+export interface OrderbookQuoteTradeDeserialized
+	extends OrderbookQuoteDeserialized {
 	tradeSize: BigNumberish;
 }
 
@@ -231,7 +224,7 @@ export interface TokenApproval {
 	amt: number | 'max';
 }
 
-export interface GetQuotesRequest {
+export interface QuoteIds {
 	quoteIds: string[];
 }
 
