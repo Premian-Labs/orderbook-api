@@ -578,7 +578,6 @@ app.get('/orderbook/quotes', async (req, res) => {
 		pick(getQuotesQuery, ['base', 'quote', 'expiration', 'strike', 'type']), expiration);
 	const poolAddress = await getPoolAddress(poolKey)
 
-
 	let proxyResponse;
 	try {
 		proxyResponse = await proxyHTTPRequest(
@@ -644,19 +643,60 @@ app.get('/orderbook/orders', async (req, res) => {
 		return res.send(validateGetAllQuotes.errors);
 	}
 
-	//TODO: is chainId needed here?
-	const proxyResponse = await proxyHTTPRequest(
-		'orders',
-		'GET',
-		{
-			...req.query,
-			chainId: chainId,
-		},
-		null
+	const quotesQuery = req.query as unknown as QuoteIds;
+
+	if (quotesQuery.quoteIds.length > 25) {
+		Logger.error('Quotes quantity is up to 25 per request!');
+		return res.status(400).json({
+			message: 'Quotes quantity is up to 25 per request!',
+		});
+	}
+
+	let proxyResponse;
+	try {
+		proxyResponse = await proxyHTTPRequest(
+			'orders',
+			'GET',
+			quotesQuery,
+			null
+		);
+	} catch (e) {
+		Logger.error(e);
+		return res.status(500).json({
+			message: e,
+		});
+	}
+
+	if (proxyResponse.status !== 200) {
+		return res.status(proxyResponse.status).json({
+			message: proxyResponse.data,
+		});
+	}
+
+	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
+
+	const returnedQuotes: ReturnedOrderbookQuote[] = orderbookQuotes.map(
+		(orderbookQuote) => {
+			return {
+				base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
+				quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
+				expiration: moment
+					.unix(orderbookQuote.poolKey.maturity)
+					.format('DDMMMYY')
+					.toUpperCase(),
+				strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
+				type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
+				side: orderbookQuote.isBuy ? 'bid' : 'ask',
+				size: parseFloat(formatEther(orderbookQuote.fillableSize)),
+				price: parseFloat(formatEther(orderbookQuote.price)),
+				deadline: orderbookQuote.deadline - orderbookQuote.ts,
+				quoteId: orderbookQuote.quoteId,
+				ts: orderbookQuote.ts,
+			};
+		}
 	);
 
-	//TODO: reduce redis quote objects to simplified/readable quotes
-	return res.status(proxyResponse.status).json(proxyResponse.data);
+	return res.status(200).json(returnedQuotes);
 });
 
 app.get('/orderbook/private_quotes', async (req, res) => {
