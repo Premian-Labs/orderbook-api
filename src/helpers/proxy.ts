@@ -1,12 +1,12 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
 import { PublishQuoteProxyRequest } from './types';
-import { ArbOrderbookUrl, ArbGoerliOrderbookUrl } from '../config/constants';
+import { arbOrderbookUrl, arbGoerliOrderbookUrl } from '../config/constants';
 
 dotenv.config();
 
 const orderbook_url =
-	process.env.ENV == 'production' ? ArbOrderbookUrl : ArbGoerliOrderbookUrl;
+	process.env.ENV == 'production' ? arbOrderbookUrl : arbGoerliOrderbookUrl;
 // undefined is checked in index
 const api_key =
 	process.env.ENV == 'production'

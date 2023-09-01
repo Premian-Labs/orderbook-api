@@ -130,15 +130,7 @@ export const validateGetFillableQuotes = ajv.compile({
 			pattern: '^0x[a-fA-F0-9]{40}$',
 		},
 	},
-	required: [
-		'base',
-		'quote',
-		'expiration',
-		'strike',
-		'type',
-		'size',
-		'side'
-	],
+	required: ['base', 'quote', 'expiration', 'strike', 'type', 'size', 'side'],
 	additionalProperties: false,
 });
 

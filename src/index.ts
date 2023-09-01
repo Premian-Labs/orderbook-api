@@ -4,19 +4,32 @@ import dotenv from 'dotenv';
 import moment from 'moment';
 import * as _ from 'lodash';
 import Logger from './lib/logger';
-import { GasLimit, referral } from './config/constants';
+import { checkEnv } from './config/setConfig';
 import {
-	ethers,
+	gasLimit,
+	referralAddress,
+	provider,
+	chainId,
+	tokenAddresses,
+	moralisChainId,
+	signer,
+	walletAddr,
+	availableTokens,
+	routerAddress,
+} from './config/constants';
+import {
 	Contract,
 	parseEther,
 	MaxUint256,
 	parseUnits,
-	formatEther, toBigInt
+	formatEther,
+	toBigInt,
 } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
 	FillableQuote,
-	FillQuoteRequest, GetFillableQuotes,
+	FillQuoteRequest,
+	GetFillableQuotes,
 	GroupedDeleteRequest,
 	MoralisTokenBalance,
 	Option,
@@ -29,7 +42,7 @@ import {
 	ReturnedOrderbookQuote,
 	TokenApproval,
 	TokenBalance,
-	TokenType
+	TokenType,
 } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
@@ -37,7 +50,6 @@ import {
 	validateFillQuotes,
 	validateGetAllQuotes,
 	validateGetFillableQuotes,
-	validateGetRFQQuotes,
 	validatePostQuotes,
 	validatePositionManagement,
 	validateApprovals,
@@ -64,62 +76,10 @@ import {
 } from './helpers/quote';
 import { ERC20Base__factory, IPool, IPool__factory } from './typechain';
 import Moralis from 'moralis';
-import { EvmChain } from '@moralisweb3/common-evm-utils';
-import { find, merge, mergeWith, omit, pick } from 'lodash';
+import { find, pick } from 'lodash';
 
 dotenv.config();
-
-if (
-	!process.env.ENV ||
-	!process.env.WALLET_PRIVATE_KEY ||
-	!process.env.WALLET_ADDRESS ||
-	!process.env.LOCAL_URL
-) {
-	throw new Error(`Missing Core Credentials`);
-}
-
-if (
-	process.env.ENV == 'development' &&
-	(!process.env.TESTNET_RPC_URL || !process.env.TESTNET_ORDERBOOK_API_KEY)
-) {
-	throw new Error(`Missing Testnet Credentials`);
-}
-
-if (
-	process.env.ENV == 'production' &&
-	(!process.env.MAINNET_RPC_URL || !process.env.MAINNET_ORDERBOOK_API_KEY)
-) {
-	throw new Error(`Missing Mainnet Credentials`);
-}
-
-// TODO: remove when moralis migration to cloud happens
-if (!process.env.MORALIS_KEY || !process.env.ENV) {
-	throw new Error(`Balance Credentials Missing`);
-}
-
-const rpc_url =
-	process.env.ENV == 'production'
-		? process.env.MAINNET_RPC_URL
-		: process.env.TESTNET_RPC_URL;
-
-const privateKey = process.env.WALLET_PRIVATE_KEY;
-export const walletAddr = process.env.WALLET_ADDRESS;
-export const provider = new ethers.JsonRpcProvider(rpc_url);
-export const chainId = process.env.ENV == 'production' ? '42161' : '421613';
-
-// FIXME: Moralis Wallet API does not work for ARBITRUM_TESTNET. This is Patch for testing
-export const moralisChainId =
-	process.env.ENV === 'production' ? EvmChain.ARBITRUM : EvmChain.GOERLI;
-export const availableTokens =
-	process.env.ENV === 'production'
-		? Object.keys(arb.tokens)
-		: Object.keys(arbGoerli.tokens);
-
-const tokenAddresses =
-	process.env.ENV === 'production' ? arb.tokens : arbGoerli.tokens;
-export const signer = new ethers.Wallet(privateKey, provider);
-const routerAddress =
-	process.env.ENV == 'production' ? arb.ERC20Router : arbGoerli.ERC20Router;
+checkEnv();
 
 // TODO: remove when moralis migrates to cloud
 Moralis.start({
@@ -252,61 +212,6 @@ app.post('/orderbook/quotes', async (req, res) => {
 	);
 
 	return res.status(postQuotesRequest.status).json(returnedQuotes);
-
-	// User Data Inputs -> Converted to Cloud Validation and/or web3 format
-	/*
-		base: 'WETH',
-		quote: 'USDC',
-		expiration: 10FEB24,
-		strike: 1700,
-		type: 'P'
-		side: 'bid'
-		size:  4,
-		price: .21,
-		deadline: 300
- */
-
-	// Convert raw data OrderbookQuote[] -> to FINAL OUTPUT
-	/*
-	poolKey:{
-	base: string;
-	quote: string;
-	oracleAdapter: string;
-	strike: string;
-	maturity: number;
-	isCallPool: boolean;
-	}
-	provider: string;
-	taker: string;
-	price: string;
-	size: string;
-	isBuy: boolean;
-	deadline: number;
-	salt: number;
-	chainId: string;
-	signature: RSV;
-
-	(additional values returned)
-	quoteId: string;
-	poolAddress: string;
-	fillableSize: string;
-	ts: number;
-	 */
-
-	// FINAL OUTPUT: Returned User Data Output
-	/*
-		base: 'WETH',
-		quote: 'USDC',
-		expiration: 10FEB24,
-		strike: 1700,
-		type: 'P'
-		side: 'bid'
-		size:  4, -> (fillableSize)
-		price: .21,
-		deadline: 300,
-		quoteId: '0x1235',
-		ts: 1693578178
-	*/
 });
 
 app.patch('/orderbook/quotes', async (req, res) => {
@@ -458,9 +363,9 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				quoteOB,
 				fillableQuoteDeserialized.tradeSize,
 				signedQuoteObject,
-				referral,
+				referralAddress,
 				{
-					gasLimit: GasLimit,
+					gasLimit: gasLimit,
 				}
 			);
 			await provider.waitForTransaction(fillTx.hash, 1);
@@ -575,8 +480,10 @@ app.get('/orderbook/quotes', async (req, res) => {
 
 	// Create Pool Key
 	const poolKey = createPoolKey(
-		pick(getQuotesQuery, ['base', 'quote', 'expiration', 'strike', 'type']), expiration);
-	const poolAddress = await getPoolAddress(poolKey)
+		pick(getQuotesQuery, ['base', 'quote', 'expiration', 'strike', 'type']),
+		expiration
+	);
+	const poolAddress = await getPoolAddress(poolKey);
 
 	let proxyResponse;
 	try {
@@ -588,8 +495,8 @@ app.get('/orderbook/quotes', async (req, res) => {
 				size: toBigInt(getQuotesQuery.size).toString(),
 				side: getQuotesQuery.side,
 				chainId: chainId,
-				...(getQuotesQuery.provider && {provider: getQuotesQuery.provider}),
-				...(getQuotesQuery.taker && {taker: getQuotesQuery.taker}),
+				...(getQuotesQuery.provider && { provider: getQuotesQuery.provider }),
+				...(getQuotesQuery.taker && { taker: getQuotesQuery.taker }),
 			},
 			null
 		);
@@ -606,7 +513,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 		});
 	}
 
-	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
+	const orderbookQuotes = proxyResponse.data as OrderbookQuote[];
 
 	const returnedQuotes: ReturnedOrderbookQuote[] = orderbookQuotes.map(
 		(orderbookQuote) => {
@@ -654,12 +561,7 @@ app.get('/orderbook/orders', async (req, res) => {
 
 	let proxyResponse;
 	try {
-		proxyResponse = await proxyHTTPRequest(
-			'orders',
-			'GET',
-			quotesQuery,
-			null
-		);
+		proxyResponse = await proxyHTTPRequest('orders', 'GET', quotesQuery, null);
 	} catch (e) {
 		Logger.error(e);
 		return res.status(500).json({
@@ -673,7 +575,7 @@ app.get('/orderbook/orders', async (req, res) => {
 		});
 	}
 
-	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
+	const orderbookQuotes = proxyResponse.data as OrderbookQuote[];
 
 	const returnedQuotes: ReturnedOrderbookQuote[] = orderbookQuotes.map(
 		(orderbookQuote) => {
@@ -827,7 +729,7 @@ app.post('/pool/annihilate', async (req, res) => {
 		// 3. invoke onchain annihilate function for option
 		try {
 			const annihilateTx = await pool.annihilate(size, {
-				gasLimit: GasLimit,
+				gasLimit: gasLimit,
 			});
 			await provider.waitForTransaction(annihilateTx.hash, 1);
 		} catch (e) {

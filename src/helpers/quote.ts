@@ -10,19 +10,11 @@ import {
 	SerializedQuote,
 } from './types';
 import { ZeroAddress } from 'ethers';
-
-import {
-	solidityPackedKeccak256,
-	toUtf8Bytes,
-	keccak256,
-	Provider,
-	AbiCoder,
-} from 'ethers';
+import { Provider } from 'ethers';
 //TODO: remove hardhat and keep typing
 import { JsonRpcRequest } from 'hardhat/types';
-import { chainId } from '../index';
+import { chainId } from '../config/constants';
 
-const abiCoder = AbiCoder.defaultAbiCoder();
 const randomId = () => Math.floor(Math.random() * 10000000000);
 
 export async function getQuote(
@@ -185,73 +177,6 @@ export const send = (provider: any, method: string, params: any[]) =>
 			});
 		}
 	});
-
-export async function calculateQuoteOBHash(
-	w3Provider: Provider,
-	quoteOB: QuoteOB,
-	poolAddress: string
-) {
-	const FILL_QUOTE_OB_TYPE_HASH = keccak256(
-		toUtf8Bytes(
-			'FillQuoteOB(address provider,address taker,uint256 price,uint256 size,bool isBuy,uint256 deadline,uint256 salt)'
-		)
-	);
-	const EIP712_TYPE_HASH = keccak256(
-		toUtf8Bytes(
-			'EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'
-		)
-	);
-
-	const domain: Domain = {
-		name: 'Premia',
-		version: '1',
-		chainId: (await w3Provider.getNetwork()).chainId.toString(),
-		verifyingContract: poolAddress,
-	};
-
-	const domainHash = keccak256(
-		abiCoder.encode(
-			['bytes32', 'bytes32', 'bytes32', 'uint256', 'address'],
-			[
-				EIP712_TYPE_HASH,
-				keccak256(toUtf8Bytes(domain.name)),
-				keccak256(toUtf8Bytes(domain.version)),
-				domain.chainId,
-				domain.verifyingContract,
-			]
-		)
-	);
-
-	const structHash = keccak256(
-		abiCoder.encode(
-			[
-				'bytes32',
-				'address',
-				'address',
-				'uint256',
-				'uint256',
-				'bool',
-				'uint256',
-				'uint256',
-			],
-			[
-				FILL_QUOTE_OB_TYPE_HASH,
-				quoteOB.provider,
-				quoteOB.taker,
-				quoteOB.price,
-				quoteOB.size,
-				quoteOB.isBuy,
-				quoteOB.deadline,
-				quoteOB.salt,
-			]
-		)
-	);
-
-	return solidityPackedKeccak256(
-		['string', 'bytes32', 'bytes32'],
-		['\x19\x01', domainHash, structHash]
-	);
-}
 
 export function createQuote(
 	poolKey: PoolKey,

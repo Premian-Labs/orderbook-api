@@ -3,8 +3,6 @@ import {
 	Option,
 	TokenType,
 	PublishQuoteRequest,
-	OrderbookQuote,
-	OrderbookQuoteDeserialized,
 	MoralisTokenBalance,
 	TokenAddresses,
 	FillableQuote,
@@ -19,7 +17,7 @@ import {
 } from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
-import { provider, signer, walletAddr } from '../index';
+import { provider, signer, walletAddr } from '../config/constants';
 import arb from '../config/arbitrum.json';
 import arbGoerli from '../config/arbitrumGoerli.json';
 import moment from 'moment/moment';
