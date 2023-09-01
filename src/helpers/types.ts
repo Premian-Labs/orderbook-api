@@ -111,6 +111,8 @@ export interface FillQuoteRequest {
 	quoteId: string;
 }
 
+export type FillableQuote = FillQuoteRequest & OrderbookQuote
+
 export interface PoolKeySerialized {
 	base: string;
 	quote: string;
@@ -143,6 +145,10 @@ export interface OrderbookQuoteDeserialized extends PublishOBQuote {
 	poolAddress: string;
 	fillableSize: BigNumberish;
 	ts: number;
+}
+
+export interface OrderbookQuoteTradeDeserialized extends OrderbookQuoteDeserialized {
+	tradeSize: BigNumberish;
 }
 
 export interface QuoteOBMessage {

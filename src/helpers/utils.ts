@@ -6,7 +6,7 @@ import {
 	OrderbookQuote,
 	OrderbookQuoteDeserialized,
 	MoralisTokenBalance,
-	TokenAddresses,
+	TokenAddresses, FillableQuote, OrderbookQuoteTradeDeserialized
 } from './types';
 import {
 	Contract,
@@ -222,7 +222,7 @@ export function optionExpired(exp: string) {
 export async function validateBalances(
 	tokenBalances: MoralisTokenBalance[],
 	collateralToken: string,
-	fillQuoteRequests: OrderbookQuoteDeserialized[]
+	fillQuoteRequests: OrderbookQuoteTradeDeserialized[]
 ) {
 	const [availableTokenBalance, decimals] = tokenBalances
 		.filter((tokenBalance) => tokenBalance.symbol === collateralToken)
@@ -234,7 +234,7 @@ export async function validateBalances(
 	// Sums up fillQuoteRequests sizes
 	const tradesTotalSize = fillQuoteRequests
 		.map((fillQuoteRequest) =>
-			parseFloat(formatUnits(fillQuoteRequest.fillableSize, decimals))
+			parseFloat(formatUnits(fillQuoteRequest.tradeSize, decimals))
 		)
 		.reduce((sum, x) => sum + x);
 
@@ -244,8 +244,8 @@ export async function validateBalances(
 }
 
 export function deserializeOrderbookQuote(
-	quote: OrderbookQuote
-): OrderbookQuoteDeserialized {
+	quote: FillableQuote
+): OrderbookQuoteTradeDeserialized {
 	const deSerializedPoolKey = {
 		base: quote.poolKey.base,
 		quote: quote.poolKey.quote,

@@ -11,10 +11,11 @@ import {
 	parseEther,
 	MaxUint256,
 	parseUnits,
-	formatEther,
+	formatEther, Wallet
 } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
+	FillableQuote,
 	FillQuoteRequest,
 	GroupedDeleteRequest,
 	MoralisTokenBalance,
@@ -27,7 +28,7 @@ import {
 	ReturnedOrderbookQuote,
 	TokenApproval,
 	TokenBalance,
-	TokenType,
+	TokenType
 } from './helpers/types';
 import { checkTestApiKey } from './helpers/auth';
 import {
@@ -63,6 +64,7 @@ import {
 import { ERC20Base__factory, IPool, IPool__factory } from './typechain';
 import Moralis from 'moralis';
 import { EvmChain } from '@moralisweb3/common-evm-utils';
+import { find, merge, mergeWith } from 'lodash';
 
 dotenv.config();
 
@@ -250,7 +252,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 
 	return res.status(postQuotesRequest.status).json(returnedQuotes);
 
-	//TODO: User User Data Inputs -> Converted to Cloud Validation and/or web3 format
+	// User Data Inputs -> Converted to Cloud Validation and/or web3 format
 	/*
 		base: 'WETH',
 		quote: 'USDC',
@@ -263,7 +265,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		deadline: 300
  */
 
-	//TODO: Convert raw data OrderbookQuote[] -> to FINAL OUTPUT
+	// Convert raw data OrderbookQuote[] -> to FINAL OUTPUT
 	/*
 	poolKey:{
 	base: string;
@@ -290,7 +292,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 	ts: number;
 	 */
 
-	//TODO: FINAL OUTPUT: Returned User Data Output
+	// FINAL OUTPUT: Returned User Data Output
 	/*
 		base: 'WETH',
 		quote: 'USDC',
@@ -330,9 +332,9 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		});
 	}
 
-	let fillableQuotesRequest;
+	let activeQuotesRequest;
 	try {
-		fillableQuotesRequest = await proxyHTTPRequest(
+		activeQuotesRequest = await proxyHTTPRequest(
 			'orders',
 			'GET',
 			{
@@ -347,13 +349,24 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		});
 	}
 
-	if (fillableQuotesRequest.status !== 200) {
-		return res.status(fillableQuotesRequest.status).json({
-			message: fillableQuotesRequest.data,
+	if (activeQuotesRequest.status !== 200) {
+		return res.status(activeQuotesRequest.status).json({
+			message: activeQuotesRequest.data,
 		});
 	}
 
-	const fillableQuotes = fillableQuotesRequest.data as OrderbookQuote[];
+	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[];
+
+	// 1.1 Check to see which quotes from the request are still valid in the orderbook
+	const fillableQuotes: FillableQuote[] = activeQuotes.map(activeQuote => {
+		const matchedFromRequest = find(fillQuoteRequests, ['quoteId', activeQuote.quoteId ])!
+		return {
+			...activeQuote,
+			...matchedFromRequest,
+		}
+	})
+
+	// 1.2 Format the fillable quotes to Deserialized quote objects (include the tradeSize in object)
 	const fillableQuotesDeserialized = fillableQuotes.map(
 		deserializeOrderbookQuote
 	);
@@ -382,7 +395,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		tokenBalances = tokenBalances.toJSON();
 	} catch (e) {
 		Logger.error(e);
-		throw new Error('Internal server error');
+		return res.status(500).json({ message: e });
 	}
 
 	for (const baseToken in callsFillQuoteRequestsGroupedByCollateral) {
@@ -394,7 +407,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			);
 		} catch (e) {
 			Logger.error(e);
-			res.status(400).json({ message: e });
+			return res.status(400).json({ message: e });
 		}
 	}
 
@@ -407,7 +420,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			);
 		} catch (e) {
 			Logger.error(e);
-			res.status(400).json({ message: e });
+			return res.status(400).json({ message: e });
 		}
 	}
 
@@ -433,11 +446,10 @@ app.patch('/orderbook/quotes', async (req, res) => {
 
 			const signedQuoteObject = await signQuote(provider, fillableQuoteDeserialized.poolAddress, quoteOB);
 
-			//FIXME: should we be using size or fillable size? And how to we ensure this is related to the size in the req?
 			const fillTx = await pool.fillQuoteOB(
 				quoteOB,
-				fillableQuoteDeserialized.size,
-				fillableQuoteDeserialized.signature,
+				fillableQuoteDeserialized.tradeSize,
+				signedQuoteObject,
 				referral,
 				{
 					gasLimit: GasLimit,
@@ -454,7 +466,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		.catch((e) => {
 			Logger.error(e);
 			res.status(500).json({ message: e });
-		});
+		})
 });
 
 // TODO: reduce API to provide ONLY quoteIDs (remove poolAddress)
