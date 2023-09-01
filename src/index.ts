@@ -224,8 +224,14 @@ app.patch('/orderbook/quotes', async (req, res) => {
 
 	let fillableQuotesRequest;
 	try {
-		// TODO: add query ability on the cloud side to get quotes from an array of quoteIds
-		fillableQuotesRequest = await proxyHTTPRequest('quote', 'GET', quoteIds);
+		fillableQuotesRequest = await proxyHTTPRequest(
+			'orders',
+			'GET',
+			{
+				quoteIds: quoteIds
+			},
+			null
+		);
 	} catch (e) {
 		Logger.error(e);
 		return res.status(500).json({
@@ -397,7 +403,10 @@ app.get('/orderbook/quotes', async (req, res) => {
 	const proxyResponse = await proxyHTTPRequest(
 		'quotes',
 		'GET',
-		req.query,
+		{
+			...req.query,
+			chainId: chainId
+		},
 		null
 	);
 	//TODO: reduce redis quote objects to simplified/readable quotes
@@ -416,7 +425,10 @@ app.get('/orderbook/orders', async (req, res) => {
 	const proxyResponse = await proxyHTTPRequest(
 		'orders',
 		'GET',
-		req.query,
+		{
+			...req.query,
+			chainId: chainId
+		},
 		null
 	);
 	return res.status(proxyResponse.status).json(proxyResponse.data);
@@ -434,7 +446,10 @@ app.get('/orderbook/private_quotes', async (req, res) => {
 	const proxyResponse = await proxyHTTPRequest(
 		'rfq_quotes',
 		'GET',
-		req.query,
+		{
+			...req.query,
+			chainId: chainId
+		},
 		null
 	);
 	return res.status(proxyResponse.status).json(proxyResponse.data);

@@ -127,7 +127,52 @@ export const validateDeleteQuotes = ajv.compile({
 });
 
 export const validateGetFillableQuotes = ajv.compile({
+	type: 'object',
+	properties: {
+		poolAddress: {
+			type: 'string',
+			pattern: '^0x[a-fA-F0-9]{40}$',
+		},
+		size: {
+			type: 'string',
+			pattern: '^[0-9]*$',
+		},
+		side: {
+			type: 'string',
+			pattern: '^bid$|^ask$',
+		},
+		provider: {
+			type: 'string',
+			pattern: '^0x[a-fA-F0-9]{40}$',
+		},
+		taker: {
+			type: 'string',
+			pattern: '^0x[a-fA-F0-9]{40}$',
+		},
+	},
+	required: ['poolAddress', 'size', 'side'],
+	additionalProperties: false,
+});
+
+export const validateGetAllQuotes = ajv.compile({
 	oneOf: [
+		{
+			type: 'object',
+			properties: {
+				quoteIds: {
+					type: 'array',
+					items: {
+						type: 'string',
+						pattern: '[a-fA-F0-9]{64}$',
+					},
+					minItems: 1,
+					// 2048 chars is max params length
+					maxItems: 32,
+				},
+			},
+			required: ['quoteIds'],
+			additionalProperties: false,
+		},
 		{
 			type: 'object',
 			properties: {
@@ -151,60 +196,11 @@ export const validateGetFillableQuotes = ajv.compile({
 					type: 'string',
 					pattern: '^0x[a-fA-F0-9]{40}$',
 				},
-				taker: {
-					type: 'string',
-					pattern: '^0x[a-fA-F0-9]{40}$',
-				},
 			},
-			required: ['poolAddress', 'size', 'side', 'chainId'],
+			required: ['chainId'],
 			additionalProperties: false,
-		},
-		{
-			type: 'array',
-			items: {
-				type: 'object',
-				properties: {
-					quoteId: {
-						type: 'string',
-						pattern: '[a-fA-F0-9]{64}$',
-					},
-				},
-				required: ['quoteId'],
-				additionalProperties: false,
-			},
-			minItems: 1,
-			// 2048 chars is max params length
-			maxItems: 32,
-		},
-	],
-});
-
-export const validateGetAllQuotes = ajv.compile({
-	type: 'object',
-	properties: {
-		poolAddress: {
-			type: 'string',
-			pattern: '^0x[a-fA-F0-9]{40}$',
-		},
-		size: {
-			type: 'string',
-			pattern: '^[0-9]*$',
-		},
-		side: {
-			type: 'string',
-			pattern: '^bid$|^ask$',
-		},
-		chainId: {
-			type: 'string',
-			pattern: '^42161$|^421613$',
-		},
-		provider: {
-			type: 'string',
-			pattern: '^0x[a-fA-F0-9]{40}$',
-		},
-	},
-	required: ['chainId'],
-	additionalProperties: false,
+		}
+	]
 });
 
 export const validateGetRFQQuotes = ajv.compile({
@@ -218,16 +214,12 @@ export const validateGetRFQQuotes = ajv.compile({
 			type: 'string',
 			pattern: '^bid$|^ask$',
 		},
-		chainId: {
-			type: 'string',
-			pattern: '^42161$|^421613$',
-		},
 		taker: {
 			type: 'string',
 			pattern: '^0x[a-fA-F0-9]{40}$',
 		},
 	},
-	required: ['poolAddress', 'side', 'taker', 'chainId'],
+	required: ['poolAddress', 'side', 'taker'],
 	additionalProperties: false,
 });
 
