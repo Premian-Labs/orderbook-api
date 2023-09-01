@@ -7,6 +7,8 @@ import {
 	TokenAddresses,
 	FillableQuote,
 	OrderbookQuoteTradeDeserialized,
+	OrderbookQuote,
+	ReturnedOrderbookQuote,
 } from './types';
 import {
 	Contract,
@@ -17,7 +19,12 @@ import {
 } from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
-import { provider, signer, walletAddr } from '../config/constants';
+import {
+	provider,
+	signer,
+	tokenAddresses,
+	walletAddr,
+} from '../config/constants';
 import arb from '../config/arbitrum.json';
 import arbGoerli from '../config/arbitrumGoerli.json';
 import moment from 'moment/moment';
@@ -285,4 +292,28 @@ export function getTokenByAddress(
 		return '';
 	}
 	return tokenName;
+}
+
+export function createReturnedQuotes(orderbookQuotes: OrderbookQuote[]) {
+	const returnedQuotes: ReturnedOrderbookQuote[] = orderbookQuotes.map(
+		(orderbookQuote) => {
+			return {
+				base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
+				quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
+				expiration: moment
+					.unix(orderbookQuote.poolKey.maturity)
+					.format('DDMMMYY')
+					.toUpperCase(),
+				strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
+				type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
+				side: orderbookQuote.isBuy ? 'bid' : 'ask',
+				size: parseFloat(formatEther(orderbookQuote.fillableSize)),
+				price: parseFloat(formatEther(orderbookQuote.price)),
+				deadline: orderbookQuote.deadline - orderbookQuote.ts,
+				quoteId: orderbookQuote.quoteId,
+				ts: orderbookQuote.ts,
+			};
+		}
+	);
+	return returnedQuotes;
 }

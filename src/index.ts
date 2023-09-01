@@ -10,21 +10,13 @@ import {
 	referralAddress,
 	provider,
 	chainId,
-	tokenAddresses,
 	moralisChainId,
 	signer,
 	walletAddr,
 	availableTokens,
 	routerAddress,
 } from './config/constants';
-import {
-	Contract,
-	parseEther,
-	MaxUint256,
-	parseUnits,
-	formatEther,
-	toBigInt,
-} from 'ethers';
+import { Contract, parseEther, MaxUint256, parseUnits, toBigInt } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
 	FillableQuote,
@@ -63,7 +55,7 @@ import {
 	preProcessAnnhilate,
 	deserializeOrderbookQuote,
 	validateBalances,
-	getTokenByAddress,
+	createReturnedQuotes,
 } from './helpers/utils';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
@@ -190,26 +182,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 
 	// 3 Parse/format orderbook quotes to return
 	const orderbookQuotes = postQuotesRequest.data as OrderbookQuote[];
-	const returnedQuotes: ReturnedOrderbookQuote[] = orderbookQuotes.map(
-		(orderbookQuote) => {
-			return {
-				base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
-				quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
-				expiration: moment
-					.unix(orderbookQuote.poolKey.maturity)
-					.format('DDMMMYY')
-					.toUpperCase(),
-				strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
-				type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
-				side: orderbookQuote.isBuy ? 'bid' : 'ask',
-				size: parseFloat(formatEther(orderbookQuote.fillableSize)),
-				price: parseFloat(formatEther(orderbookQuote.price)),
-				deadline: orderbookQuote.deadline - orderbookQuote.ts,
-				quoteId: orderbookQuote.quoteId,
-				ts: orderbookQuote.ts,
-			};
-		}
-	);
+	const returnedQuotes = createReturnedQuotes(orderbookQuotes);
 
 	return res.status(postQuotesRequest.status).json(returnedQuotes);
 });
@@ -514,27 +487,8 @@ app.get('/orderbook/quotes', async (req, res) => {
 	}
 
 	const orderbookQuotes = proxyResponse.data as OrderbookQuote[];
-
-	const returnedQuotes: ReturnedOrderbookQuote[] = orderbookQuotes.map(
-		(orderbookQuote) => {
-			return {
-				base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
-				quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
-				expiration: moment
-					.unix(orderbookQuote.poolKey.maturity)
-					.format('DDMMMYY')
-					.toUpperCase(),
-				strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
-				type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
-				side: orderbookQuote.isBuy ? 'bid' : 'ask',
-				size: parseFloat(formatEther(orderbookQuote.fillableSize)),
-				price: parseFloat(formatEther(orderbookQuote.price)),
-				deadline: orderbookQuote.deadline - orderbookQuote.ts,
-				quoteId: orderbookQuote.quoteId,
-				ts: orderbookQuote.ts,
-			};
-		}
-	);
+	const returnedQuotes: ReturnedOrderbookQuote[] =
+		createReturnedQuotes(orderbookQuotes);
 
 	return res.status(200).json(returnedQuotes);
 });
@@ -576,27 +530,8 @@ app.get('/orderbook/orders', async (req, res) => {
 	}
 
 	const orderbookQuotes = proxyResponse.data as OrderbookQuote[];
-
-	const returnedQuotes: ReturnedOrderbookQuote[] = orderbookQuotes.map(
-		(orderbookQuote) => {
-			return {
-				base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
-				quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
-				expiration: moment
-					.unix(orderbookQuote.poolKey.maturity)
-					.format('DDMMMYY')
-					.toUpperCase(),
-				strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
-				type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
-				side: orderbookQuote.isBuy ? 'bid' : 'ask',
-				size: parseFloat(formatEther(orderbookQuote.fillableSize)),
-				price: parseFloat(formatEther(orderbookQuote.price)),
-				deadline: orderbookQuote.deadline - orderbookQuote.ts,
-				quoteId: orderbookQuote.quoteId,
-				ts: orderbookQuote.ts,
-			};
-		}
-	);
+	const returnedQuotes: ReturnedOrderbookQuote[] =
+		createReturnedQuotes(orderbookQuotes);
 
 	return res.status(200).json(returnedQuotes);
 });
