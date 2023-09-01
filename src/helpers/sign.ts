@@ -1,14 +1,16 @@
 import {
-	Domain,
-	EIP712Domain,
 	QuoteOB,
-	QuoteOBMessage,
-	RSV,
 	PoolKey,
 	PublishOBQuote,
-	SignedQuote,
 	SerializedQuote,
-} from './types';
+} from '../types/quote';
+import {
+	Domain,
+	EIP712Domain,
+	RSV,
+	QuoteOBMessage,
+	SignedQuote,
+} from '../types/signature';
 import { ZeroAddress } from 'ethers';
 import { Provider } from 'ethers';
 //TODO: remove hardhat and keep typing

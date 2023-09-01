@@ -1,6 +1,6 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
-import { PublishQuoteProxyRequest } from './types';
+import { PublishQuoteProxyRequest } from '../types/quote';
 import { arbOrderbookUrl, arbGoerliOrderbookUrl } from '../config/constants';
 
 dotenv.config();

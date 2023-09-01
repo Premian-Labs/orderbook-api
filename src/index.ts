@@ -20,22 +20,26 @@ import { Contract, parseEther, MaxUint256, parseUnits, toBigInt } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
 	FillableQuote,
-	FillQuoteRequest,
-	GetFillableQuotes,
 	GroupedDeleteRequest,
-	MoralisTokenBalance,
-	Option,
-	OptionPositions,
 	OrderbookQuote,
 	PublishQuoteProxyRequest,
-	PublishQuoteRequest,
-	QuoteIds,
 	QuoteOB,
 	ReturnedOrderbookQuote,
-	TokenApproval,
-	TokenBalance,
 	TokenType,
-} from './helpers/types';
+} from './types/quote';
+import {
+	Option,
+	QuoteIds,
+	TokenApproval,
+	FillQuoteRequest,
+	GetFillableQuotes,
+	PublishQuoteRequest,
+} from './types/validate';
+import {
+	MoralisTokenBalance,
+	TokenBalance,
+	OptionPositions,
+} from './types/balances';
 import { checkTestApiKey } from './helpers/auth';
 import {
 	validateDeleteQuotes,
@@ -67,7 +71,7 @@ import {
 	signQuote,
 	createQuote,
 	serializeQuote,
-} from './helpers/quote';
+} from './helpers/sign';
 import { ERC20Base__factory, IPool, IPool__factory } from './typechain';
 import Moralis from 'moralis';
 import { find, pick } from 'lodash';

@@ -144,7 +144,7 @@ export const validateGetAllQuotes = ajv.compile({
 				pattern: '[a-fA-F0-9]{64}$',
 			},
 			minItems: 1,
-			// 2048 chars is max params length
+			// 2048 chars is max params length for GET requests
 			maxItems: 25,
 		},
 	},

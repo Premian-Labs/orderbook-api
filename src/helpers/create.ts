@@ -1,13 +1,13 @@
 import moment from 'moment';
 import {
 	FillableQuote,
-	Option,
 	OrderbookQuote,
 	OrderbookQuoteTradeDeserialized,
 	PoolKey,
-	PublishQuoteRequest,
 	ReturnedOrderbookQuote,
-} from './types';
+} from '../types/quote';
+import { Option } from '../types/validate';
+import { PublishQuoteRequest } from '../types/validate';
 import { tokenAddresses } from '../config/constants';
 import { formatEther, parseEther, toBigInt } from 'ethers';
 import { getTokenByAddress } from './get';

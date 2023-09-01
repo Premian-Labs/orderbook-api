@@ -1,6 +1,6 @@
 import express from 'express';
 import axios from 'axios';
-import { UnkeyAuthRequest, UnkeyAuthResponse } from './types';
+import { UnkeyAuthRequest, UnkeyAuthResponse } from '../types/auth';
 
 // UNKEY API KEY middleware
 export async function checkTestApiKey(

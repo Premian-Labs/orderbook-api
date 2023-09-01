@@ -1,10 +1,10 @@
 import {
-	MoralisTokenBalance,
-	Option,
 	OrderbookQuoteTradeDeserialized,
 	PoolKey,
 	TokenType,
-} from './types';
+} from '../types/quote';
+import { MoralisTokenBalance } from '../types/balances';
+import { Option } from '../types/validate';
 import { IPool, IPool__factory } from '../typechain';
 import { createExpiration, createPoolKey } from './create';
 import { signer, walletAddr } from '../config/constants';

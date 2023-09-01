@@ -1,4 +1,4 @@
-import { PoolKey, TokenAddresses } from './types';
+import { PoolKey, TokenAddresses } from '../types/quote';
 import { Contract } from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
