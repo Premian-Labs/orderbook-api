@@ -46,17 +46,19 @@ import {
 	validatePositionManagement,
 	validateApprovals,
 } from './helpers/validators';
+import { getPoolAddress } from './helpers/get';
 import {
-	getPoolAddress,
 	createExpiration,
+	createReturnedQuotes,
 	createPoolKey,
+	deserializeOrderbookQuote,
+} from './helpers/create';
+import {
 	optionExpired,
 	preProcessExpOption,
 	preProcessAnnhilate,
-	deserializeOrderbookQuote,
 	validateBalances,
-	createReturnedQuotes,
-} from './helpers/utils';
+} from './helpers/check';
 import { proxyHTTPRequest } from './helpers/proxy';
 import arb from './config/arbitrum.json';
 import arbGoerli from './config/arbitrumGoerli.json';
