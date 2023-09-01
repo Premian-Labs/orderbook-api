@@ -94,24 +94,19 @@ export const validateFillQuotes = ajv.compile({
 
 // TODO: remove poolAddress
 export const validateDeleteQuotes = ajv.compile({
-	type: 'array',
-	items: {
-		type: 'object',
-		properties: {
-			poolAddress: {
-				type: 'string',
-				pattern: '^0x[a-fA-F0-9]{40}$',
-			},
-			quoteId: {
+	type: 'object',
+	properties: {
+		quoteIds: {
+			type: 'array',
+			items: {
 				type: 'string',
 				pattern: '[a-fA-F0-9]{64}$',
 			},
+			minItems: 1,
 		},
-		required: ['poolAddress', 'quoteId'],
-		additionalProperties: false,
 	},
-	minItems: 1,
-	maxItems: 1000,
+	required: ['quoteIds'],
+	additionalProperties: false,
 });
 
 export const validateGetFillableQuotes = ajv.compile({
@@ -157,7 +152,7 @@ export const validateGetAllQuotes = ajv.compile({
 			},
 			minItems: 1,
 			// 2048 chars is max params length
-			maxItems: 32,
+			maxItems: 25,
 		},
 	},
 	required: ['quoteIds'],

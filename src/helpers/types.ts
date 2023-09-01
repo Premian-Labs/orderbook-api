@@ -194,6 +194,13 @@ export interface Option {
 	type: 'C' | 'P';
 }
 
+export interface GetFillableQuotes extends Option {
+	size: number;
+	side: 'bid' | 'ask';
+	provider?: string;
+	taker?: string;
+}
+
 export interface NFTBalance {
 	token_address: string;
 	amount: string;

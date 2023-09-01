@@ -11,7 +11,7 @@ import {
 	parseEther,
 	MaxUint256,
 	parseUnits,
-	formatEther, Wallet
+	formatEther, toBigInt
 } from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
@@ -24,6 +24,7 @@ import {
 	OrderbookQuote,
 	PublishQuoteProxyRequest,
 	PublishQuoteRequest,
+	QuoteIds,
 	QuoteOB,
 	ReturnedOrderbookQuote,
 	TokenApproval,
@@ -358,13 +359,16 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[];
 
 	// 1.1 Check to see which quotes from the request are still valid in the orderbook
-	const fillableQuotes: FillableQuote[] = activeQuotes.map(activeQuote => {
-		const matchedFromRequest = find(fillQuoteRequests, ['quoteId', activeQuote.quoteId ])!
+	const fillableQuotes: FillableQuote[] = activeQuotes.map((activeQuote) => {
+		const matchedFromRequest = find(fillQuoteRequests, [
+			'quoteId',
+			activeQuote.quoteId,
+		])!;
 		return {
 			...activeQuote,
 			...matchedFromRequest,
-		}
-	})
+		};
+	});
 
 	// 1.2 Format the fillable quotes to Deserialized quote objects (include the tradeSize in object)
 	const fillableQuotesDeserialized = fillableQuotes.map(
@@ -444,7 +448,11 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				'salt',
 			]);
 
-			const signedQuoteObject = await signQuote(provider, fillableQuoteDeserialized.poolAddress, quoteOB);
+			const signedQuoteObject = await signQuote(
+				provider,
+				fillableQuoteDeserialized.poolAddress,
+				quoteOB
+			);
 
 			const fillTx = await pool.fillQuoteOB(
 				quoteOB,
@@ -460,16 +468,15 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		})
 	);
 
-	// TODO: make error display failed quotes
+	// TODO: make error display failed fill of a quote
 	promiseAll
 		.then(() => res.status(200).json({ message: `Quotes filled` }))
 		.catch((e) => {
 			Logger.error(e);
 			res.status(500).json({ message: e });
-		})
+		});
 });
 
-// TODO: reduce API to provide ONLY quoteIDs (remove poolAddress)
 app.delete('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validateDeleteQuotes(req.body);
@@ -480,6 +487,33 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validateDeleteQuotes.errors);
 	}
+
+	const deleteQuoteIds = req.body as QuoteIds;
+
+	let activeQuotesRequest;
+	try {
+		activeQuotesRequest = await proxyHTTPRequest(
+			'orders',
+			'GET',
+			{
+				quoteIds: deleteQuoteIds.quoteIds,
+			},
+			null
+		);
+	} catch (e) {
+		Logger.error(e);
+		return res.status(500).json({
+			message: e,
+		});
+	}
+
+	if (activeQuotesRequest.status !== 200) {
+		return res.status(activeQuotesRequest.status).json({
+			message: activeQuotesRequest.data,
+		});
+	}
+
+	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[];
 
 	const deleteByPoolAddr = _.groupBy(
 		req.body,
@@ -501,7 +535,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		})
 	);
 
-	// TODO: make error display failed quoteIds
+	// TODO: make error display failed quoteId cancellation
 	promiseAll
 		.then(() => res.status(200).json({ message: `Quotes deleted` }))
 		.catch((e) => {
@@ -525,35 +559,79 @@ app.get('/orderbook/quotes', async (req, res) => {
 		);
 		return res.send(validateGetFillableQuotes.errors);
 	}
-	const proxyResponse = await proxyHTTPRequest(
-		'quotes',
-		'GET',
-		{
-			...req.query,
-			chainId: chainId,
-		},
-		null
+
+	const getQuotesQuery = req.query as unknown as GetFillableQuotes;
+
+	// Validate/create timestamp expiration
+	let expiration: number;
+	try {
+		expiration = createExpiration(getQuotesQuery.expiration as string);
+	} catch (e) {
+		Logger.error(e);
+		return res.status(400).json({
+			message: e,
+			quotesRequest: getQuotesQuery,
+		});
+	}
+
+	// Create Pool Key
+	const poolKey = createPoolKey(
+		pick(getQuotesQuery, ['base', 'quote', 'expiration', 'strike', 'type']), expiration);
+	const poolAddress = await getPoolAddress(poolKey)
+
+
+	let proxyResponse;
+	try {
+		proxyResponse = await proxyHTTPRequest(
+			'quotes',
+			'GET',
+			{
+				poolAddress: poolAddress,
+				size: toBigInt(getQuotesQuery.size).toString(),
+				side: getQuotesQuery.side,
+				chainId: chainId,
+				...(getQuotesQuery.provider && {provider: getQuotesQuery.provider}),
+				...(getQuotesQuery.taker && {taker: getQuotesQuery.taker}),
+			},
+			null
+		);
+	} catch (e) {
+		Logger.error(e);
+		return res.status(500).json({
+			message: e,
+		});
+	}
+
+	if (proxyResponse.status !== 200) {
+		return res.status(proxyResponse.status).json({
+			message: proxyResponse.data,
+		});
+	}
+
+	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
+
+	const returnedQuotes: ReturnedOrderbookQuote[] = orderbookQuotes.map(
+		(orderbookQuote) => {
+			return {
+				base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
+				quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
+				expiration: moment
+					.unix(orderbookQuote.poolKey.maturity)
+					.format('DDMMMYY')
+					.toUpperCase(),
+				strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
+				type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
+				side: orderbookQuote.isBuy ? 'bid' : 'ask',
+				size: parseFloat(formatEther(orderbookQuote.fillableSize)),
+				price: parseFloat(formatEther(orderbookQuote.price)),
+				deadline: orderbookQuote.deadline - orderbookQuote.ts,
+				quoteId: orderbookQuote.quoteId,
+				ts: orderbookQuote.ts,
+			};
+		}
 	);
 
-	//TODO: reduce redis quote objects to simplified/readable quotes
-	return res.status(proxyResponse.status).json(proxyResponse.data);
-
-	/*
-	Return:
-	base: 'WETH',
-	quote: 'USDC',
-	expiration: 10FEB24,
-	strike: 1700,
-	type: 'P'
-	side:
-
-	price: string;
-	size: string; -> fillableSize: string;
-	isBuy: boolean;
-	deadline: number; -> # of seconds left (deadline - ts)
-	quoteId: string;
-	ts: number;
-	 */
+	return res.status(200).json(returnedQuotes);
 });
 
 // gets quotes using an array of quoteIds

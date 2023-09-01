@@ -6,7 +6,9 @@ import {
 	OrderbookQuote,
 	OrderbookQuoteDeserialized,
 	MoralisTokenBalance,
-	TokenAddresses, FillableQuote, OrderbookQuoteTradeDeserialized
+	TokenAddresses,
+	FillableQuote,
+	OrderbookQuoteTradeDeserialized,
 } from './types';
 import {
 	Contract,
