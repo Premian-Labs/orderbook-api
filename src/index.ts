@@ -15,6 +15,7 @@ import {
 	walletAddr,
 	availableTokens,
 	routerAddress,
+	tokenAddresses,
 } from './config/constants';
 import {
 	Contract,
@@ -43,7 +44,6 @@ import {
 	PublishQuoteRequest,
 } from './types/validate';
 import {
-	MoralisTokenBalance,
 	TokenBalance,
 	OptionPositions,
 } from './types/balances';
@@ -702,8 +702,13 @@ app.post('/pool/annihilate', async (req, res) => {
 });
 
 app.get('/account/option_balances', async (req, res) => {
-	// FIXME: in production, we can not return balances for arbitrum goerli
-	// TODO: Check for moralis update to `disable_total` in comings days
+	// TODO: Check for moralis update to `disable_total` on Sept 11th
+	if (chainId === '421613') {
+		return res
+			.status(400)
+			.json({ message: 'No balance query available in development mode' });
+	}
+
 	let moralisResponse;
 	try {
 		moralisResponse = await Moralis.EvmApi.nft.getWalletNFTs({
@@ -780,46 +785,37 @@ app.get('/account/orders', async (req, res) => {
 });
 
 app.get('/account/collateral_balances', async (req, res) => {
-	// FIXME: in production, we can not return balances for arbitrum goerli
-	let tokenBalances;
-	try {
-		tokenBalances = await Moralis.EvmApi.token.getWalletTokenBalances({
-			chain: moralisChainId,
-			address: walletAddr,
-		});
+	let tokenBalances: TokenBalance[] = [];
+
+	// TODO: create promise allSettle wrapper (and catch)
+	try{
+		for (let tokenAddressesKey in tokenAddresses) {
+			const erc20 = ERC20Base__factory.connect(
+				tokenAddresses[tokenAddressesKey],
+				provider
+			);
+			tokenBalances.push({
+				token_address: tokenAddresses[tokenAddressesKey],
+				symbol: tokenAddressesKey,
+				balance: parseFloat(formatEther(await erc20.balanceOf(walletAddr))),
+			});
+		}
 	} catch (e) {
-		Logger.error(e);
-		return res.status(500).json({ message: 'Internal server error' });
+		return res.status(500).json({ message: e });
 	}
 
-	const filteredTokenBalances = tokenBalances.toJSON().filter((token) => {
-		return availableTokens.includes(token.symbol);
-	}) as MoralisTokenBalance[];
-
-	const finalTokenBalances = filteredTokenBalances.map((item) => {
-		const tokenBalance = pick(item, [
-			'token_address',
-			'symbol',
-			'balance',
-		]) as TokenBalance;
-		tokenBalance.balance = parseFloat(formatEther(item.balance));
-		return tokenBalance;
-	}) as TokenBalance[];
-
-	res.status(200).json(finalTokenBalances);
+	return  res.status(200).json(tokenBalances);
 });
 
 app.get('/account/native_balance', async (req, res) => {
-	// FIXME: in production, we can not return balances for arbitrum goerli
-	let nativeBalance;
+	let nativeBalance: number;
 	try {
-		nativeBalance = await Moralis.EvmApi.balance.getNativeBalance({
-			chain: moralisChainId,
-			address: walletAddr,
-		});
+		nativeBalance = parseFloat(
+			formatEther(await provider.getBalance(walletAddr))
+		);
 	} catch (e) {
 		Logger.error(e);
-		return res.status(500).json({ message: 'Internal server error' });
+		return res.status(500).json({ message: e });
 	}
 
 	res.status(200).json(nativeBalance);

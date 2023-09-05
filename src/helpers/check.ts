@@ -80,7 +80,6 @@ export async function preProcessExpOption(
 		formatEther(balance)
 	);
 
-	//TODO: verify that a zero balance indeed comes as 0n
 	if (balance === 0n) {
 		throw new Error('No balance to settle');
 	}
@@ -101,6 +100,8 @@ export function optionExpired(exp: string) {
 	return maturitySec < ts;
 }
 
+
+//TODO: remove dependency to moralis
 export async function validateBalances(
 	tokenBalances: MoralisTokenBalance[],
 	collateralToken: string,

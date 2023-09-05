@@ -10,11 +10,10 @@ import {
 	RSV,
 	QuoteOBMessage,
 	SignedQuote,
+	JsonRpcRequest,
 } from '../types/signature';
 import { ZeroAddress } from 'ethers';
 import { Provider } from 'ethers';
-//TODO: remove hardhat and keep typing
-import { JsonRpcRequest } from 'hardhat/types';
 import { chainId } from '../config/constants';
 
 const randomId = () => Math.floor(Math.random() * 10000000000);

@@ -13,8 +13,6 @@ const api_key =
 		? process.env.MAINNET_ORDERBOOK_API_KEY
 		: process.env.TESTNET_ORDERBOOK_API_KEY;
 
-//TODO: do we want to do error handling in here? (see getRequest function in SDK)
-
 export async function proxyHTTPRequest(
 	path: string,
 	method: 'GET' | 'POST',

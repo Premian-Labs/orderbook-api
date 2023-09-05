@@ -30,3 +30,10 @@ export interface SignedQuote extends QuoteOBMessage {
 	s: string;
 	v: number;
 }
+
+export interface JsonRpcRequest {
+	jsonrpc: string;
+	method: string;
+	params: any[];
+	id: number;
+}
