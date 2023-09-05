@@ -15,10 +15,6 @@ interact with the Premia v3 Orderbook and related protocol functionality for bot
 advanced/programmatic users.  The containerized API allows for development in _any_ language.  Web3 functionality is 
 abstracted away from the developer, shortening integration time.
 
-
-## API Architecture
-![](img/architecture.png)
-
 ## PreRequisites
 
 There are several things that are needed in order to work with the API locally.  They include:
@@ -26,4 +22,9 @@ There are several things that are needed in order to work with the API locally. 
 - An EOA (Externally Owned Account) on the Ethereum (funded on Arbitrum)
 - An API Key from premia (please email support@premia.finance and use subject line 'API KEY REQUEST')
 - Latest version of [Docker](https://docs.docker.com/get-docker/)
-- An RPC provider (such as [Alchemy](https://www.alchemy.com/) or [Infura](https://www.infura.io/))
+- An RPC provide
+
+## API Architecture
+![](img/architecture.png)
+
+r (such as [Alchemy](https://www.alchemy.com/) or [Infura](https://www.infura.io/))
