@@ -81,7 +81,7 @@ import {
 } from './helpers/sign';
 import { ERC20Base__factory, IPool, IPool__factory } from './typechain';
 import Moralis from 'moralis';
-import { difference, find, flatten, groupBy, partition, pick } from 'lodash';
+import {difference, find, flatten, groupBy, partition, pick, zipWith} from 'lodash';
 
 dotenv.config();
 checkEnv();
@@ -590,32 +590,43 @@ app.post('/pool/settle', async (req, res) => {
 		return res.send(validatePositionManagement.errors);
 	}
 
-	let options = req.body as Option[];
-	let pool: IPool;
+	const options = req.body as Option[];
 
-	// TODO: create promise allSettle wrapper (and catch)
-	for (const option of options) {
-		// 2. check all user inputs are valid for option settlement
-		try {
-			pool = await preProcessExpOption(option, TokenType.SHORT);
-		} catch (e) {
-			Logger.error(e);
-			return res.status(400).json({
-				message: e,
-				option: option,
-			});
-		}
-		// 3 invoke onchain settle function for option
-		try {
+	const promiseAll = await Promise.allSettled(
+		options.map(async option => {
+			const pool = await preProcessExpOption(option, TokenType.SHORT);
 			const settleTx = await pool.settle();
 			await provider.waitForTransaction(settleTx.hash, 1);
-		} catch (e) {
-			Logger.error(e);
-			return res.status(500).json({ message: e, option: option });
+			return option;
+		})
+	)
+
+	const fulfilledOptions: Option[] = [];
+	const reasons: Option[] = [];
+	promiseAll.forEach((result) => {
+		if (result.status === 'fulfilled') {
+			fulfilledOptions.push(result.value);
 		}
+		if (result.status === 'rejected') {
+			reasons.push(result.reason);
+		}
+	});
+
+	const failedOptions = difference(
+		options,
+		fulfilledOptions
+	);
+
+	if (failedOptions.length > 0) {
+		return res.status(500).json({
+			message: 'Failed to settle short options',
+			// NOTE: failedOptions and reasons always have the same order
+			failedOptions: zipWith(failedOptions, reasons,
+				(failedOption, reason) => ({ failedOption, reason })),
+		});
 	}
 
-	res.sendStatus(200);
+	return res.sendStatus(200);
 });
 
 app.post('/pool/exercise', async (req, res) => {
@@ -629,33 +640,43 @@ app.post('/pool/exercise', async (req, res) => {
 		return res.send(validatePositionManagement.errors);
 	}
 
-	let options = req.body as Option[];
-	let pool: IPool;
+	const options = req.body as Option[];
 
-	// TODO: create promise allSettle wrapper (and catch)
-	for (const option of options) {
-		// 2. check all user inputs are valid for option settlement
-		try {
-			pool = await preProcessExpOption(option, TokenType.LONG);
-		} catch (e) {
-			Logger.error(e);
-			return res.status(400).json({
-				message: e,
-				option: option,
-			});
-		}
-
-		// 3. invoke onchain exercise function for option
-		try {
+	const promiseAll = await Promise.allSettled(
+		options.map(async option => {
+			const pool = await preProcessExpOption(option, TokenType.LONG);
 			const exerciseTx = await pool.exercise();
 			await provider.waitForTransaction(exerciseTx.hash, 1);
-		} catch (e) {
-			Logger.error(e);
-			return res.status(500).json({ message: e, option: option });
+			return option;
+		})
+	)
+
+	const fulfilledOptions: Option[] = [];
+	const reasons: Option[] = [];
+	promiseAll.forEach((result) => {
+		if (result.status === 'fulfilled') {
+			fulfilledOptions.push(result.value);
 		}
+		if (result.status === 'rejected') {
+			reasons.push(result.reason);
+		}
+	});
+
+	const failedOptions = difference(
+		options,
+		fulfilledOptions
+	);
+
+	if (failedOptions.length > 0) {
+		return res.status(500).json({
+			message: 'Failed to exercise long options',
+			// NOTE: failedOptions and reasons always have the same order
+			failedOptions: zipWith(failedOptions, reasons,
+				(failedOption, reason) => ({ failedOption, reason })),
+		});
 	}
 
-	res.sendStatus(200);
+	return res.sendStatus(200);
 });
 
 app.post('/pool/annihilate', async (req, res) => {
@@ -669,36 +690,45 @@ app.post('/pool/annihilate', async (req, res) => {
 		return res.send(validatePositionManagement.errors);
 	}
 
-	let options = req.body as Option[];
-	let pool: IPool;
-	let size: bigint;
+	const options = req.body as Option[];
 
-	// TODO: create promise allSettle wrapper (and catch)
-	for (const option of options) {
-		// 2. check all user inputs are valid for option settlement
-		try {
-			[pool, size] = await preProcessAnnhilate(option);
-		} catch (e) {
-			Logger.error(e);
-			return res.status(400).json({
-				message: e,
-				option: option,
-			});
-		}
-
-		// 3. invoke onchain annihilate function for option
-		try {
+	const promiseAll = await Promise.allSettled(
+		options.map(async option => {
+			const [pool, size] = await preProcessAnnhilate(option);
 			const annihilateTx = await pool.annihilate(size, {
 				gasLimit: gasLimit,
 			});
 			await provider.waitForTransaction(annihilateTx.hash, 1);
-		} catch (e) {
-			Logger.error(e);
-			return res.status(500).json({ message: e, option: option });
+			return option;
+		})
+	)
+
+	const fulfilledOptions: Option[] = [];
+	const reasons: Option[] = [];
+	promiseAll.forEach((result) => {
+		if (result.status === 'fulfilled') {
+			fulfilledOptions.push(result.value);
 		}
+		if (result.status === 'rejected') {
+			reasons.push(result.reason);
+		}
+	});
+
+	const failedOptions = difference(
+		options,
+		fulfilledOptions
+	);
+
+	if (failedOptions.length > 0) {
+		return res.status(500).json({
+			message: 'Failed to annihilate options',
+			// NOTE: failedOptions and reasons always have the same order
+			failedOptions: zipWith(failedOptions, reasons,
+				(failedOption, reason) => ({ failedOption, reason })),
+		});
 	}
 
-	res.sendStatus(200);
+	return res.sendStatus(200);
 });
 
 app.get('/account/option_balances', async (req, res) => {
