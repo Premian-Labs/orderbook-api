@@ -16,7 +16,14 @@ import {
 	availableTokens,
 	routerAddress,
 } from './config/constants';
-import { Contract, parseEther, MaxUint256, parseUnits, toBigInt } from 'ethers';
+import {
+	Contract,
+	parseEther,
+	MaxUint256,
+	parseUnits,
+	toBigInt,
+	formatEther,
+} from 'ethers';
 import poolABI from './abi/IPool.json';
 import {
 	FillableQuote,
@@ -696,7 +703,6 @@ app.post('/pool/annihilate', async (req, res) => {
 app.get('/account/option_balances', async (req, res) => {
 	// FIXME: in production, we can not return balances for arbitrum goerli
 	// TODO: Check for moralis update to `disable_total` in comings days
-	// TODO: parseEther balances
 	let moralisResponse;
 	try {
 		moralisResponse = await Moralis.EvmApi.nft.getWalletNFTs({
@@ -737,13 +743,13 @@ app.get('/account/option_balances', async (req, res) => {
 				optionBalances.expired.push({
 					name: NFTBalance.name,
 					token_address: NFTBalance.token_address,
-					amount: NFTBalance.amount!,
+					amount: parseFloat(formatEther(NFTBalance.amount!)),
 				});
 			} else {
 				optionBalances.open.push({
 					name: NFTBalance.name,
 					token_address: NFTBalance.token_address,
-					amount: NFTBalance.amount!,
+					amount: parseFloat(formatEther(NFTBalance.amount!)),
 				});
 			}
 		}
@@ -757,12 +763,12 @@ app.get('/account/orders', async (req, res) => {
 		provider: walletAddr,
 		chainId: moralisChainId,
 	});
+	//TODO return truncated orders
 	return res.status(proxyResponse.status).json(proxyResponse.data);
 });
 
 app.get('/account/collateral_balances', async (req, res) => {
 	// FIXME: in production, we can not return balances for arbitrum goerli
-	// TODO: parseEther balances
 	let tokenBalances;
 	try {
 		tokenBalances = await Moralis.EvmApi.token.getWalletTokenBalances({
@@ -778,16 +784,21 @@ app.get('/account/collateral_balances', async (req, res) => {
 		return availableTokens.includes(token.symbol);
 	}) as MoralisTokenBalance[];
 
-	const finalTokenBalances = filteredTokenBalances.map(
-		({ name, logo, thumbnail, possible_spam, decimals, ...item }) => item
-	) as TokenBalance[];
+	const finalTokenBalances = filteredTokenBalances.map((item) => {
+		const tokenBalance = pick(item, [
+			'token_address',
+			'symbol',
+			'balance',
+		]) as TokenBalance;
+		tokenBalance.balance = parseFloat(formatEther(item.balance));
+		return tokenBalance;
+	}) as TokenBalance[];
 
 	res.status(200).json(finalTokenBalances);
 });
 
 app.get('/account/native_balance', async (req, res) => {
 	// FIXME: in production, we can not return balances for arbitrum goerli
-	// TODO: parseEther balances
 	let nativeBalance;
 	try {
 		nativeBalance = await Moralis.EvmApi.balance.getNativeBalance({
@@ -837,7 +848,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 						: parseEther(approval.amt.toString());
 				const response = await erc20.approve(routerAddress, qty);
 				await provider.waitForTransaction(response.hash, 1);
-				Logger.info(`${approval.token} approval set to ${approval.amt}`);
+				Logger.info(`${approval.token} approval set to ${parseFloat(formatEther(approval.amt))}`);
 			}
 		}
 	} catch (e) {

@@ -1,7 +1,7 @@
 export interface TokenBalance {
 	token_address: string;
 	symbol: string;
-	balance: string;
+	balance: number | string;
 }
 
 export interface MoralisTokenBalance extends TokenBalance {
@@ -13,7 +13,7 @@ export interface MoralisTokenBalance extends TokenBalance {
 }
 export interface NFTBalance {
 	token_address: string;
-	amount: string;
+	amount: number;
 	name: string;
 }
 
