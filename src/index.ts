@@ -445,12 +445,20 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	if (failedQuoteIds.length > 0) {
 		return res.status(400).json({
-			messages: 'Failed to cancel quotes',
+			message: 'Failed to cancel quotes',
 			failedQuoteIds: failedQuoteIds
 		});
 	}
 
-	return res.sendStatus(200);
+	const omittedQuoteIds = difference(
+		deleteQuoteIds.quoteIds,
+		flatten(fulfilledQuoteIds)
+	);
+
+	return res.status(200).json({
+		message: 'Quotes cancelled',
+		omittedQuoteIds: omittedQuoteIds
+	});
 });
 
 app.post('/orderbook/validate_quote', async (req, res) => {
