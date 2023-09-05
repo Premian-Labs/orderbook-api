@@ -281,6 +281,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	);
 
 	// 1.2 Check that we have enough collateral balance to fill orders
+	// FIXME: we can not use moralis here. We need to check the collateral types and query balance directly via web3
 	let tokenBalances;
 	try {
 		tokenBalances = await Moralis.EvmApi.token.getWalletTokenBalances({
@@ -759,12 +760,23 @@ app.get('/account/option_balances', async (req, res) => {
 });
 
 app.get('/account/orders', async (req, res) => {
-	const proxyResponse = await proxyHTTPRequest('orders', 'GET', {
-		provider: walletAddr,
-		chainId: moralisChainId,
-	});
-	//TODO return truncated orders
-	return res.status(proxyResponse.status).json(proxyResponse.data);
+	let proxyResponse;
+	try {
+		proxyResponse = await proxyHTTPRequest('orders', 'GET', {
+			provider: walletAddr,
+			chainId: chainId,
+		});
+	} catch (e) {
+		Logger.error(e);
+		return res.status(500).json({
+			message: e,
+		});
+	}
+	const orderbookQuotes = proxyResponse.data as OrderbookQuote[];
+	const returnedQuotes: ReturnedOrderbookQuote[] =
+		createReturnedQuotes(orderbookQuotes);
+
+	return res.status(200).json(returnedQuotes);
 });
 
 app.get('/account/collateral_balances', async (req, res) => {
@@ -848,7 +860,11 @@ app.post('/account/collateral_approval', async (req, res) => {
 						: parseEther(approval.amt.toString());
 				const response = await erc20.approve(routerAddress, qty);
 				await provider.waitForTransaction(response.hash, 1);
-				Logger.info(`${approval.token} approval set to ${parseFloat(formatEther(approval.amt))}`);
+				Logger.info(
+					`${approval.token} approval set to ${parseFloat(
+						formatEther(approval.amt)
+					)}`
+				);
 			}
 		}
 	} catch (e) {
