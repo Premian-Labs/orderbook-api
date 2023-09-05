@@ -589,6 +589,7 @@ app.post('/pool/settle', async (req, res) => {
 	let options = req.body as Option[];
 	let pool: IPool;
 
+	// TODO: create promise allSettle wrapper (and catch)
 	for (const option of options) {
 		// 2. check all user inputs are valid for option settlement
 		try {
@@ -627,6 +628,7 @@ app.post('/pool/exercise', async (req, res) => {
 	let options = req.body as Option[];
 	let pool: IPool;
 
+	// TODO: create promise allSettle wrapper (and catch)
 	for (const option of options) {
 		// 2. check all user inputs are valid for option settlement
 		try {
@@ -667,6 +669,7 @@ app.post('/pool/annihilate', async (req, res) => {
 	let pool: IPool;
 	let size: bigint;
 
+	// TODO: create promise allSettle wrapper (and catch)
 	for (const option of options) {
 		// 2. check all user inputs are valid for option settlement
 		try {
@@ -815,7 +818,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 
 	const approvals = req.body as TokenApproval[];
 
-	// TODO: create promise all wrapper (and catch)
+	// TODO: create promise allSettle wrapper (and catch)
 	try {
 		for (const approval of approvals) {
 			const erc20Addr =
