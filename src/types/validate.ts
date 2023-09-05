@@ -1,4 +1,5 @@
 // validateOptionEntity & validatePositionManagement
+// NOTE: Returned Quote Objects include Option type
 export interface Option {
 	base: string;
 	quote: string;

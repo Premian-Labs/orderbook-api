@@ -353,20 +353,20 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		})
 	);
 
-	const fulfilledQuoteIds: string[] = []
-	promiseAll.forEach(result => {
+	const fulfilledQuoteIds: string[] = [];
+	promiseAll.forEach((result) => {
 		if (result.status === 'fulfilled') {
 			fulfilledQuoteIds.push(result.value.quoteId);
 		}
-	})
+	});
 
 	const failedQuoteIds = difference(quoteIds, fulfilledQuoteIds);
 
 	if (failedQuoteIds.length > 0) {
 		return res.status(400).json({
 			messages: 'Failed to fill quotes',
-			failedQuoteIds: failedQuoteIds
-		})
+			failedQuoteIds: failedQuoteIds,
+		});
 	}
 
 	return res.sendStatus(200);
@@ -431,22 +431,22 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		})
 	);
 
-	const fulfilledQuoteIds: string[][] = []
-	promiseAll.forEach(result => {
+	const fulfilledQuoteIds: string[][] = [];
+	promiseAll.forEach((result) => {
 		if (result.status === 'fulfilled') {
 			fulfilledQuoteIds.push(result.value);
 		}
 	});
 
 	const failedQuoteIds = difference(
-		activeQuotes.map(quote => quote.quoteId),
+		activeQuotes.map((quote) => quote.quoteId),
 		flatten(fulfilledQuoteIds)
 	);
 
 	if (failedQuoteIds.length > 0) {
 		return res.status(400).json({
 			message: 'Failed to cancel quotes',
-			failedQuoteIds: failedQuoteIds
+			failedQuoteIds: failedQuoteIds,
 		});
 	}
 
@@ -457,12 +457,8 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	return res.status(200).json({
 		message: 'Quotes cancelled',
-		omittedQuoteIds: omittedQuoteIds
+		omittedQuoteIds: omittedQuoteIds,
 	});
-});
-
-app.post('/orderbook/validate_quote', async (req, res) => {
-	// TODO: check if a quote is valid - Web3 call
 });
 
 // returns quotes up to a specific size
@@ -857,6 +853,5 @@ const server = app.listen(process.env.HTTP_PORT, () => {
 });
 
 server.on('upgrade', (req, socket, head) => {
-	proxy.ws(req, socket, head, {target: process.env.WS_ENDPOINT });
+	proxy.ws(req, socket, head, { target: process.env.WS_ENDPOINT });
 });
-

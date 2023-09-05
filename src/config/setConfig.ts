@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-export function checkEnv() {
+export function checkEnv(integrationTest: boolean = false) {
 	if (
 		!process.env.ENV ||
 		!process.env.WALLET_PRIVATE_KEY ||
@@ -13,8 +13,14 @@ export function checkEnv() {
 		throw new Error(`Missing Core Credentials`);
 	}
 
+	if (process.env.ENV !== 'development' && integrationTest) {
+		throw new Error('Integration test can only be run in development mode');
+	}
+
+	const useTestnet = process.env.ENV == 'development' || integrationTest;
+
 	if (
-		process.env.ENV == 'development' &&
+		useTestnet &&
 		(!process.env.TESTNET_RPC_URL || !process.env.TESTNET_ORDERBOOK_API_KEY)
 	) {
 		throw new Error(`Missing Testnet Credentials`);

@@ -1,6 +1,6 @@
 import { BigNumberish } from 'ethers';
 import { RSV } from './signature';
-import { FillQuoteRequest } from './validate';
+import { FillQuoteRequest, Option } from './validate';
 
 export interface PoolKey {
 	base: string;
@@ -110,12 +110,7 @@ export interface OrderbookQuoteTradeDeserialized
 	tradeSize: BigNumberish;
 }
 
-export interface ReturnedOrderbookQuote {
-	base: string;
-	quote: string;
-	expiration: string;
-	strike: number;
-	type: 'C' | 'P';
+export interface ReturnedOrderbookQuote extends Option {
 	side: 'bid' | 'ask';
 	size: number;
 	price: number;
