@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import moment from 'moment';
-import * as _ from 'lodash';
 import Logger from './lib/logger';
 import { checkEnv } from './config/setConfig';
 import {
@@ -74,7 +73,7 @@ import {
 } from './helpers/sign';
 import { ERC20Base__factory, IPool, IPool__factory } from './typechain';
 import Moralis from 'moralis';
-import { find, pick } from 'lodash';
+import { difference, find, flatten, groupBy, partition, pick } from 'lodash';
 
 dotenv.config();
 checkEnv();
@@ -260,15 +259,15 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	);
 
 	// 2. Group calls by base and puts by quote currency
-	const [callsFillQuoteRequests, putsFillQuoteRequests] = _.partition(
+	const [callsFillQuoteRequests, putsFillQuoteRequests] = partition(
 		fillableQuotesDeserialized,
 		(fillQuoteRequest) => fillQuoteRequest.poolKey.isCallPool
 	);
-	const callsFillQuoteRequestsGroupedByCollateral = _.groupBy(
+	const callsFillQuoteRequestsGroupedByCollateral = groupBy(
 		callsFillQuoteRequests,
 		'poolKey.base'
 	);
-	const putsFillQuoteRequestsGroupedByCollateral = _.groupBy(
+	const putsFillQuoteRequestsGroupedByCollateral = groupBy(
 		putsFillQuoteRequests,
 		'poolKey.quote'
 	);
@@ -313,7 +312,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	}
 
 	// 2.0 Process fill quotes
-	const promiseAll = Promise.all(
+	const promiseAll = await Promise.allSettled(
 		fillableQuotesDeserialized.map(async (fillableQuoteDeserialized) => {
 			const pool = IPool__factory.connect(
 				fillableQuoteDeserialized.poolAddress,
@@ -322,7 +321,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			Logger.debug(
 				`Filling quote ${JSON.stringify(fillableQuoteDeserialized)}...`
 			);
-			const quoteOB: QuoteOB = _.pick(fillableQuoteDeserialized, [
+			const quoteOB: QuoteOB = pick(fillableQuoteDeserialized, [
 				'provider',
 				'taker',
 				'price',
@@ -349,6 +348,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			);
 			await provider.waitForTransaction(fillTx.hash, 1);
 			Logger.debug(`Quote ${JSON.stringify(fillableQuoteDeserialized)} filled`);
+			return fillableQuoteDeserialized;
 		})
 	);
 
@@ -426,16 +426,30 @@ app.delete('/orderbook/quotes', async (req, res) => {
 			const cancelTx = await poolContract.cancelQuotesOB(quoteIds);
 			await provider.waitForTransaction(cancelTx.hash, 1);
 			Logger.debug(`Quotes ${quoteIds} cancelled`);
+			return quoteIds;
 		})
 	);
 
-	// TODO: make error display failed quoteId cancellation
-	promiseAll
-		.then(() => res.status(200).json({ message: `Quotes deleted` }))
-		.catch((e) => {
-			Logger.error(e);
-			res.status(500).json({ message: e });
+	const fulfilledQuoteIds: string[][] = []
+	promiseAll.forEach(result => {
+		if (result.status === 'fulfilled') {
+			fulfilledQuoteIds.push(result.value);
+		}
+	});
+
+	const failedQuoteIds = difference(
+		activeQuotes.map(quote => quote.quoteId),
+		flatten(fulfilledQuoteIds)
+	);
+
+	if (failedQuoteIds.length > 0) {
+		return res.status(400).json({
+			messages: 'Failed to cancel quotes',
+			failedQuoteIds: failedQuoteIds
 		});
+	}
+
+	return res.sendStatus(200);
 });
 
 app.post('/orderbook/validate_quote', async (req, res) => {
