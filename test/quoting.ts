@@ -61,5 +61,16 @@ describe("Get/orderbook/orders", () => {
 	});
 })
 
+describe("Websocket", () => {
+	it('should connect to ws', async () => {
+	});
+
+	it('should receive a quote from ws', async () => {
+	});
+
+	it('should disconnect to ws', async () => {
+	});
+})
+
 
 
