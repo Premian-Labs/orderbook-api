@@ -1,4 +1,5 @@
 import express from 'express';
+import httpProxy from 'http-proxy';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import moment from 'moment';
@@ -839,6 +840,12 @@ app.post('/account/collateral_approval', async (req, res) => {
 	res.sendStatus(200);
 });
 
-app.listen(process.env.HTTP_PORT, () => {
+const proxy = httpProxy.createProxyServer({ ws: true });
+const server = app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`);
 });
+
+server.on('upgrade', (req, socket, head) => {
+	proxy.ws(req, socket, head, {target: process.env.WS_ENDPOINT });
+});
+
