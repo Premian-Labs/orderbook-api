@@ -352,13 +352,23 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		})
 	);
 
-	// TODO: make error display failed fill of a quote
-	promiseAll
-		.then(() => res.status(200).json({ message: `Quotes filled` }))
-		.catch((e) => {
-			Logger.error(e);
-			res.status(500).json({ message: e });
-		});
+	const fulfilledQuoteIds: string[] = []
+	promiseAll.forEach(result => {
+		if (result.status === 'fulfilled') {
+			fulfilledQuoteIds.push(result.value.quoteId);
+		}
+	})
+
+	const failedQuoteIds = difference(quoteIds, fulfilledQuoteIds);
+
+	if (failedQuoteIds.length > 0) {
+		return res.status(400).json({
+			messages: 'Failed to fill quotes',
+			failedQuoteIds: failedQuoteIds
+		})
+	}
+
+	return res.sendStatus(200);
 });
 
 app.delete('/orderbook/quotes', async (req, res) => {
@@ -399,12 +409,12 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[];
 
-	const deleteByPoolAddr = _.groupBy(
+	const deleteByPoolAddr = groupBy(
 		activeQuotes,
 		'poolAddress'
 	) as GroupedDeleteRequest;
 
-	const promiseAll = Promise.all(
+	const promiseAll = await Promise.allSettled(
 		Object.keys(deleteByPoolAddr).map(async (poolAddress) => {
 			const poolContract = new Contract(poolAddress, poolABI, signer);
 
