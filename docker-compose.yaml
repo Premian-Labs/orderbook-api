@@ -1,6 +1,6 @@
 version: '3.9'
 services:
-  websockets-quotes:
+  api-platform:
     env_file: .env
     restart: on-failure
     build: .
