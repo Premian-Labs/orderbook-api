@@ -19,7 +19,7 @@ abstracted away from the developer, shortening integration time.
 
 There are several things that are needed in order to work with the API locally.  They include:
 
-- An EOA (Externally Owned Account) on the Ethereum (funded on Arbitrum)
+- An EOA (Externally Owned Account) on the Ethereum (funded on Arbitrum) with a wallet provider such as [Metamask](https://metamask.io/)
 - An API Key from premia (please email support@premia.finance and use subject line 'API KEY REQUEST')
 - Latest version of [Docker](https://docs.docker.com/get-docker/)
 - An RPC provider (such as [Alchemy](https://www.alchemy.com/) or [Infura](https://www.infura.io/))
