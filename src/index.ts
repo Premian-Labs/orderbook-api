@@ -764,7 +764,10 @@ app.get('/account/collateral_balances', async (req, res) => {
 		}
 	});
 
-	const failedBalanceQueries = difference(availableTokens, balances.map(balance => balance.symbol));
+	const failedBalanceQueries = difference(
+		availableTokens,
+		balances.map((balance) => balance.symbol)
+	);
 
 	return res.sendStatus(200).json({
 		success: balances,
@@ -805,36 +808,36 @@ app.post('/account/collateral_approval', async (req, res) => {
 
 	const approvals = req.body as TokenApproval[];
 	const promiseAll = await Promise.allSettled(
-		approvals.map(async(approval) => {
-				const erc20Addr =
-					process.env.ENV == 'production'
-						? arb.tokens[approval.token]
-						: arbGoerli.tokens[approval.token];
-				const erc20 = ERC20Base__factory.connect(erc20Addr, signer);
+		approvals.map(async (approval) => {
+			const erc20Addr =
+				process.env.ENV == 'production'
+					? arb.tokens[approval.token]
+					: arbGoerli.tokens[approval.token];
+			const erc20 = ERC20Base__factory.connect(erc20Addr, signer);
 
-				if (approval.amt === 'max') {
-					const response = await erc20.approve(
-						routerAddress,
-						MaxUint256.toString()
-					);
-					await provider.waitForTransaction(response.hash, 1);
-					Logger.info(`${approval.token} approval set to MAX`);
-				} else {
-					const qty =
-						approval.token === 'USDC'
-							? parseUnits(approval.amt.toString(), 6)
-							: parseEther(approval.amt.toString());
-					const response = await erc20.approve(routerAddress, qty);
-					await provider.waitForTransaction(response.hash, 1);
-					Logger.info(
-						`${approval.token} approval set to ${parseFloat(
-							formatEther(approval.amt)
-						)}`
-					);
-				}
-				return approval
+			if (approval.amt === 'max') {
+				const response = await erc20.approve(
+					routerAddress,
+					MaxUint256.toString()
+				);
+				await provider.waitForTransaction(response.hash, 1);
+				Logger.info(`${approval.token} approval set to MAX`);
+			} else {
+				const qty =
+					approval.token === 'USDC'
+						? parseUnits(approval.amt.toString(), 6)
+						: parseEther(approval.amt.toString());
+				const response = await erc20.approve(routerAddress, qty);
+				await provider.waitForTransaction(response.hash, 1);
+				Logger.info(
+					`${approval.token} approval set to ${parseFloat(
+						formatEther(approval.amt)
+					)}`
+				);
+			}
+			return approval;
 		})
-	)
+	);
 
 	const approved: TokenApproval[] = [];
 	const reasons: any[] = [];
@@ -851,14 +854,10 @@ app.post('/account/collateral_approval', async (req, res) => {
 
 	return res.sendStatus(200).json({
 		success: approved,
-		failed: zipWith(
-			failedApprovals,
-			reasons,
-			(failedApproval, reason) => ({
-				failedApproval,
-				reason,
-			})
-		),
+		failed: zipWith(failedApprovals, reasons, (failedApproval, reason) => ({
+			failedApproval,
+			reason,
+		})),
 	});
 });
 
