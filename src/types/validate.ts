@@ -41,7 +41,7 @@ export interface GetFillableQuotes extends Option {
 	taker?: string;
 }
 
-// validateApprovals
+// validateApprovals & collateral_approvals
 export interface TokenApproval {
 	token: string;
 	amt: number | 'max';

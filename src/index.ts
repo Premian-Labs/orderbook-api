@@ -43,10 +43,7 @@ import {
 	GetFillableQuotes,
 	PublishQuoteRequest,
 } from './types/validate';
-import {
-	TokenBalance,
-	OptionPositions,
-} from './types/balances';
+import { OptionPositions, TokenBalance } from './types/balances';
 import { checkTestApiKey } from './helpers/auth';
 import {
 	validateDeleteQuotes,
@@ -79,9 +76,18 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/sign';
-import { ERC20Base__factory, IPool, IPool__factory } from './typechain';
+import { ERC20Base__factory, IPool__factory } from './typechain';
 import Moralis from 'moralis';
-import {difference, find, flatten, groupBy, partition, pick, zipWith} from 'lodash';
+import {
+	difference,
+	find,
+	flatten,
+	groupBy,
+	partition,
+	pick,
+	zipWith,
+} from 'lodash';
+import { requestDetailed } from './helpers/util';
 
 dotenv.config();
 checkEnv();
@@ -370,14 +376,10 @@ app.patch('/orderbook/quotes', async (req, res) => {
 
 	const failedQuoteIds = difference(quoteIds, fulfilledQuoteIds);
 
-	if (failedQuoteIds.length > 0) {
-		return res.status(400).json({
-			messages: 'Failed to fill quotes',
-			failedQuoteIds: failedQuoteIds,
-		});
-	}
-
-	return res.sendStatus(200);
+	return res.status(200).json({
+		success: fulfilledQuoteIds,
+		failed: failedQuoteIds,
+	});
 });
 
 app.delete('/orderbook/quotes', async (req, res) => {
@@ -451,21 +453,15 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		flatten(fulfilledQuoteIds)
 	);
 
-	if (failedQuoteIds.length > 0) {
-		return res.status(400).json({
-			message: 'Failed to cancel quotes',
-			failedQuoteIds: failedQuoteIds,
-		});
-	}
-
 	const omittedQuoteIds = difference(
 		deleteQuoteIds.quoteIds,
 		flatten(fulfilledQuoteIds)
 	);
 
 	return res.status(200).json({
-		message: 'Quotes cancelled',
-		omittedQuoteIds: omittedQuoteIds,
+		success: flatten(fulfilledQuoteIds),
+		failed: failedQuoteIds,
+		omitted: omittedQuoteIds,
 	});
 });
 
@@ -593,40 +589,16 @@ app.post('/pool/settle', async (req, res) => {
 	const options = req.body as Option[];
 
 	const promiseAll = await Promise.allSettled(
-		options.map(async option => {
+		options.map(async (option) => {
 			const pool = await preProcessExpOption(option, TokenType.SHORT);
 			const settleTx = await pool.settle();
 			await provider.waitForTransaction(settleTx.hash, 1);
 			return option;
 		})
-	)
-
-	const fulfilledOptions: Option[] = [];
-	const reasons: Option[] = [];
-	promiseAll.forEach((result) => {
-		if (result.status === 'fulfilled') {
-			fulfilledOptions.push(result.value);
-		}
-		if (result.status === 'rejected') {
-			reasons.push(result.reason);
-		}
-	});
-
-	const failedOptions = difference(
-		options,
-		fulfilledOptions
 	);
+	const requestSummary = requestDetailed(promiseAll, options);
 
-	if (failedOptions.length > 0) {
-		return res.status(500).json({
-			message: 'Failed to settle short options',
-			// NOTE: failedOptions and reasons always have the same order
-			failedOptions: zipWith(failedOptions, reasons,
-				(failedOption, reason) => ({ failedOption, reason })),
-		});
-	}
-
-	return res.sendStatus(200);
+	return res.status(200).json(requestSummary);
 });
 
 app.post('/pool/exercise', async (req, res) => {
@@ -643,40 +615,17 @@ app.post('/pool/exercise', async (req, res) => {
 	const options = req.body as Option[];
 
 	const promiseAll = await Promise.allSettled(
-		options.map(async option => {
+		options.map(async (option) => {
 			const pool = await preProcessExpOption(option, TokenType.LONG);
 			const exerciseTx = await pool.exercise();
 			await provider.waitForTransaction(exerciseTx.hash, 1);
 			return option;
 		})
-	)
-
-	const fulfilledOptions: Option[] = [];
-	const reasons: Option[] = [];
-	promiseAll.forEach((result) => {
-		if (result.status === 'fulfilled') {
-			fulfilledOptions.push(result.value);
-		}
-		if (result.status === 'rejected') {
-			reasons.push(result.reason);
-		}
-	});
-
-	const failedOptions = difference(
-		options,
-		fulfilledOptions
 	);
 
-	if (failedOptions.length > 0) {
-		return res.status(500).json({
-			message: 'Failed to exercise long options',
-			// NOTE: failedOptions and reasons always have the same order
-			failedOptions: zipWith(failedOptions, reasons,
-				(failedOption, reason) => ({ failedOption, reason })),
-		});
-	}
+	const requestSummary = requestDetailed(promiseAll, options);
 
-	return res.sendStatus(200);
+	return res.status(200).json(requestSummary);
 });
 
 app.post('/pool/annihilate', async (req, res) => {
@@ -693,7 +642,7 @@ app.post('/pool/annihilate', async (req, res) => {
 	const options = req.body as Option[];
 
 	const promiseAll = await Promise.allSettled(
-		options.map(async option => {
+		options.map(async (option) => {
 			const [pool, size] = await preProcessAnnhilate(option);
 			const annihilateTx = await pool.annihilate(size, {
 				gasLimit: gasLimit,
@@ -701,34 +650,11 @@ app.post('/pool/annihilate', async (req, res) => {
 			await provider.waitForTransaction(annihilateTx.hash, 1);
 			return option;
 		})
-	)
-
-	const fulfilledOptions: Option[] = [];
-	const reasons: Option[] = [];
-	promiseAll.forEach((result) => {
-		if (result.status === 'fulfilled') {
-			fulfilledOptions.push(result.value);
-		}
-		if (result.status === 'rejected') {
-			reasons.push(result.reason);
-		}
-	});
-
-	const failedOptions = difference(
-		options,
-		fulfilledOptions
 	);
 
-	if (failedOptions.length > 0) {
-		return res.status(500).json({
-			message: 'Failed to annihilate options',
-			// NOTE: failedOptions and reasons always have the same order
-			failedOptions: zipWith(failedOptions, reasons,
-				(failedOption, reason) => ({ failedOption, reason })),
-		});
-	}
+	const requestSummary = requestDetailed(promiseAll, options);
 
-	return res.sendStatus(200);
+	return res.status(200).json(requestSummary);
 });
 
 app.get('/account/option_balances', async (req, res) => {
@@ -815,26 +741,42 @@ app.get('/account/orders', async (req, res) => {
 });
 
 app.get('/account/collateral_balances', async (req, res) => {
-	let tokenBalances: TokenBalance[] = [];
-
-	// TODO: create promise allSettle wrapper (and catch)
-	try{
-		for (let tokenAddressesKey in tokenAddresses) {
-			const erc20 = ERC20Base__factory.connect(
-				tokenAddresses[tokenAddressesKey],
-				provider
-			);
-			tokenBalances.push({
-				token_address: tokenAddresses[tokenAddressesKey],
-				symbol: tokenAddressesKey,
+	const promiseAll = await Promise.allSettled(
+		availableTokens.map(async (token) => {
+			const erc20 = ERC20Base__factory.connect(tokenAddresses[token], provider);
+			const tokenBalance: TokenBalance = {
+				token_address: tokenAddresses[token],
+				symbol: token,
 				balance: parseFloat(formatEther(await erc20.balanceOf(walletAddr))),
-			});
-		}
-	} catch (e) {
-		return res.status(500).json({ message: e });
-	}
+			};
+			return tokenBalance;
+		})
+	);
 
-	return  res.status(200).json(tokenBalances);
+	const balances: TokenBalance[] = [];
+	const reasons: any[] = [];
+	promiseAll.forEach((result) => {
+		if (result.status === 'fulfilled') {
+			balances.push(result.value);
+		}
+		if (result.status === 'rejected') {
+			reasons.push(result.reason);
+		}
+	});
+
+	const failedBalanceQueries = difference(availableTokens, balances.map(balance => balance.symbol));
+
+	return res.sendStatus(200).json({
+		success: balances,
+		failed: zipWith(
+			failedBalanceQueries,
+			reasons,
+			(failedBalanceQuery, reason) => ({
+				failedBalanceQuery,
+				reason,
+			})
+		),
+	});
 });
 
 app.get('/account/native_balance', async (req, res) => {
@@ -862,42 +804,62 @@ app.post('/account/collateral_approval', async (req, res) => {
 	}
 
 	const approvals = req.body as TokenApproval[];
+	const promiseAll = await Promise.allSettled(
+		approvals.map(async(approval) => {
+				const erc20Addr =
+					process.env.ENV == 'production'
+						? arb.tokens[approval.token]
+						: arbGoerli.tokens[approval.token];
+				const erc20 = ERC20Base__factory.connect(erc20Addr, signer);
 
-	// TODO: create promise allSettle wrapper (and catch)
-	try {
-		for (const approval of approvals) {
-			const erc20Addr =
-				process.env.ENV == 'production'
-					? arb.tokens[approval.token]
-					: arbGoerli.tokens[approval.token];
-			const erc20 = ERC20Base__factory.connect(erc20Addr, signer);
+				if (approval.amt === 'max') {
+					const response = await erc20.approve(
+						routerAddress,
+						MaxUint256.toString()
+					);
+					await provider.waitForTransaction(response.hash, 1);
+					Logger.info(`${approval.token} approval set to MAX`);
+				} else {
+					const qty =
+						approval.token === 'USDC'
+							? parseUnits(approval.amt.toString(), 6)
+							: parseEther(approval.amt.toString());
+					const response = await erc20.approve(routerAddress, qty);
+					await provider.waitForTransaction(response.hash, 1);
+					Logger.info(
+						`${approval.token} approval set to ${parseFloat(
+							formatEther(approval.amt)
+						)}`
+					);
+				}
+				return approval
+		})
+	)
 
-			if (approval.amt === 'max') {
-				const response = await erc20.approve(
-					routerAddress,
-					MaxUint256.toString()
-				);
-				await provider.waitForTransaction(response.hash, 1);
-				Logger.info(`${approval.token} approval set to MAX`);
-			} else {
-				const qty =
-					approval.token === 'USDC'
-						? parseUnits(approval.amt.toString(), 6)
-						: parseEther(approval.amt.toString());
-				const response = await erc20.approve(routerAddress, qty);
-				await provider.waitForTransaction(response.hash, 1);
-				Logger.info(
-					`${approval.token} approval set to ${parseFloat(
-						formatEther(approval.amt)
-					)}`
-				);
-			}
+	const approved: TokenApproval[] = [];
+	const reasons: any[] = [];
+	promiseAll.forEach((result) => {
+		if (result.status === 'fulfilled') {
+			approved.push(result.value);
 		}
-	} catch (e) {
-		return res.status(500).json({ message: e });
-	}
+		if (result.status === 'rejected') {
+			reasons.push(result.reason);
+		}
+	});
 
-	res.sendStatus(200);
+	const failedApprovals = difference(approvals, approved);
+
+	return res.sendStatus(200).json({
+		success: approved,
+		failed: zipWith(
+			failedApprovals,
+			reasons,
+			(failedApproval, reason) => ({
+				failedApproval,
+				reason,
+			})
+		),
+	});
 });
 
 const proxy = httpProxy.createProxyServer({ ws: true });

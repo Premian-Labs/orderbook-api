@@ -100,7 +100,6 @@ export function optionExpired(exp: string) {
 	return maturitySec < ts;
 }
 
-
 //TODO: remove dependency to moralis
 export async function validateBalances(
 	tokenBalances: MoralisTokenBalance[],
