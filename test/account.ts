@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import axios from 'axios'
-import { checkEnv } from '../src/config/setConfig';
+import { checkEnv } from '../src/config/checkConfig';
 
 dotenv.config();
 // NOTE: integration tests can only be run on development mode & with testnet credentials

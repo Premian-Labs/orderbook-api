@@ -1,15 +1,12 @@
-import dotenv from 'dotenv';
-import axios from 'axios'
-import { checkEnv } from '../src/config/setConfig';
+import { checkEnv } from '../src/config/checkConfig';
+import { apiRequest} from './helpers/util';
 
-dotenv.config();
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true);
 
-const url = `https://localhost:${process.env.HTTP_PORT}`
-
-describe("Post/orderbook/quotes", () => {
+describe("post/orderbook/quotes", () => {
 	it('should post valid quotes to the orderbook', async () => {
+
 	});
 
 	it('should prevent quotes with invalid deadlines from posting', async () => {
@@ -19,7 +16,7 @@ describe("Post/orderbook/quotes", () => {
 	});
 })
 
-describe("Patch/orderbook/quotes", () => {
+describe("patch/orderbook/quotes", () => {
 	it('should fill valid put/call quotes from the orderbook', async () => {
 	});
 
@@ -40,7 +37,7 @@ describe("Patch/orderbook/quotes", () => {
 
 })
 
-describe("Delete/orderbook/quotes", () => {
+describe("delete/orderbook/quotes", () => {
 	it('should delete quotes from the orderbook', async () => {
 	});
 
@@ -51,17 +48,17 @@ describe("Delete/orderbook/quotes", () => {
 	});
 })
 
-describe("Get/orderbook/quotes", () => {
+describe("get/orderbook/quotes", () => {
 	it('should return quotes for a specified Option & size', async () => {
 	});
 })
 
-describe("Get/orderbook/orders", () => {
+describe("get/orderbook/orders", () => {
 	it('should return quote objects using an array of QuoteIds', async () => {
 	});
 })
 
-describe("Websocket", () => {
+describe("websocket", () => {
 	it('should connect to ws', async () => {
 	});
 

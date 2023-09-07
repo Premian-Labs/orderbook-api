@@ -4,7 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import moment from 'moment';
 import Logger from './lib/logger';
-import { checkEnv } from './config/setConfig';
+import { checkEnv } from './config/checkConfig';
 import {
 	gasLimit,
 	referralAddress,

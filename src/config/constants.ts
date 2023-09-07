@@ -6,9 +6,17 @@ import arbGoerli from './arbitrumGoerli.json';
 
 dotenv.config();
 
-export const arbGoerliOrderbookUrl: string =
-	'https://test.orderbook.premia.finance';
-export const arbOrderbookUrl: string = 'https://orderbook.premia.finance';
+// NOTE: orderbook_url is only used for posting/getting quotes from orderbook API
+export const orderbook_url =
+	process.env.ENV == 'production'
+		? 'https://orderbook.premia.finance'
+		: 'https://test.orderbook.premia.finance';
+// undefined is checked in index
+export const apiKey =
+	process.env.ENV == 'production'
+		? process.env.MAINNET_ORDERBOOK_API_KEY
+		: process.env.TESTNET_ORDERBOOK_API_KEY;
+
 export const gasLimit: number = 1400000;
 
 export const referralAddress = ZeroAddress;
