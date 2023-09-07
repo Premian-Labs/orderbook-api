@@ -3,11 +3,11 @@ import { URLSearchParams } from 'url'
 
 // verified to exist in checkConfig
 const port = process.env.HTTP_PORT!
-type RequestType =  'GET' | 'POST' | 'PATCH' | 'DELETE'
+type requestType =  'GET' | 'POST' | 'PATCH' | 'DELETE'
 
-export async function apiRequest(type: RequestType, endpoint: string, data?: any, queryParams?: any) {
+export async function apiRequest(method: requestType, endpoint: string, data?: any, queryParams?: any) {
 	const url = `https://localhost:${port}/${endpoint}`
-	switch (type ){
+	switch (method){
 		case 'GET':{
 			const params = new URLSearchParams(queryParams);
 			const urlParams = url.concat(`/?${params}`)
