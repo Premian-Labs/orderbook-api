@@ -1,7 +1,7 @@
 import axios from 'axios';
 import dotenv from 'dotenv';
 import { PublishQuoteProxyRequest } from '../types/quote';
-import { orderbook_url, api_key } from '../config/constants';
+import { orderbook_url, apiKey } from '../config/constants';
 
 dotenv.config();
 
@@ -15,7 +15,7 @@ export async function proxyHTTPRequest(
 		case 'POST': {
 			return await axios.post(`${orderbook_url}/${path}`, [body], {
 				headers: {
-					'x-apikey': api_key,
+					'x-apikey': apiKey,
 				},
 				validateStatus: function (status) {
 					return status < 500;
@@ -26,7 +26,7 @@ export async function proxyHTTPRequest(
 			return await axios.get(`${orderbook_url}/${path}`, {
 				params: params,
 				headers: {
-					'x-apikey': api_key,
+					'x-apikey': apiKey,
 				},
 				validateStatus: function (status) {
 					return status < 500;
