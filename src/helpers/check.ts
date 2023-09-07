@@ -3,11 +3,11 @@ import {
 	PoolKey,
 	TokenType,
 } from '../types/quote';
-import { MoralisTokenBalance } from '../types/balances';
+import { TokenBalance } from '../types/balances';
 import { Option } from '../types/validate';
 import { IPool, IPool__factory } from '../typechain';
 import { createExpiration, createPoolKey } from './create';
-import { signer, walletAddr } from '../config/constants';
+import { signer, tokenAddresses, walletAddr } from '../config/constants';
 import { formatEther, formatUnits, parseEther } from 'ethers';
 import Logger from '../lib/logger';
 import { getPoolAddress } from './get';
@@ -71,6 +71,7 @@ export async function preProcessExpOption(
 	expOption.expiration = createExpiration(strExp);
 
 	// 3. check that there is a balance for the option being settled/exercised
+	// NOTE: Option base/quote is the name
 	const poolKey: PoolKey = createPoolKey(expOption);
 	const poolAddr = await getPoolAddress(poolKey);
 	const pool = IPool__factory.connect(poolAddr, signer);
@@ -100,27 +101,32 @@ export function optionExpired(exp: string) {
 	return maturitySec < ts;
 }
 
-//TODO: remove dependency to moralis
 export async function validateBalances(
-	tokenBalances: MoralisTokenBalance[],
-	collateralToken: string,
+	tokenBalances: TokenBalance[],
+	collateralTokenAddr: string,
 	fillQuoteRequests: OrderbookQuoteTradeDeserialized[]
 ) {
-	const [availableTokenBalance, decimals] = tokenBalances
-		.filter((tokenBalance) => tokenBalance.symbol === collateralToken)
-		.map((tokenBalance) => [
-			parseFloat(formatUnits(tokenBalance.balance, tokenBalance.decimals)),
-			tokenBalance.decimals,
-		])[0];
+	// Note: we only have balances for what is available in tokenAddresses constant
+	// value of balance is a number from getBalances()
+	const availableTokenBalance = tokenBalances.find(
+		(tokenBalance) => tokenBalance.token_address === collateralTokenAddr
+	)!.balance as number;
 
 	// Sums up fillQuoteRequests sizes
 	const tradesTotalSize = fillQuoteRequests
 		.map((fillQuoteRequest) =>
-			parseFloat(formatUnits(fillQuoteRequest.tradeSize, decimals))
+			parseFloat(
+				formatUnits(
+					fillQuoteRequest.tradeSize,
+					collateralTokenAddr === tokenAddresses['USDC'] ? 6 : 18
+				)
+			)
 		)
 		.reduce((sum, x) => sum + x);
 
 	if (availableTokenBalance < tradesTotalSize) {
-		throw new Error(`Not enough ${collateralToken} collateral to fill orders`);
+		throw new Error(
+			`Not enough ${collateralTokenAddr} collateral to fill orders`
+		);
 	}
 }

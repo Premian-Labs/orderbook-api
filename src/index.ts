@@ -54,7 +54,7 @@ import {
 	validatePositionManagement,
 	validateApprovals,
 } from './helpers/validators';
-import { getPoolAddress } from './helpers/get';
+import { getBalances, getPoolAddress } from './helpers/get';
 import {
 	createExpiration,
 	createReturnedQuotes,
@@ -287,19 +287,9 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	);
 
 	// 1.2 Check that we have enough collateral balance to fill orders
-	// FIXME: we can not use moralis here. We need to check the collateral types and query balance directly via web3
-	let tokenBalances;
-	try {
-		tokenBalances = await Moralis.EvmApi.token.getWalletTokenBalances({
-			chain: moralisChainId,
-			address: walletAddr,
-		});
-		tokenBalances = tokenBalances.toJSON();
-	} catch (e) {
-		Logger.error(e);
-		return res.status(500).json({ message: e });
-	}
+	const [tokenBalances] = await getBalances();
 
+	// sorted base token address
 	for (const baseToken in callsFillQuoteRequestsGroupedByCollateral) {
 		try {
 			await validateBalances(
@@ -313,6 +303,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		}
 	}
 
+	// sorted by quote token address
 	for (const quoteToken in putsFillQuoteRequestsGroupedByCollateral) {
 		try {
 			await validateBalances(
@@ -741,28 +732,7 @@ app.get('/account/orders', async (req, res) => {
 });
 
 app.get('/account/collateral_balances', async (req, res) => {
-	const promiseAll = await Promise.allSettled(
-		availableTokens.map(async (token) => {
-			const erc20 = ERC20Base__factory.connect(tokenAddresses[token], provider);
-			const tokenBalance: TokenBalance = {
-				token_address: tokenAddresses[token],
-				symbol: token,
-				balance: parseFloat(formatEther(await erc20.balanceOf(walletAddr))),
-			};
-			return tokenBalance;
-		})
-	);
-
-	const balances: TokenBalance[] = [];
-	const reasons: any[] = [];
-	promiseAll.forEach((result) => {
-		if (result.status === 'fulfilled') {
-			balances.push(result.value);
-		}
-		if (result.status === 'rejected') {
-			reasons.push(result.reason);
-		}
-	});
+	const [balances, failureReasons] = await getBalances();
 
 	const failedBalanceQueries = difference(
 		availableTokens,
@@ -773,7 +743,7 @@ app.get('/account/collateral_balances', async (req, res) => {
 		success: balances,
 		failed: zipWith(
 			failedBalanceQueries,
-			reasons,
+			failureReasons,
 			(failedBalanceQuery, reason) => ({
 				failedBalanceQuery,
 				reason,

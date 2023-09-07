@@ -3,8 +3,8 @@ import { RSV } from './signature';
 import { FillQuoteRequest, Option } from './validate';
 
 export interface PoolKey {
-	base: string;
-	quote: string;
+	base: string; // token address
+	quote: string; // token address
 	oracleAdapter: string;
 	strike: BigNumberish;
 	maturity: BigNumberish;
@@ -43,15 +43,6 @@ export interface GroupedDeleteRequest {
 export enum TokenType {
 	SHORT = 0,
 	LONG = 1,
-}
-
-export interface PoolKey {
-	base: string;
-	quote: string;
-	oracleAdapter: string;
-	strike: BigNumberish;
-	maturity: BigNumberish;
-	isCallPool: boolean;
 }
 
 export interface QuoteOB {

@@ -1,8 +1,8 @@
 // validateOptionEntity & validatePositionManagement
 // NOTE: Returned Quote Objects include Option type
 export interface Option {
-	base: string;
-	quote: string;
+	base: string; //token name | token address
+	quote: string; //token name | token address
 	expiration: string | number;
 	strike: number;
 	type: 'C' | 'P';
@@ -10,8 +10,8 @@ export interface Option {
 
 // validatePostQuotes
 export interface PublishQuoteRequest {
-	base: string;
-	quote: string;
+	base: string; // token name
+	quote: string; // token name
 	expiration: string;
 	strike: number;
 	type: 'C' | 'P';

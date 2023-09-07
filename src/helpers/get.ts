@@ -1,10 +1,17 @@
 import { PoolKey, TokenAddresses } from '../types/quote';
-import { Contract } from 'ethers';
+import { Contract, formatEther } from 'ethers';
 import Logger from '../lib/logger';
 import PoolFactoryABI from '../abi/IPoolFactory.json';
-import { provider } from '../config/constants';
+import {
+	availableTokens,
+	provider,
+	tokenAddresses,
+	walletAddr,
+} from '../config/constants';
 import arb from '../config/arbitrum.json';
 import arbGoerli from '../config/arbitrumGoerli.json';
+import { ERC20Base__factory } from '../typechain';
+import { TokenBalance } from '../types/balances';
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
@@ -50,4 +57,30 @@ export function getTokenByAddress(
 		return '';
 	}
 	return tokenName;
+}
+
+export async function getBalances() {
+	const promiseAll = await Promise.allSettled(
+		availableTokens.map(async (token) => {
+			const erc20 = ERC20Base__factory.connect(tokenAddresses[token], provider);
+			const tokenBalance: TokenBalance = {
+				token_address: tokenAddresses[token],
+				symbol: token,
+				balance: parseFloat(formatEther(await erc20.balanceOf(walletAddr))),
+			};
+			return tokenBalance;
+		})
+	);
+	const balances: TokenBalance[] = [];
+	const reasons: any[] = [];
+	promiseAll.forEach((result) => {
+		if (result.status === 'fulfilled') {
+			balances.push(result.value);
+		}
+		if (result.status === 'rejected') {
+			reasons.push(result.reason);
+		}
+	});
+
+	return [balances, reasons] as [TokenBalance[], any[]];
 }
