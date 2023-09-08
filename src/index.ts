@@ -642,7 +642,7 @@ app.get('/account/option_balances', async (req, res) => {
 	let optionBalancesRequest;
 	try {
 		optionBalancesRequest = await proxyHTTPRequest(
-			'orders',
+			'account/option_balances',
 			'GET',
 			{
 				chainId: chainId,
