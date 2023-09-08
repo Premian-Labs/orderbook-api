@@ -1,6 +1,5 @@
 import { ethers, ZeroAddress } from 'ethers';
 import dotenv from 'dotenv';
-import { EvmChain } from '@moralisweb3/common-evm-utils';
 import arb from './arbitrum.json';
 import arbGoerli from './arbitrumGoerli.json';
 
@@ -29,10 +28,6 @@ export const privateKey = process.env.WALLET_PRIVATE_KEY!;
 export const walletAddr = process.env.WALLET_ADDRESS!;
 export const provider = new ethers.JsonRpcProvider(rpcUrl);
 export const chainId = process.env.ENV == 'production' ? '42161' : '421613';
-
-// FIXME: Moralis Wallet API does not work for ARBITRUM_TESTNET. This is Patch for testing
-export const moralisChainId =
-	process.env.ENV === 'production' ? EvmChain.ARBITRUM : EvmChain.GOERLI;
 export const availableTokens =
 	process.env.ENV === 'production'
 		? Object.keys(arb.tokens)

@@ -2,7 +2,6 @@ import express from 'express';
 import httpProxy from 'http-proxy';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import moment from 'moment';
 import Logger from './lib/logger';
 import { checkEnv } from './config/checkConfig';
 import {
@@ -10,12 +9,10 @@ import {
 	referralAddress,
 	provider,
 	chainId,
-	moralisChainId,
 	signer,
 	walletAddr,
 	availableTokens,
 	routerAddress,
-	tokenAddresses,
 } from './config/constants';
 import {
 	Contract,
@@ -62,7 +59,6 @@ import {
 	deserializeOrderbookQuote,
 } from './helpers/create';
 import {
-	optionExpired,
 	preProcessExpOption,
 	preProcessAnnhilate,
 	validateBalances,
@@ -77,7 +73,6 @@ import {
 	serializeQuote,
 } from './helpers/sign';
 import { ERC20Base__factory, IPool__factory } from './typechain';
-import Moralis from 'moralis';
 import {
 	difference,
 	find,
@@ -91,11 +86,6 @@ import { requestDetailed } from './helpers/util';
 
 dotenv.config();
 checkEnv();
-
-// TODO: remove when moralis migrates to cloud
-Moralis.start({
-	apiKey: process.env.MORALIS_KEY,
-}).then(() => console.log('Moralis SDK connected'));
 
 const app = express();
 app.use(cors());
@@ -649,66 +639,31 @@ app.post('/pool/annihilate', async (req, res) => {
 });
 
 app.get('/account/option_balances', async (req, res) => {
-	// TODO: Check for moralis update to `disable_total` on Sept 11th
-	if (chainId === '421613') {
-		return res
-			.status(400)
-			.json({ message: 'No balance query available in development mode' });
-	}
-
-	let moralisResponse;
+	let optionBalancesRequest;
 	try {
-		moralisResponse = await Moralis.EvmApi.nft.getWalletNFTs({
-			chain: moralisChainId,
-			format: 'decimal',
-			disableTotal: false,
-			mediaItems: false,
-			address: walletAddr,
-		});
+		optionBalancesRequest = await proxyHTTPRequest(
+			'orders',
+			'GET',
+			{
+				chainId: chainId,
+				wallet: walletAddr
+			},
+			null
+		);
 	} catch (e) {
 		Logger.error(e);
-		return res.status(500).json({ message: 'Internal server error' });
+		return res.status(500).json({
+			message: e,
+		});
 	}
 
-	const NFTBalances = moralisResponse.toJSON().result;
-	if (NFTBalances === undefined)
-		return res.status(404).json({ message: 'No positions found' });
+	if (optionBalancesRequest.status !== 200) {
+		return res.status(optionBalancesRequest.status).json({
+			message: optionBalancesRequest.data,
+		});
+	}
 
-	let optionBalances: OptionPositions = {
-		open: [],
-		expired: [],
-	};
-
-	NFTBalances.forEach((NFTBalance) => {
-		const product = NFTBalance.name.split('-');
-
-		const approvedTokens =
-			availableTokens.includes(product[0]) &&
-			availableTokens.includes(product[1]);
-		const approvedOptionType = product[4] === 'P' || product[4] === 'C';
-		const approvedStrike = !isNaN(Number(product[3]));
-		const approvedExp = moment.utc(product[2], 'DDMMMYYYY').isValid();
-
-		if (approvedTokens && approvedOptionType && approvedStrike && approvedExp) {
-			const optionHasExpired = optionExpired(product[2]);
-
-			if (optionHasExpired) {
-				optionBalances.expired.push({
-					name: NFTBalance.name,
-					token_address: NFTBalance.token_address,
-					amount: parseFloat(formatEther(NFTBalance.amount!)),
-				});
-			} else {
-				optionBalances.open.push({
-					name: NFTBalance.name,
-					token_address: NFTBalance.token_address,
-					amount: parseFloat(formatEther(NFTBalance.amount!)),
-				});
-			}
-		}
-	});
-
-	res.status(200).json(optionBalances);
+	res.status(200).json(optionBalancesRequest.data as OptionPositions);
 });
 
 app.get('/account/orders', async (req, res) => {
