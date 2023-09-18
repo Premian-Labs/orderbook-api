@@ -67,7 +67,7 @@ export function createExpiration(exp: string): number {
 	}
 
 	// Set time to 8:00 AM
-	return expirationMoment.unix();
+	return expirationMoment.add(8, 'hours').unix();
 }
 
 export function createReturnedQuotes(orderbookQuotes: OrderbookQuote[]) {
