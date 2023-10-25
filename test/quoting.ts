@@ -1,5 +1,4 @@
 import { checkEnv } from '../src/config/checkConfig';
-import { apiRequest} from './helpers/util';
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true);

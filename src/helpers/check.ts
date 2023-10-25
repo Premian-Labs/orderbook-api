@@ -2,39 +2,39 @@ import {
 	OrderbookQuoteTradeDeserialized,
 	PoolKey,
 	TokenType,
-} from '../types/quote';
-import { TokenBalance } from '../types/balances';
-import { Option } from '../types/validate';
-import { IPool, IPool__factory } from '../typechain';
-import { createExpiration, createPoolKey } from './create';
-import { signer, tokenAddresses, walletAddr } from '../config/constants';
-import { formatEther, formatUnits, parseEther } from 'ethers';
-import Logger from '../lib/logger';
-import { getPoolAddress } from './get';
-import moment from 'moment';
+} from '../types/quote'
+import { TokenBalance } from '../types/balances'
+import { Option } from '../types/validate'
+import { IPool, IPool__factory } from '../typechain'
+import { createExpiration, createPoolKey } from './create'
+import { signer, tokenAddresses, walletAddr } from '../config/constants'
+import { formatEther, formatUnits, parseEther } from 'ethers'
+import Logger from '../lib/logger'
+import { getPoolAddress } from './get'
+import moment from 'moment'
 
 export async function preProcessAnnhilate(
 	annihilateOption: Option
 ): Promise<[IPool, bigint]> {
 	// NOTE: expiration is an incoming string only value but later converted to number
-	const strExp = annihilateOption.expiration as string;
+	const strExp = annihilateOption.expiration as string
 
 	// 1. validate and convert option exp to timestamp
-	annihilateOption.expiration = createExpiration(strExp);
+	annihilateOption.expiration = createExpiration(strExp)
 
 	// 2. create poolKey
-	const poolKey = createPoolKey(annihilateOption);
+	const poolKey = createPoolKey(annihilateOption)
 
 	// 3. get & check balances
-	const poolAddr = await getPoolAddress(poolKey);
-	const pool = IPool__factory.connect(poolAddr, signer);
+	const poolAddr = await getPoolAddress(poolKey)
+	const pool = IPool__factory.connect(poolAddr, signer)
 
 	const shortBalance = parseFloat(
 		formatEther(await pool.balanceOf(walletAddr, TokenType.SHORT))
-	);
+	)
 	const longBalance = parseFloat(
 		formatEther(await pool.balanceOf(walletAddr, TokenType.LONG))
-	);
+	)
 
 	Logger.info(
 		'short token balance:',
@@ -42,16 +42,16 @@ export async function preProcessAnnhilate(
 		'\n',
 		'long token balance:',
 		longBalance
-	);
+	)
 
 	const annihilateSize = parseEther(
 		Math.min(shortBalance, longBalance).toString()
-	);
+	)
 
 	if (annihilateSize > 0n) {
-		return [pool, annihilateSize];
+		return [pool, annihilateSize]
 	} else {
-		throw new Error(`No positions to annihilate`);
+		throw new Error(`No positions to annihilate`)
 	}
 }
 
@@ -60,32 +60,32 @@ export async function preProcessExpOption(
 	tokenType: number
 ) {
 	// NOTE: expiration is an incoming string only value but later converted to number
-	const strExp = expOption.expiration as string;
+	const strExp = expOption.expiration as string
 
 	// 1. verified the option has expired
-	const optionHasExpired = optionExpired(strExp);
+	const optionHasExpired = optionExpired(strExp)
 	if (!optionHasExpired) {
-		throw new Error('Option has not expired');
+		throw new Error('Option has not expired')
 	}
 	// 2. validate and convert option exp to timestamp
-	expOption.expiration = createExpiration(strExp);
+	expOption.expiration = createExpiration(strExp)
 
 	// 3. check that there is a balance for the option being settled/exercised
 	// NOTE: Option base/quote is the name
-	const poolKey: PoolKey = createPoolKey(expOption);
-	const poolAddr = await getPoolAddress(poolKey);
-	const pool = IPool__factory.connect(poolAddr, signer);
-	const balance = await pool.balanceOf(walletAddr, tokenType);
+	const poolKey: PoolKey = createPoolKey(expOption)
+	const poolAddr = await getPoolAddress(poolKey)
+	const pool = IPool__factory.connect(poolAddr, signer)
+	const balance = await pool.balanceOf(walletAddr, tokenType)
 	Logger.info(
 		`${tokenType === 0 ? 'Short' : 'Long'} Balance: `,
 		formatEther(balance)
-	);
+	)
 
 	if (balance === 0n) {
-		throw new Error('No balance to settle');
+		throw new Error('No balance to settle')
 	}
 
-	return pool;
+	return pool
 }
 
 export function optionExpired(exp: string) {
@@ -94,11 +94,11 @@ export function optionExpired(exp: string) {
 		minute: 0,
 		second: 0,
 		millisecond: 0,
-	});
-	const maturitySec = maturity.valueOf() / 1000;
-	const ts = Math.trunc(new Date().getTime() / 1000);
+	})
+	const maturitySec = maturity.valueOf() / 1000
+	const ts = Math.trunc(new Date().getTime() / 1000)
 
-	return maturitySec < ts;
+	return maturitySec < ts
 }
 
 export async function validateBalances(
@@ -110,7 +110,7 @@ export async function validateBalances(
 	// value of balance is a number from getBalances()
 	const availableTokenBalance = tokenBalances.find(
 		(tokenBalance) => tokenBalance.token_address === collateralTokenAddr
-	)!.balance as number;
+	)!.balance as number
 
 	// Sums up fillQuoteRequests sizes
 	const tradesTotalSize = fillQuoteRequests
@@ -122,11 +122,11 @@ export async function validateBalances(
 				)
 			)
 		)
-		.reduce((sum, x) => sum + x);
+		.reduce((sum, x) => sum + x)
 
 	if (availableTokenBalance < tradesTotalSize) {
 		throw new Error(
 			`Not enough ${collateralTokenAddr} collateral to fill orders`
-		);
+		)
 	}
 }

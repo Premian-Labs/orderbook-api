@@ -1,15 +1,15 @@
 export interface TokenBalance {
-	token_address: string;
-	symbol: string;
-	balance: number | string;
+	token_address: string
+	symbol: string
+	balance: number | string
 }
 export interface NFTBalance {
-	token_address: string;
-	amount: number;
-	name: string;
+	token_address: string
+	amount: number
+	name: string
 }
 
 export interface OptionPositions {
-	open: NFTBalance[];
-	expired: NFTBalance[];
+	open: NFTBalance[]
+	expired: NFTBalance[]
 }

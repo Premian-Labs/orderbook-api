@@ -1,49 +1,49 @@
-import { PoolKey, TokenAddresses } from '../types/quote';
-import { Contract, formatEther } from 'ethers';
-import Logger from '../lib/logger';
-import PoolFactoryABI from '../abi/IPoolFactory.json';
+import { PoolKey, TokenAddresses } from '../types/quote'
+import { Contract, formatEther } from 'ethers'
+import Logger from '../lib/logger'
+import PoolFactoryABI from '../abi/IPoolFactory.json'
 import {
 	availableTokens,
 	provider,
 	tokenAddresses,
 	walletAddr,
-} from '../config/constants';
-import arb from '../config/arbitrum.json';
-import arbGoerli from '../config/arbitrumGoerli.json';
-import { ERC20Base__factory } from '../typechain';
-import { TokenBalance } from '../types/balances';
+} from '../config/constants'
+import arb from '../config/arbitrum.json'
+import arbGoerli from '../config/arbitrumGoerli.json'
+import { ERC20Base__factory } from '../typechain'
+import { TokenBalance } from '../types/balances'
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
 		? arb.PoolFactoryProxy
-		: arbGoerli.PoolFactoryProxy;
-const poolFactory = new Contract(poolFactoryAddr, PoolFactoryABI, provider);
+		: arbGoerli.PoolFactoryProxy
+const poolFactory = new Contract(poolFactoryAddr, PoolFactoryABI, provider)
 
-const poolMap: Map<PoolKey, string> = new Map();
+const poolMap: Map<PoolKey, string> = new Map()
 
 export async function getPoolAddress(poolKey: PoolKey) {
-	const memPoolAddress = poolMap.get(poolKey);
-	if (memPoolAddress) return memPoolAddress;
+	const memPoolAddress = poolMap.get(poolKey)
+	if (memPoolAddress) return memPoolAddress
 
-	let poolAddress: string;
-	let isDeployed: boolean;
+	let poolAddress: string
+	let isDeployed: boolean
 
 	try {
-		[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey);
+		;[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
 	} catch (e) {
 		try {
-			[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey);
+			;[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
 		} catch (e) {
-			Logger.error(`Can not get pool address: ${JSON.stringify(e)}`);
-			throw new Error(`Can not get pool address`);
+			Logger.error(`Can not get pool address: ${JSON.stringify(e)}`)
+			throw new Error(`Can not get pool address`)
 		}
 	}
-	poolAddress = poolAddress.toLowerCase();
+	poolAddress = poolAddress.toLowerCase()
 	if (!isDeployed) {
-		Logger.warn(`Pool is not deployed: ${JSON.stringify(poolKey)}`);
+		Logger.warn(`Pool is not deployed: ${JSON.stringify(poolKey)}`)
 	}
-	poolMap.set(poolKey, poolAddress);
-	return poolAddress;
+	poolMap.set(poolKey, poolAddress)
+	return poolAddress
 }
 
 export function getTokenByAddress(
@@ -52,35 +52,36 @@ export function getTokenByAddress(
 ) {
 	const tokenName = Object.keys(tokenObject).find(
 		(key) => tokenObject[key] === address
-	);
+	)
 	if (tokenName == undefined) {
-		return '';
+		return ''
 	}
-	return tokenName;
+	return tokenName
 }
 
 export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
 		availableTokens.map(async (token) => {
-			const erc20 = ERC20Base__factory.connect(tokenAddresses[token], provider);
+			const erc20 = ERC20Base__factory.connect(tokenAddresses[token], provider)
 			const tokenBalance: TokenBalance = {
 				token_address: tokenAddresses[token],
 				symbol: token,
+				// FIXME: fix decimals for non-standard coin (WBTC, USDC)
 				balance: parseFloat(formatEther(await erc20.balanceOf(walletAddr))),
-			};
-			return tokenBalance;
+			}
+			return tokenBalance
 		})
-	);
-	const balances: TokenBalance[] = [];
-	const reasons: any[] = [];
+	)
+	const balances: TokenBalance[] = []
+	const reasons: any[] = []
 	promiseAll.forEach((result) => {
 		if (result.status === 'fulfilled') {
-			balances.push(result.value);
+			balances.push(result.value)
 		}
 		if (result.status === 'rejected') {
-			reasons.push(result.reason);
+			reasons.push(result.reason)
 		}
-	});
+	})
 
-	return [balances, reasons] as [TokenBalance[], any[]];
+	return [balances, reasons] as [TokenBalance[], any[]]
 }

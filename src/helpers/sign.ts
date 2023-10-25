@@ -3,7 +3,7 @@ import {
 	PoolKey,
 	PublishOBQuote,
 	SerializedQuote,
-} from '../types/quote';
+} from '../types/quote'
 import {
 	Domain,
 	EIP712Domain,
@@ -11,12 +11,12 @@ import {
 	QuoteOBMessage,
 	SignedQuote,
 	JsonRpcRequest,
-} from '../types/signature';
-import { ZeroAddress } from 'ethers';
-import { Provider } from 'ethers';
-import { chainId } from '../config/constants';
+} from '../types/signature'
+import { ZeroAddress } from 'ethers'
+import { Provider } from 'ethers'
+import { chainId } from '../config/constants'
 
-const randomId = () => Math.floor(Math.random() * 10000000000);
+const randomId = () => Math.floor(Math.random() * 10000000000)
 
 export async function getQuote(
 	makerAddr: string,
@@ -26,7 +26,7 @@ export async function getQuote(
 	deadline: number,
 	takerAddr = ZeroAddress
 ): Promise<QuoteOB> {
-	const ts = Math.trunc(new Date().getTime() / 1000);
+	const ts = Math.trunc(new Date().getTime() / 1000)
 	return {
 		provider: makerAddr,
 		taker: takerAddr,
@@ -35,7 +35,7 @@ export async function getQuote(
 		isBuy: isBuy,
 		deadline: BigInt(deadline),
 		salt: BigInt(ts),
-	};
+	}
 }
 
 export async function signQuote(
@@ -48,7 +48,7 @@ export async function signQuote(
 		version: '1',
 		chainId: chainId,
 		verifyingContract: poolAddress,
-	};
+	}
 
 	const message: QuoteOBMessage = {
 		...quoteOB,
@@ -56,7 +56,7 @@ export async function signQuote(
 		size: quoteOB.size.toString(),
 		deadline: quoteOB.deadline.toString(),
 		salt: quoteOB.salt.toString(),
-	};
+	}
 
 	const typedData = {
 		types: {
@@ -74,9 +74,9 @@ export async function signQuote(
 		primaryType: 'FillQuoteOB',
 		domain,
 		message,
-	};
-	const sig = await signData(provider, quoteOB.provider, typedData);
-	return { ...sig, ...message };
+	}
+	const sig = await signData(provider, quoteOB.provider, typedData)
+	return { ...sig, ...message }
 }
 
 const signData = async (
@@ -85,53 +85,53 @@ const signData = async (
 	typeData: any
 ): Promise<RSV> => {
 	if (provider._signTypedData || provider.signTypedData) {
-		return signWithEthers(provider, fromAddress, typeData);
+		return signWithEthers(provider, fromAddress, typeData)
 	}
 	const typeDataString =
-		typeof typeData === 'string' ? typeData : JSON.stringify(typeData);
+		typeof typeData === 'string' ? typeData : JSON.stringify(typeData)
 
 	const result = await send(provider, 'eth_signTypedData_v4', [
 		fromAddress,
 		typeDataString,
 	]).catch((error: any) => {
 		if (error.message === 'Method eth_signTypedData_v4 not supported.') {
-			return send(provider, 'eth_signTypedData', [fromAddress, typeData]);
+			return send(provider, 'eth_signTypedData', [fromAddress, typeData])
 		} else {
-			throw error;
+			throw error
 		}
-	});
+	})
 
 	return {
 		r: result.slice(0, 66),
 		s: '0x' + result.slice(66, 130),
 		v: parseInt(result.slice(130, 132), 16),
-	};
-};
+	}
+}
 
 const signWithEthers = async (
 	signer: any,
 	fromAddress: string,
 	typeData: any
 ): Promise<RSV> => {
-	const signerAddress = await signer.getAddress();
+	const signerAddress = await signer.getAddress()
 	if (signerAddress.toLowerCase() !== fromAddress.toLowerCase()) {
-		throw new Error('Signer address does not match requested signing address');
+		throw new Error('Signer address does not match requested signing address')
 	}
 
-	const { EIP712Domain: _unused, ...types } = typeData.types;
+	const { EIP712Domain: _unused, ...types } = typeData.types
 	const rawSignature = await (signer.signTypedData
 		? signer.signTypedData(typeData.domain, types, typeData.message)
-		: signer._signTypedData(typeData.domain, types, typeData.message));
+		: signer._signTypedData(typeData.domain, types, typeData.message))
 
-	return splitSignatureToRSV(rawSignature);
-};
+	return splitSignatureToRSV(rawSignature)
+}
 
 const splitSignatureToRSV = (signature: string): RSV => {
-	const r = '0x' + signature.substring(2).substring(0, 64);
-	const s = '0x' + signature.substring(2).substring(64, 128);
-	const v = parseInt(signature.substring(2).substring(128, 130), 16);
-	return { r, s, v };
-};
+	const r = '0x' + signature.substring(2).substring(0, 64)
+	const s = '0x' + signature.substring(2).substring(64, 128)
+	const v = parseInt(signature.substring(2).substring(128, 130), 16)
+	return { r, s, v }
+}
 
 export const send = (provider: any, method: string, params: any[]) =>
 	new Promise<any>((resolve, reject) => {
@@ -140,28 +140,28 @@ export const send = (provider: any, method: string, params: any[]) =>
 			method,
 			params,
 			jsonrpc: '',
-		};
+		}
 		const callback = (err: any, result: any) => {
 			if (err) {
-				reject(err);
+				reject(err)
 			} else if (result.error) {
-				console.error(result.error);
-				reject(result.error);
+				console.error(result.error)
+				reject(result.error)
 			} else {
-				resolve(result.result);
+				resolve(result.result)
 			}
-		};
+		}
 
 		const _provider =
-			provider.provider?.provider || provider.provider || provider;
+			provider.provider?.provider || provider.provider || provider
 
 		if (_provider.getUncheckedSigner /* ethers provider */) {
 			_provider
 				.send(method, params)
 				.then((r: any) => resolve(r))
-				.catch((e: any) => reject(e));
+				.catch((e: any) => reject(e))
 		} else if (_provider.sendAsync) {
-			_provider.sendAsync(payload, callback);
+			_provider.sendAsync(payload, callback)
 		} else {
 			_provider.send(payload, callback).catch((error: any) => {
 				if (
@@ -171,13 +171,13 @@ export const send = (provider: any, method: string, params: any[]) =>
 					_provider
 						.send(method, params)
 						.then((r: any) => resolve(r))
-						.catch((e: any) => reject(e));
+						.catch((e: any) => reject(e))
 				} else {
-					throw error;
+					throw error
 				}
-			});
+			})
 		}
-	});
+	})
 
 export function createQuote(
 	poolKey: PoolKey,
@@ -188,7 +188,7 @@ export function createQuote(
 		r: sig.r,
 		s: sig.s,
 		v: sig.v,
-	};
+	}
 
 	return {
 		poolKey: poolKey,
@@ -200,7 +200,7 @@ export function createQuote(
 		deadline: quoteOB.deadline,
 		salt: quoteOB.salt,
 		signature: signature,
-	};
+	}
 }
 
 export function serializeQuote(quote: PublishOBQuote): SerializedQuote {
@@ -225,5 +225,5 @@ export function serializeQuote(quote: PublishOBQuote): SerializedQuote {
 			s: quote.signature.s,
 			v: Number(quote.signature.v),
 		},
-	};
+	}
 }

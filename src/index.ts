@@ -1,9 +1,9 @@
-import express from 'express';
-import httpProxy from 'http-proxy';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import Logger from './lib/logger';
-import { checkEnv } from './config/checkConfig';
+import express from 'express'
+import httpProxy from 'http-proxy'
+import cors from 'cors'
+import dotenv from 'dotenv'
+import Logger from './lib/logger'
+import { checkEnv } from './config/checkConfig'
 import {
 	gasLimit,
 	referralAddress,
@@ -13,7 +13,7 @@ import {
 	walletAddr,
 	availableTokens,
 	routerAddress,
-} from './config/constants';
+} from './config/constants'
 import {
 	Contract,
 	parseEther,
@@ -21,8 +21,8 @@ import {
 	parseUnits,
 	toBigInt,
 	formatEther,
-} from 'ethers';
-import poolABI from './abi/IPool.json';
+} from 'ethers'
+import poolABI from './abi/IPool.json'
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
@@ -31,7 +31,7 @@ import {
 	QuoteOB,
 	ReturnedOrderbookQuote,
 	TokenType,
-} from './types/quote';
+} from './types/quote'
 import {
 	Option,
 	QuoteIds,
@@ -39,9 +39,9 @@ import {
 	FillQuoteRequest,
 	GetFillableQuotes,
 	PublishQuoteRequest,
-} from './types/validate';
-import { OptionPositions, TokenBalance } from './types/balances';
-import { checkTestApiKey } from './helpers/auth';
+} from './types/validate'
+import { OptionPositions, TokenBalance } from './types/balances'
+import { checkTestApiKey } from './helpers/auth'
 import {
 	validateDeleteQuotes,
 	validateFillQuotes,
@@ -50,29 +50,29 @@ import {
 	validatePostQuotes,
 	validatePositionManagement,
 	validateApprovals,
-} from './helpers/validators';
-import { getBalances, getPoolAddress } from './helpers/get';
+} from './helpers/validators'
+import { getBalances, getPoolAddress } from './helpers/get'
 import {
 	createExpiration,
 	createReturnedQuotes,
 	createPoolKey,
 	deserializeOrderbookQuote,
-} from './helpers/create';
+} from './helpers/create'
 import {
 	preProcessExpOption,
 	preProcessAnnhilate,
 	validateBalances,
-} from './helpers/check';
-import { proxyHTTPRequest } from './helpers/proxy';
-import arb from './config/arbitrum.json';
-import arbGoerli from './config/arbitrumGoerli.json';
+} from './helpers/check'
+import { proxyHTTPRequest } from './helpers/proxy'
+import arb from './config/arbitrum.json'
+import arbGoerli from './config/arbitrumGoerli.json'
 import {
 	getQuote,
 	signQuote,
 	createQuote,
 	serializeQuote,
-} from './helpers/sign';
-import { ERC20Base__factory, IPool__factory } from './typechain';
+} from './helpers/sign'
+import { ERC20Base__factory, IPool__factory } from './typechain'
 import {
 	difference,
 	find,
@@ -81,62 +81,62 @@ import {
 	partition,
 	pick,
 	zipWith,
-} from 'lodash';
-import { requestDetailed } from './helpers/util';
+} from 'lodash'
+import { requestDetailed } from './helpers/util'
 
-dotenv.config();
-checkEnv();
+dotenv.config()
+checkEnv()
 
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(checkTestApiKey);
+const app = express()
+app.use(cors())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(checkTestApiKey)
 
 app.post('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
-	const valid = validatePostQuotes(req.body);
+	const valid = validatePostQuotes(req.body)
 	if (!valid) {
-		res.status(400);
+		res.status(400)
 		Logger.error(
 			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
-		);
-		return res.send(validatePostQuotes.errors);
+		)
+		return res.send(validatePostQuotes.errors)
 	}
 
 	// 2. Loop through each order and convert to signed quote object
-	let serializedQuotes: PublishQuoteProxyRequest[] = [];
+	let serializedQuotes: PublishQuoteProxyRequest[] = []
 
 	for (const quote of req.body as PublishQuoteRequest[]) {
 		// 2.1 Check that deadline is valid and generate deadline timestamp
-		const ts = Math.trunc(new Date().getTime() / 1000);
-		let deadline: number;
+		const ts = Math.trunc(new Date().getTime() / 1000)
+		let deadline: number
 		if (quote.deadline < 60) {
 			return res.status(400).json({
 				message: 'Quote deadline is invalid (cannot be less than 60 sec)',
 				quote: quote,
-			});
+			})
 		} else {
-			deadline = ts + quote.deadline;
+			deadline = ts + quote.deadline
 		}
 
 		// 2.2 Validate/create timestamp expiration
-		let expiration: number;
+		let expiration: number
 		try {
-			expiration = createExpiration(quote.expiration);
+			expiration = createExpiration(quote.expiration)
 		} catch (e) {
-			Logger.error(e);
+			Logger.error(e)
 			return res.status(400).json({
 				message: e,
 				quote: quote,
-			});
+			})
 		}
 
 		// 2.3 Create Pool Key
-		const poolKey = createPoolKey(quote, expiration);
+		const poolKey = createPoolKey(quote, expiration)
 
 		// 2.4 Get PoolAddress
-		const poolAddr = await getPoolAddress(poolKey);
+		const poolAddr = await getPoolAddress(poolKey)
 
 		// 2.5 Generate a initial quote object
 		const quoteOB = await getQuote(
@@ -146,26 +146,26 @@ app.post('/orderbook/quotes', async (req, res) => {
 			parseEther(quote.price.toString()),
 			deadline,
 			quote.taker
-		);
+		)
 
 		// 2.6 Sign quote object
-		const signedQuote = await signQuote(provider, poolAddr, quoteOB);
-		const publishQuote = createQuote(poolKey, quoteOB, signedQuote);
+		const signedQuote = await signQuote(provider, poolAddr, quoteOB)
+		const publishQuote = createQuote(poolKey, quoteOB, signedQuote)
 
 		// 2.7 Serialize quote
-		const serializedQuote = serializeQuote(publishQuote);
+		const serializedQuote = serializeQuote(publishQuote)
 
 		// 2.8 Add chain id to quote object
 		const publishQuoteRequest = {
 			...serializedQuote,
 			chainId: chainId,
-		};
+		}
 
 		// 2.9 Add quote the object array
-		serializedQuotes.push(publishQuoteRequest);
+		serializedQuotes.push(publishQuoteRequest)
 	}
 
-	let postQuotesRequest;
+	let postQuotesRequest
 	try {
 		// 3 Submit quote object array to orderbook API
 		postQuotesRequest = await proxyHTTPRequest(
@@ -173,12 +173,12 @@ app.post('/orderbook/quotes', async (req, res) => {
 			'POST',
 			null,
 			serializedQuotes
-		);
+		)
 	} catch (e) {
-		Logger.error(e);
+		Logger.error(e)
 		return res.status(500).json({
 			message: e,
-		});
+		})
 	}
 
 	// NOTE: if at least 1 quote is valid/unique status will be 201
@@ -186,41 +186,41 @@ app.post('/orderbook/quotes', async (req, res) => {
 	if (postQuotesRequest.status !== 201) {
 		return res.status(postQuotesRequest.status).json({
 			message: postQuotesRequest.data,
-		});
+		})
 	}
 
 	// 3 Parse/format orderbook quotes to return
-	const orderbookQuotes = postQuotesRequest.data as OrderbookQuote[];
-	const returnedQuotes = createReturnedQuotes(orderbookQuotes);
+	const orderbookQuotes = postQuotesRequest.data as OrderbookQuote[]
+	const returnedQuotes = createReturnedQuotes(orderbookQuotes)
 
-	return res.status(postQuotesRequest.status).json(returnedQuotes);
-});
+	return res.status(postQuotesRequest.status).json(returnedQuotes)
+})
 
 app.patch('/orderbook/quotes', async (req, res) => {
-	const valid = validateFillQuotes(req.body);
+	const valid = validateFillQuotes(req.body)
 	if (!valid) {
-		res.status(400);
+		res.status(400)
 		Logger.error(
 			`Validation error: ${JSON.stringify(validateFillQuotes.errors)}`
-		);
-		return res.send(validateFillQuotes.errors);
+		)
+		return res.send(validateFillQuotes.errors)
 	}
 
-	const fillQuoteRequests = req.body as FillQuoteRequest[];
+	const fillQuoteRequests = req.body as FillQuoteRequest[]
 
 	// 1. Get quote objects from redis orderbook by quoteId
 	const quoteIds = fillQuoteRequests.map(
 		(fillQuoteRequest) => fillQuoteRequest.quoteId
-	);
+	)
 
 	if (quoteIds.length > 25) {
-		Logger.error('Quotes quantity is up to 25 per request!');
+		Logger.error('Quotes quantity is up to 25 per request!')
 		return res.status(400).json({
 			message: 'Quotes quantity is up to 25 per request!',
-		});
+		})
 	}
 
-	let activeQuotesRequest;
+	let activeQuotesRequest
 	try {
 		activeQuotesRequest = await proxyHTTPRequest(
 			'orders',
@@ -229,55 +229,55 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				quoteIds: quoteIds,
 			},
 			null
-		);
+		)
 	} catch (e) {
-		Logger.error(e);
+		Logger.error(e)
 		return res.status(500).json({
 			message: e,
-		});
+		})
 	}
 
 	if (activeQuotesRequest.status !== 200) {
 		return res.status(activeQuotesRequest.status).json({
 			message: activeQuotesRequest.data,
-		});
+		})
 	}
 
-	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[];
+	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[]
 
 	// 1.1 Check to see which quotes from the request are still valid in the orderbook
 	const fillableQuotes: FillableQuote[] = activeQuotes.map((activeQuote) => {
 		const matchedFromRequest = find(fillQuoteRequests, [
 			'quoteId',
 			activeQuote.quoteId,
-		])!;
+		])!
 		return {
 			...activeQuote,
 			...matchedFromRequest,
-		};
-	});
+		}
+	})
 
 	// 1.2 Format the fillable quotes to Deserialized quote objects (include the tradeSize in object)
 	const fillableQuotesDeserialized = fillableQuotes.map(
 		deserializeOrderbookQuote
-	);
+	)
 
 	// 2. Group calls by base and puts by quote currency
 	const [callsFillQuoteRequests, putsFillQuoteRequests] = partition(
 		fillableQuotesDeserialized,
 		(fillQuoteRequest) => fillQuoteRequest.poolKey.isCallPool
-	);
+	)
 	const callsFillQuoteRequestsGroupedByCollateral = groupBy(
 		callsFillQuoteRequests,
 		'poolKey.base'
-	);
+	)
 	const putsFillQuoteRequestsGroupedByCollateral = groupBy(
 		putsFillQuoteRequests,
 		'poolKey.quote'
-	);
+	)
 
 	// 1.2 Check that we have enough collateral balance to fill orders
-	const [tokenBalances] = await getBalances();
+	const [tokenBalances] = await getBalances()
 
 	// sorted base token address
 	for (const baseToken in callsFillQuoteRequestsGroupedByCollateral) {
@@ -286,10 +286,10 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				tokenBalances,
 				baseToken,
 				callsFillQuoteRequestsGroupedByCollateral[baseToken]
-			);
+			)
 		} catch (e) {
-			Logger.error(e);
-			return res.status(400).json({ message: e });
+			Logger.error(e)
+			return res.status(400).json({ message: e })
 		}
 	}
 
@@ -300,10 +300,10 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				tokenBalances,
 				quoteToken,
 				putsFillQuoteRequestsGroupedByCollateral[quoteToken]
-			);
+			)
 		} catch (e) {
-			Logger.error(e);
-			return res.status(400).json({ message: e });
+			Logger.error(e)
+			return res.status(400).json({ message: e })
 		}
 	}
 
@@ -313,10 +313,10 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			const pool = IPool__factory.connect(
 				fillableQuoteDeserialized.poolAddress,
 				signer
-			);
+			)
 			Logger.debug(
 				`Filling quote ${JSON.stringify(fillableQuoteDeserialized)}...`
-			);
+			)
 			const quoteOB: QuoteOB = pick(fillableQuoteDeserialized, [
 				'provider',
 				'taker',
@@ -325,13 +325,13 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				'isBuy',
 				'deadline',
 				'salt',
-			]);
+			])
 
 			const signedQuoteObject = await signQuote(
 				provider,
 				fillableQuoteDeserialized.poolAddress,
 				quoteOB
-			);
+			)
 
 			const fillTx = await pool.fillQuoteOB(
 				quoteOB,
@@ -341,42 +341,42 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				{
 					gasLimit: gasLimit,
 				}
-			);
-			await provider.waitForTransaction(fillTx.hash, 1);
-			Logger.debug(`Quote ${JSON.stringify(fillableQuoteDeserialized)} filled`);
-			return fillableQuoteDeserialized;
+			)
+			await provider.waitForTransaction(fillTx.hash, 1)
+			Logger.debug(`Quote ${JSON.stringify(fillableQuoteDeserialized)} filled`)
+			return fillableQuoteDeserialized
 		})
-	);
+	)
 
-	const fulfilledQuoteIds: string[] = [];
+	const fulfilledQuoteIds: string[] = []
 	promiseAll.forEach((result) => {
 		if (result.status === 'fulfilled') {
-			fulfilledQuoteIds.push(result.value.quoteId);
+			fulfilledQuoteIds.push(result.value.quoteId)
 		}
-	});
+	})
 
-	const failedQuoteIds = difference(quoteIds, fulfilledQuoteIds);
+	const failedQuoteIds = difference(quoteIds, fulfilledQuoteIds)
 
 	return res.status(200).json({
 		success: fulfilledQuoteIds,
 		failed: failedQuoteIds,
-	});
-});
+	})
+})
 
 app.delete('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
-	const valid = validateDeleteQuotes(req.body);
+	const valid = validateDeleteQuotes(req.body)
 	if (!valid) {
-		res.status(400);
+		res.status(400)
 		Logger.error(
 			`Validation error: ${JSON.stringify(validateDeleteQuotes.errors)}`
-		);
-		return res.send(validateDeleteQuotes.errors);
+		)
+		return res.send(validateDeleteQuotes.errors)
 	}
 
-	const deleteQuoteIds = req.body as QuoteIds;
+	const deleteQuoteIds = req.body as QuoteIds
 
-	let activeQuotesRequest;
+	let activeQuotesRequest
 	try {
 		activeQuotesRequest = await proxyHTTPRequest(
 			'orders',
@@ -385,100 +385,100 @@ app.delete('/orderbook/quotes', async (req, res) => {
 				quoteIds: deleteQuoteIds.quoteIds,
 			},
 			null
-		);
+		)
 	} catch (e) {
-		Logger.error(e);
+		Logger.error(e)
 		return res.status(500).json({
 			message: e,
-		});
+		})
 	}
 
 	if (activeQuotesRequest.status !== 200) {
 		return res.status(activeQuotesRequest.status).json({
 			message: activeQuotesRequest.data,
-		});
+		})
 	}
 
-	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[];
+	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[]
 
 	const deleteByPoolAddr = groupBy(
 		activeQuotes,
 		'poolAddress'
-	) as GroupedDeleteRequest;
+	) as GroupedDeleteRequest
 
 	const promiseAll = await Promise.allSettled(
 		Object.keys(deleteByPoolAddr).map(async (poolAddress) => {
-			const poolContract = new Contract(poolAddress, poolABI, signer);
+			const poolContract = new Contract(poolAddress, poolABI, signer)
 
 			const quoteIds = deleteByPoolAddr[poolAddress].map(
 				(quotes) => quotes.quoteId
-			);
+			)
 
-			Logger.debug(`Cancelling quotes ${quoteIds}...`);
-			const cancelTx = await poolContract.cancelQuotesOB(quoteIds);
-			await provider.waitForTransaction(cancelTx.hash, 1);
-			Logger.debug(`Quotes ${quoteIds} cancelled`);
-			return quoteIds;
+			Logger.debug(`Cancelling quotes ${quoteIds}...`)
+			const cancelTx = await poolContract.cancelQuotesOB(quoteIds)
+			await provider.waitForTransaction(cancelTx.hash, 1)
+			Logger.debug(`Quotes ${quoteIds} cancelled`)
+			return quoteIds
 		})
-	);
+	)
 
-	const fulfilledQuoteIds: string[][] = [];
+	const fulfilledQuoteIds: string[][] = []
 	promiseAll.forEach((result) => {
 		if (result.status === 'fulfilled') {
-			fulfilledQuoteIds.push(result.value);
+			fulfilledQuoteIds.push(result.value)
 		}
-	});
+	})
 
 	const failedQuoteIds = difference(
 		activeQuotes.map((quote) => quote.quoteId),
 		flatten(fulfilledQuoteIds)
-	);
+	)
 
 	const omittedQuoteIds = difference(
 		deleteQuoteIds.quoteIds,
 		flatten(fulfilledQuoteIds)
-	);
+	)
 
 	return res.status(200).json({
 		success: flatten(fulfilledQuoteIds),
 		failed: failedQuoteIds,
 		omitted: omittedQuoteIds,
-	});
-});
+	})
+})
 
 // returns quotes up to a specific size
 app.get('/orderbook/quotes', async (req, res) => {
-	const valid = validateGetFillableQuotes(req.query);
+	const valid = validateGetFillableQuotes(req.query)
 	if (!valid) {
-		res.status(400);
+		res.status(400)
 		Logger.error(
 			`Validation error: ${JSON.stringify(validateGetFillableQuotes.errors)}`
-		);
-		return res.send(validateGetFillableQuotes.errors);
+		)
+		return res.send(validateGetFillableQuotes.errors)
 	}
 
-	const getQuotesQuery = req.query as unknown as GetFillableQuotes;
+	const getQuotesQuery = req.query as unknown as GetFillableQuotes
 
 	// Validate/create timestamp expiration
-	let expiration: number;
+	let expiration: number
 	try {
-		expiration = createExpiration(getQuotesQuery.expiration as string);
+		expiration = createExpiration(getQuotesQuery.expiration as string)
 	} catch (e) {
-		Logger.error(e);
+		Logger.error(e)
 		return res.status(400).json({
 			message: e,
 			quotesRequest: getQuotesQuery,
-		});
+		})
 	}
 
 	// Create Pool Key
 	const poolKey = createPoolKey(
 		pick(getQuotesQuery, ['base', 'quote', 'expiration', 'strike', 'type']),
 		expiration
-	);
-	const poolAddress = await getPoolAddress(poolKey);
+	)
+	const poolAddress = await getPoolAddress(poolKey)
 
-	let proxyResponse;
+	let proxyResponse
 	try {
 		proxyResponse = await proxyHTTPRequest(
 			'quotes',
@@ -492,207 +492,207 @@ app.get('/orderbook/quotes', async (req, res) => {
 				...(getQuotesQuery.taker && { taker: getQuotesQuery.taker }),
 			},
 			null
-		);
+		)
 	} catch (e) {
-		Logger.error(e);
+		Logger.error(e)
 		return res.status(500).json({
 			message: e,
-		});
+		})
 	}
 
 	if (proxyResponse.status !== 200) {
 		return res.status(proxyResponse.status).json({
 			message: proxyResponse.data,
-		});
+		})
 	}
 
-	const orderbookQuotes = proxyResponse.data as OrderbookQuote[];
+	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
 	const returnedQuotes: ReturnedOrderbookQuote[] =
-		createReturnedQuotes(orderbookQuotes);
+		createReturnedQuotes(orderbookQuotes)
 
-	return res.status(200).json(returnedQuotes);
-});
+	return res.status(200).json(returnedQuotes)
+})
 
 // gets quotes using an array of quoteIds
 app.get('/orderbook/orders', async (req, res) => {
-	const valid = validateGetAllQuotes(req.query);
+	const valid = validateGetAllQuotes(req.query)
 	if (!valid) {
-		res.status(400);
+		res.status(400)
 		Logger.error(
 			`Validation error: ${JSON.stringify(validateGetAllQuotes.errors)}`
-		);
-		return res.send(validateGetAllQuotes.errors);
+		)
+		return res.send(validateGetAllQuotes.errors)
 	}
 
-	const quotesQuery = req.query as unknown as QuoteIds;
+	const quotesQuery = req.query as unknown as QuoteIds
 
 	if (quotesQuery.quoteIds.length > 25) {
-		Logger.error('Quotes quantity is up to 25 per request!');
+		Logger.error('Quotes quantity is up to 25 per request!')
 		return res.status(400).json({
 			message: 'Quotes quantity is up to 25 per request!',
-		});
+		})
 	}
 
-	let proxyResponse;
+	let proxyResponse
 	try {
-		proxyResponse = await proxyHTTPRequest('orders', 'GET', quotesQuery, null);
+		proxyResponse = await proxyHTTPRequest('orders', 'GET', quotesQuery, null)
 	} catch (e) {
-		Logger.error(e);
+		Logger.error(e)
 		return res.status(500).json({
 			message: e,
-		});
+		})
 	}
 
 	if (proxyResponse.status !== 200) {
 		return res.status(proxyResponse.status).json({
 			message: proxyResponse.data,
-		});
+		})
 	}
 
-	const orderbookQuotes = proxyResponse.data as OrderbookQuote[];
+	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
 	const returnedQuotes: ReturnedOrderbookQuote[] =
-		createReturnedQuotes(orderbookQuotes);
+		createReturnedQuotes(orderbookQuotes)
 
-	return res.status(200).json(returnedQuotes);
-});
+	return res.status(200).json(returnedQuotes)
+})
 
 app.post('/pool/settle', async (req, res) => {
 	// 1. Validate incoming object array
-	const valid = validatePositionManagement(req.body);
+	const valid = validatePositionManagement(req.body)
 	if (!valid) {
-		res.status(400);
+		res.status(400)
 		Logger.error(
 			`Validation error: ${JSON.stringify(validatePositionManagement.errors)}`
-		);
-		return res.send(validatePositionManagement.errors);
+		)
+		return res.send(validatePositionManagement.errors)
 	}
 
-	const options = req.body as Option[];
+	const options = req.body as Option[]
 
 	const promiseAll = await Promise.allSettled(
 		options.map(async (option) => {
-			const pool = await preProcessExpOption(option, TokenType.SHORT);
-			const settleTx = await pool.settle();
-			await provider.waitForTransaction(settleTx.hash, 1);
-			return option;
+			const pool = await preProcessExpOption(option, TokenType.SHORT)
+			const settleTx = await pool.settle()
+			await provider.waitForTransaction(settleTx.hash, 1)
+			return option
 		})
-	);
-	const requestSummary = requestDetailed(promiseAll, options);
+	)
+	const requestSummary = requestDetailed(promiseAll, options)
 
-	return res.status(200).json(requestSummary);
-});
+	return res.status(200).json(requestSummary)
+})
 
 app.post('/pool/exercise', async (req, res) => {
 	// 1. Validate incoming object array
-	const valid = validatePositionManagement(req.body);
+	const valid = validatePositionManagement(req.body)
 	if (!valid) {
-		res.status(400);
+		res.status(400)
 		Logger.error(
 			`Validation error: ${JSON.stringify(validatePositionManagement.errors)}`
-		);
-		return res.send(validatePositionManagement.errors);
+		)
+		return res.send(validatePositionManagement.errors)
 	}
 
-	const options = req.body as Option[];
+	const options = req.body as Option[]
 
 	const promiseAll = await Promise.allSettled(
 		options.map(async (option) => {
-			const pool = await preProcessExpOption(option, TokenType.LONG);
-			const exerciseTx = await pool.exercise();
-			await provider.waitForTransaction(exerciseTx.hash, 1);
-			return option;
+			const pool = await preProcessExpOption(option, TokenType.LONG)
+			const exerciseTx = await pool.exercise()
+			await provider.waitForTransaction(exerciseTx.hash, 1)
+			return option
 		})
-	);
+	)
 
-	const requestSummary = requestDetailed(promiseAll, options);
+	const requestSummary = requestDetailed(promiseAll, options)
 
-	return res.status(200).json(requestSummary);
-});
+	return res.status(200).json(requestSummary)
+})
 
 app.post('/pool/annihilate', async (req, res) => {
 	// 1. Validate incoming object array
-	const valid = validatePositionManagement(req.body);
+	const valid = validatePositionManagement(req.body)
 	if (!valid) {
-		res.status(400);
+		res.status(400)
 		Logger.error(
 			`Validation error: ${JSON.stringify(validatePositionManagement.errors)}`
-		);
-		return res.send(validatePositionManagement.errors);
+		)
+		return res.send(validatePositionManagement.errors)
 	}
 
-	const options = req.body as Option[];
+	const options = req.body as Option[]
 
 	const promiseAll = await Promise.allSettled(
 		options.map(async (option) => {
-			const [pool, size] = await preProcessAnnhilate(option);
+			const [pool, size] = await preProcessAnnhilate(option)
 			const annihilateTx = await pool.annihilate(size, {
 				gasLimit: gasLimit,
-			});
-			await provider.waitForTransaction(annihilateTx.hash, 1);
-			return option;
+			})
+			await provider.waitForTransaction(annihilateTx.hash, 1)
+			return option
 		})
-	);
+	)
 
-	const requestSummary = requestDetailed(promiseAll, options);
+	const requestSummary = requestDetailed(promiseAll, options)
 
-	return res.status(200).json(requestSummary);
-});
+	return res.status(200).json(requestSummary)
+})
 
 app.get('/account/option_balances', async (req, res) => {
-	let optionBalancesRequest;
+	let optionBalancesRequest
 	try {
 		optionBalancesRequest = await proxyHTTPRequest(
 			'account/option_balances',
 			'GET',
 			{
 				chainId: chainId,
-				wallet: walletAddr
+				wallet: walletAddr,
 			},
 			null
-		);
+		)
 	} catch (e) {
-		Logger.error(e);
+		Logger.error(e)
 		return res.status(500).json({
 			message: e,
-		});
+		})
 	}
 
 	if (optionBalancesRequest.status !== 200) {
 		return res.status(optionBalancesRequest.status).json({
 			message: optionBalancesRequest.data,
-		});
+		})
 	}
 
-	res.status(200).json(optionBalancesRequest.data as OptionPositions);
-});
+	res.status(200).json(optionBalancesRequest.data as OptionPositions)
+})
 
 app.get('/account/orders', async (req, res) => {
-	let proxyResponse;
+	let proxyResponse
 	try {
 		proxyResponse = await proxyHTTPRequest('orders', 'GET', {
 			provider: walletAddr,
 			chainId: chainId,
-		});
+		})
 	} catch (e) {
-		Logger.error(e);
+		Logger.error(e)
 		return res.status(500).json({
 			message: e,
-		});
+		})
 	}
-	const orderbookQuotes = proxyResponse.data as OrderbookQuote[];
+	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
 	const returnedQuotes: ReturnedOrderbookQuote[] =
-		createReturnedQuotes(orderbookQuotes);
+		createReturnedQuotes(orderbookQuotes)
 
-	return res.status(200).json(returnedQuotes);
-});
+	return res.status(200).json(returnedQuotes)
+})
 
 app.get('/account/collateral_balances', async (req, res) => {
-	const [balances, failureReasons] = await getBalances();
+	const [balances, failureReasons] = await getBalances()
 
 	const failedBalanceQueries = difference(
 		availableTokens,
 		balances.map((balance) => balance.symbol)
-	);
+	)
 
 	return res.sendStatus(200).json({
 		success: balances,
@@ -704,78 +704,78 @@ app.get('/account/collateral_balances', async (req, res) => {
 				reason,
 			})
 		),
-	});
-});
+	})
+})
 
 app.get('/account/native_balance', async (req, res) => {
-	let nativeBalance: number;
+	let nativeBalance: number
 	try {
 		nativeBalance = parseFloat(
 			formatEther(await provider.getBalance(walletAddr))
-		);
+		)
 	} catch (e) {
-		Logger.error(e);
-		return res.status(500).json({ message: e });
+		Logger.error(e)
+		return res.status(500).json({ message: e })
 	}
 
-	res.status(200).json(nativeBalance);
-});
+	res.status(200).json(nativeBalance)
+})
 
 app.post('/account/collateral_approval', async (req, res) => {
-	const valid = validateApprovals(req.body);
+	const valid = validateApprovals(req.body)
 	if (!valid) {
-		res.status(400);
+		res.status(400)
 		Logger.error(
 			`Validation error: ${JSON.stringify(validateApprovals.errors)}`
-		);
-		return res.send(validateApprovals.errors);
+		)
+		return res.send(validateApprovals.errors)
 	}
 
-	const approvals = req.body as TokenApproval[];
+	const approvals = req.body as TokenApproval[]
 	const promiseAll = await Promise.allSettled(
 		approvals.map(async (approval) => {
 			const erc20Addr =
 				process.env.ENV == 'production'
 					? arb.tokens[approval.token]
-					: arbGoerli.tokens[approval.token];
-			const erc20 = ERC20Base__factory.connect(erc20Addr, signer);
+					: arbGoerli.tokens[approval.token]
+			const erc20 = ERC20Base__factory.connect(erc20Addr, signer)
 
 			if (approval.amt === 'max') {
 				const response = await erc20.approve(
 					routerAddress,
 					MaxUint256.toString()
-				);
-				await provider.waitForTransaction(response.hash, 1);
-				Logger.info(`${approval.token} approval set to MAX`);
+				)
+				await provider.waitForTransaction(response.hash, 1)
+				Logger.info(`${approval.token} approval set to MAX`)
 			} else {
 				const qty =
 					approval.token === 'USDC'
 						? parseUnits(approval.amt.toString(), 6)
-						: parseEther(approval.amt.toString());
-				const response = await erc20.approve(routerAddress, qty);
-				await provider.waitForTransaction(response.hash, 1);
+						: parseEther(approval.amt.toString())
+				const response = await erc20.approve(routerAddress, qty)
+				await provider.waitForTransaction(response.hash, 1)
 				Logger.info(
 					`${approval.token} approval set to ${parseFloat(
 						formatEther(approval.amt)
 					)}`
-				);
+				)
 			}
-			return approval;
+			return approval
 		})
-	);
+	)
 
-	const approved: TokenApproval[] = [];
-	const reasons: any[] = [];
+	const approved: TokenApproval[] = []
+	const reasons: any[] = []
 	promiseAll.forEach((result) => {
 		if (result.status === 'fulfilled') {
-			approved.push(result.value);
+			approved.push(result.value)
 		}
 		if (result.status === 'rejected') {
-			reasons.push(result.reason);
+			reasons.push(result.reason)
 		}
-	});
+	})
 
-	const failedApprovals = difference(approvals, approved);
+	const failedApprovals = difference(approvals, approved)
 
 	return res.sendStatus(200).json({
 		success: approved,
@@ -783,14 +783,14 @@ app.post('/account/collateral_approval', async (req, res) => {
 			failedApproval,
 			reason,
 		})),
-	});
-});
+	})
+})
 
-const proxy = httpProxy.createProxyServer({ ws: true });
+const proxy = httpProxy.createProxyServer({ ws: true })
 const server = app.listen(process.env.HTTP_PORT, () => {
-	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`);
-});
+	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`)
+})
 
 server.on('upgrade', (req, socket, head) => {
-	proxy.ws(req, socket, head, { target: process.env.WS_ENDPOINT });
-});
+	proxy.ws(req, socket, head, { target: process.env.WS_ENDPOINT })
+})

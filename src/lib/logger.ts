@@ -1,4 +1,4 @@
-import { transports, createLogger } from 'winston';
+import { transports, createLogger } from 'winston'
 
 const levels = {
 	error: 0,
@@ -6,13 +6,13 @@ const levels = {
 	info: 2,
 	http: 3,
 	debug: 4,
-};
+}
 
 const level = () => {
-	const env = process.env.ENV || 'development';
-	const isDevelopment = env === 'development';
-	return isDevelopment ? 'debug' : 'info';
-};
+	const env = process.env.ENV || 'development'
+	const isDevelopment = env === 'development'
+	return isDevelopment ? 'debug' : 'info'
+}
 
 // Create the logger instance that has to be exported
 // and used to log messages.
@@ -23,6 +23,6 @@ const Logger = createLogger({
 	defaultMeta: {
 		service: 'Quotes',
 	},
-});
+})
 
-export default Logger;
+export default Logger

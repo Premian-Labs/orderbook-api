@@ -1,10 +1,10 @@
-import Ajv from 'ajv';
-import arb from '../config/arbitrum.json';
-import arbGoerli from '../config/arbitrumGoerli.json';
+import Ajv from 'ajv'
+import arb from '../config/arbitrum.json'
+import arbGoerli from '../config/arbitrumGoerli.json'
 
-const ajv = new Ajv();
-const chainConfig = process.env.ENV == 'production' ? arb : arbGoerli;
-const supportedTokens = Object.keys(chainConfig.tokens);
+const ajv = new Ajv()
+const chainConfig = process.env.ENV == 'production' ? arb : arbGoerli
+const supportedTokens = Object.keys(chainConfig.tokens)
 
 const validateOptionEntity = {
 	base: {
@@ -24,7 +24,7 @@ const validateOptionEntity = {
 		type: 'string',
 		pattern: '^C$|^P$',
 	},
-};
+}
 
 export const validatePostQuotes = ajv.compile({
 	type: 'array',
@@ -56,7 +56,7 @@ export const validatePostQuotes = ajv.compile({
 	},
 	minItems: 1,
 	maxItems: 1000,
-});
+})
 
 export const validatePositionManagement = ajv.compile({
 	type: 'array',
@@ -68,7 +68,7 @@ export const validatePositionManagement = ajv.compile({
 	},
 	minItems: 1,
 	maxItems: 1000,
-});
+})
 
 export const validateFillQuotes = ajv.compile({
 	type: 'array',
@@ -90,7 +90,7 @@ export const validateFillQuotes = ajv.compile({
 	},
 	minItems: 1,
 	maxItems: 1000,
-});
+})
 
 export const validateDeleteQuotes = ajv.compile({
 	type: 'object',
@@ -106,7 +106,7 @@ export const validateDeleteQuotes = ajv.compile({
 	},
 	required: ['quoteIds'],
 	additionalProperties: false,
-});
+})
 
 export const validateGetFillableQuotes = ajv.compile({
 	type: 'object',
@@ -132,7 +132,7 @@ export const validateGetFillableQuotes = ajv.compile({
 	},
 	required: ['base', 'quote', 'expiration', 'strike', 'type', 'size', 'side'],
 	additionalProperties: false,
-});
+})
 
 export const validateGetAllQuotes = ajv.compile({
 	type: 'object',
@@ -150,7 +150,7 @@ export const validateGetAllQuotes = ajv.compile({
 	},
 	required: ['quoteIds'],
 	additionalProperties: false,
-});
+})
 
 export const validateApprovals = ajv.compile({
 	type: 'array',
@@ -170,4 +170,4 @@ export const validateApprovals = ajv.compile({
 	},
 	minItems: 1,
 	maxItems: supportedTokens.length,
-});
+})

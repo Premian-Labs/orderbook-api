@@ -1,9 +1,9 @@
-import axios from 'axios';
-import dotenv from 'dotenv';
-import { PublishQuoteProxyRequest } from '../types/quote';
-import { orderbook_url, apiKey } from '../config/constants';
+import axios from 'axios'
+import dotenv from 'dotenv'
+import { PublishQuoteProxyRequest } from '../types/quote'
+import { orderbook_url, apiKey } from '../config/constants'
 
-dotenv.config();
+dotenv.config()
 
 export async function proxyHTTPRequest(
 	path: string,
@@ -18,9 +18,9 @@ export async function proxyHTTPRequest(
 					'x-apikey': apiKey,
 				},
 				validateStatus: function (status) {
-					return status < 500;
+					return status < 500
 				},
-			});
+			})
 		}
 		case 'GET': {
 			return await axios.get(`${orderbook_url}/${path}`, {
@@ -29,11 +29,11 @@ export async function proxyHTTPRequest(
 					'x-apikey': apiKey,
 				},
 				validateStatus: function (status) {
-					return status < 500;
+					return status < 500
 				},
-			});
+			})
 		}
 		default:
-			throw new Error(`HTTP method ${method} is not allowed`);
+			throw new Error(`HTTP method ${method} is not allowed`)
 	}
 }

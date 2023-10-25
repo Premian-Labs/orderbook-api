@@ -1,18 +1,18 @@
-import moment from 'moment';
+import moment from 'moment'
 import {
 	FillableQuote,
 	OrderbookQuote,
 	OrderbookQuoteTradeDeserialized,
 	PoolKey,
 	ReturnedOrderbookQuote,
-} from '../types/quote';
-import { Option } from '../types/validate';
-import { PublishQuoteRequest } from '../types/validate';
-import { tokenAddresses } from '../config/constants';
-import { formatEther, parseEther, toBigInt } from 'ethers';
-import { getTokenByAddress } from './get';
-import arb from '../config/arbitrum.json';
-import arbGoerli from '../config/arbitrumGoerli.json';
+} from '../types/quote'
+import { Option } from '../types/validate'
+import { PublishQuoteRequest } from '../types/validate'
+import { tokenAddresses } from '../config/constants'
+import { formatEther, parseEther, toBigInt } from 'ethers'
+import { getTokenByAddress } from './get'
+import arb from '../config/arbitrum.json'
+import arbGoerli from '../config/arbitrumGoerli.json'
 
 /*
 Expiration Rules:
@@ -22,52 +22,52 @@ Maturities over 30 days expire on the last Friday of the calendar month (monthly
 Max maturity is 1 year.
  */
 export function createExpiration(exp: string): number {
-	const expirationMoment = moment.utc(exp, 'DDMMMYY');
+	const expirationMoment = moment.utc(exp, 'DDMMMYY')
 
 	// 1.0 check if option expiration is a valid date
 	if (!expirationMoment.isValid()) {
-		throw new Error(`Invalid expiration date: ${exp}`);
+		throw new Error(`Invalid expiration date: ${exp}`)
 	}
 
-	const today = moment.utc().startOf('day');
+	const today = moment.utc().startOf('day')
 	// NOTE: this returns a floor integer value for day (ie 1.9 days -> 1)
-	const daysToExpiration = expirationMoment.diff(today, 'days');
+	const daysToExpiration = expirationMoment.diff(today, 'days')
 
 	// 1.1 check if option alread expired
 	if (daysToExpiration <= 0) {
-		throw new Error(`Invalid expiration date: ${exp} is in the past`);
+		throw new Error(`Invalid expiration date: ${exp} is in the past`)
 	}
 
 	// 1.2 check if option expiration is more than 1 year out
 	if (expirationMoment.diff(today, 'years') > 0) {
-		throw new Error(`Invalid expiration date: ${exp} is more then in 1 year`);
+		throw new Error(`Invalid expiration date: ${exp} is more then in 1 year`)
 	}
 
 	// 2. DAILY OPTIONS: if option expiration is tomorrow or the day after tomorrow, return as vaild
 	if (daysToExpiration === 1 || daysToExpiration === 2) {
 		// Set time to 8:00 AM
-		return expirationMoment.add(8, 'hours').unix();
+		return expirationMoment.add(8, 'hours').unix()
 	}
 
 	// 3. WEEKLY OPTIONS: check if option expiration is Friday
 	if (expirationMoment.day() !== 5) {
-		throw new Error(`${expirationMoment.toJSON()} is not Friday!`);
+		throw new Error(`${expirationMoment.toJSON()} is not Friday!`)
 	}
 
 	// 4. MONTHLY OPTIONS: if option maturity > 30 days, validate expire is last Friday of the month
 	if (daysToExpiration > 30) {
-		const lastDay = expirationMoment.clone().endOf('month').startOf('day');
-		lastDay.subtract((lastDay.day() + 2) % 7, 'days');
+		const lastDay = expirationMoment.clone().endOf('month').startOf('day')
+		lastDay.subtract((lastDay.day() + 2) % 7, 'days')
 
 		if (!lastDay.isSame(expirationMoment)) {
 			throw new Error(
 				`${expirationMoment.toJSON()} is not the last Friday of the month!`
-			);
+			)
 		}
 	}
 
 	// Set time to 8:00 AM
-	return expirationMoment.add(8, 'hours').unix();
+	return expirationMoment.add(8, 'hours').unix()
 }
 
 export function createReturnedQuotes(orderbookQuotes: OrderbookQuote[]) {
@@ -88,10 +88,10 @@ export function createReturnedQuotes(orderbookQuotes: OrderbookQuote[]) {
 				deadline: orderbookQuote.deadline - orderbookQuote.ts,
 				quoteId: orderbookQuote.quoteId,
 				ts: orderbookQuote.ts,
-			};
+			}
 		}
-	);
-	return returnedQuotes;
+	)
+	return returnedQuotes
 }
 export function createPoolKey(
 	quote: PublishQuoteRequest | Option,
@@ -113,7 +113,7 @@ export function createPoolKey(
 		strike: parseEther(quote.strike.toString()),
 		maturity: expiration ? expiration : quote.expiration,
 		isCallPool: quote.type === 'C',
-	};
+	}
 }
 
 export function deserializeOrderbookQuote(
@@ -126,7 +126,7 @@ export function deserializeOrderbookQuote(
 		strike: toBigInt(quote.poolKey.strike),
 		maturity: toBigInt(quote.poolKey.maturity),
 		isCallPool: quote.poolKey.isCallPool,
-	};
+	}
 
 	return {
 		poolKey: deSerializedPoolKey,
@@ -144,5 +144,5 @@ export function deserializeOrderbookQuote(
 		tradeSize: toBigInt(quote.tradeSize),
 		fillableSize: toBigInt(quote.fillableSize),
 		ts: quote.ts,
-	};
+	}
 }
