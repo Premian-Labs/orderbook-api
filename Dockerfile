@@ -1,10 +1,8 @@
-FROM node:18
+FROM node:18-slim
 
-COPY package.json ./
+COPY . ./
 
-RUN yarn
-
-COPY .. .
+RUN yarn install --production
 
 EXPOSE 3000
 
