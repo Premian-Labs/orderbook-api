@@ -3,6 +3,8 @@ import { checkEnv } from '../src/config/checkConfig';
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true);
 
+const url = `http://localhost:${process.env.HTTP_PORT}`
+
 describe("post/orderbook/quotes", () => {
 	it('should post valid quotes to the orderbook', async () => {
 

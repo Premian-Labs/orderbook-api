@@ -6,7 +6,7 @@ dotenv.config();
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true);
 
-const url = `https://localhost:${process.env.HTTP_PORT}`
+const url = `http://localhost:${process.env.HTTP_PORT}`
 
 describe("Expiration & Position Management", () => {
 	it('should successfully settle options in a specified Option', async () => {
