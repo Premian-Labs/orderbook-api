@@ -181,6 +181,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		})
 	}
 
+	// FIXME: postQuotesRequest type changed
 	// NOTE: if at least 1 quote is valid/unique status will be 201
 	// quote exists (200), bad request (400), unauthorized (401).
 	if (postQuotesRequest.status !== 201) {
