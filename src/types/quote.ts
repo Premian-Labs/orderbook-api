@@ -110,6 +110,8 @@ export interface ReturnedOrderbookQuote extends Option {
 	ts: number
 }
 
+export type InvalidOrderbookQuote = Omit<ReturnedOrderbookQuote, 'quoteId' | 'ts'>
+
 export interface TokenAddresses {
 	[key: string]: string
 }

@@ -1,6 +1,6 @@
 import moment from 'moment'
 import {
-	FillableQuote,
+	FillableQuote, InvalidOrderbookQuote,
 	OrderbookQuote,
 	OrderbookQuoteTradeDeserialized,
 	PoolKey,
@@ -68,6 +68,25 @@ export function createExpiration(exp: string): number {
 
 	// Set time to 8:00 AM
 	return expirationMoment.add(8, 'hours').unix()
+}
+
+export function parseInvalidQuotes(
+	orderbookQuote: OrderbookQuote
+): InvalidOrderbookQuote {
+	return {
+		base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
+		quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
+		expiration: moment
+			.unix(orderbookQuote.poolKey.maturity)
+			.format('DDMMMYY')
+			.toUpperCase(),
+		strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
+		type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
+		side: orderbookQuote.isBuy ? 'bid' : 'ask',
+		size: parseFloat(formatEther(orderbookQuote.size)),
+		price: parseFloat(formatEther(orderbookQuote.price)),
+		deadline: orderbookQuote.deadline - orderbookQuote.ts,
+	}
 }
 
 export function createReturnedQuotes(

@@ -56,7 +56,7 @@ import {
 	createExpiration,
 	createReturnedQuotes,
 	createPoolKey,
-	deserializeOrderbookQuote,
+	deserializeOrderbookQuote, parseInvalidQuotes,
 } from './helpers/create'
 import {
 	preProcessExpOption,
@@ -190,7 +190,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 			invalid: postQuotesResponse.failed.map((failedQuote) => {
 				return {
 					reason: failedQuote.reason,
-					quote: createReturnedQuotes(failedQuote.quote),
+					quote: parseInvalidQuotes(failedQuote.quote),
 				}
 			}),
 			exists: postQuotesResponse.exists.map(createReturnedQuotes),
@@ -204,7 +204,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 			invalid: postQuotesResponse.failed.map((failedQuote) => {
 				return {
 					reason: failedQuote.reason,
-					quote: createReturnedQuotes(failedQuote.quote),
+					quote: parseInvalidQuotes(failedQuote.quote),
 				}
 			}),
 			exists: postQuotesResponse.exists.map(createReturnedQuotes),

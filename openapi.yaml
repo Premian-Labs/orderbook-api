@@ -616,7 +616,8 @@ components:
         base:
           type: string
         expiration:
-          type: number
+          type: string
+          pattern: ^\d\d\w\w\w\d\d$
         quote:
           type: string
         strike:
@@ -668,21 +669,32 @@ components:
         token:
           type: string
     ReturnedOrderbookQuote:
+      required:
+        - base
+        - quote
+        - expiration
+        - strike
+        - type
+        - side
+        - size
+        - price
+        - deadline
       type: object
       properties:
         base:
           type: string
-        deadline:
-          type: number
-        expiration:
-          type: number
-        price:
-          type: number
         quote:
           type: string
-        quoteId:
+        expiration:
           type: string
-          pattern: '[a-fA-F0-9]{64}$'
+          pattern: ^\d\d\w\w\w\d\d$
+        strike:
+          type: number
+        type:
+          enum:
+            - C
+            - P
+          type: string
         side:
           enum:
             - ask
@@ -690,15 +702,15 @@ components:
           type: string
         size:
           type: number
-        strike:
+        price:
           type: number
+        deadline:
+          type: number
+        quoteId:
+          type: string
+          pattern: '[a-fA-F0-9]{64}$'
         ts:
           type: number
-        type:
-          enum:
-            - C
-            - P
-          type: string
     DeleteQuotesRequest:
       type: object
       properties:
