@@ -70,28 +70,25 @@ export function createExpiration(exp: string): number {
 	return expirationMoment.add(8, 'hours').unix()
 }
 
-export function createReturnedQuotes(orderbookQuotes: OrderbookQuote[]) {
-	const returnedQuotes: ReturnedOrderbookQuote[] = orderbookQuotes.map(
-		(orderbookQuote) => {
-			return {
-				base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
-				quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
-				expiration: moment
-					.unix(orderbookQuote.poolKey.maturity)
-					.format('DDMMMYY')
-					.toUpperCase(),
-				strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
-				type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
-				side: orderbookQuote.isBuy ? 'bid' : 'ask',
-				size: parseFloat(formatEther(orderbookQuote.fillableSize)),
-				price: parseFloat(formatEther(orderbookQuote.price)),
-				deadline: orderbookQuote.deadline - orderbookQuote.ts,
-				quoteId: orderbookQuote.quoteId,
-				ts: orderbookQuote.ts,
-			}
-		}
-	)
-	return returnedQuotes
+export function createReturnedQuotes(
+	orderbookQuote: OrderbookQuote
+): ReturnedOrderbookQuote {
+	return {
+		base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
+		quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
+		expiration: moment
+			.unix(orderbookQuote.poolKey.maturity)
+			.format('DDMMMYY')
+			.toUpperCase(),
+		strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
+		type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
+		side: orderbookQuote.isBuy ? 'bid' : 'ask',
+		size: parseFloat(formatEther(orderbookQuote.fillableSize)),
+		price: parseFloat(formatEther(orderbookQuote.price)),
+		deadline: orderbookQuote.deadline - orderbookQuote.ts,
+		quoteId: orderbookQuote.quoteId,
+		ts: orderbookQuote.ts,
+	}
 }
 export function createPoolKey(
 	quote: PublishQuoteRequest | Option,

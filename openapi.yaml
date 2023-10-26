@@ -91,6 +91,10 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ReturnedOrderbookQuote'
+                  created:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReturnedOrderbookQuote'
         '400':
           description: Bad request
           content:
@@ -134,7 +138,7 @@ paths:
                     type: array
                     items:
                       type: string
-                      description: filled quote ids
+                      description: failed to fill quote ids
                       pattern: "[a-fA-F0-9]{64}"
         '400':
           description: Bad request
@@ -163,7 +167,7 @@ paths:
         required: true
       responses:
         '200':
-          description: Successful operation
+          description: Quote cancelled
         '204':
           description: Quote not found
         '400':
@@ -370,7 +374,7 @@ components:
           type: string
           pattern: '[a-fA-F0-9]{64}$'
         side:
-          enum:
+          oneOf:
             - ask
             - bid
           type: string
@@ -381,7 +385,7 @@ components:
         ts:
           type: number
         type:
-          enum:
+          oneOf:
             - C
             - P
           type: string

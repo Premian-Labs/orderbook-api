@@ -27,9 +27,9 @@ import {
 	FillableQuote,
 	GroupedDeleteRequest,
 	OrderbookQuote,
+	PostQuotesResponse,
 	PublishQuoteProxyRequest,
 	QuoteOB,
-	ReturnedOrderbookQuote,
 	TokenType,
 } from './types/quote'
 import {
@@ -83,6 +83,7 @@ import {
 	zipWith,
 } from 'lodash'
 import { requestDetailed } from './helpers/util'
+import quote from 'ajv/dist/runtime/quote'
 
 dotenv.config()
 checkEnv()
@@ -181,20 +182,37 @@ app.post('/orderbook/quotes', async (req, res) => {
 		})
 	}
 
-	// FIXME: postQuotesRequest type changed
-	// NOTE: if at least 1 quote is valid/unique status will be 201
-	// quote exists (200), bad request (400), unauthorized (401).
-	if (postQuotesRequest.status !== 201) {
+	// At least one quote created
+	if (postQuotesRequest.status == 201) {
+		const postQuotesResponse: PostQuotesResponse = postQuotesRequest.data
 		return res.status(postQuotesRequest.status).json({
-			message: postQuotesRequest.data,
+			created: postQuotesResponse.created.map(createReturnedQuotes),
+			invalid: postQuotesResponse.failed.map((failedQuote) => {
+				return {
+					reason: failedQuote.reason,
+					quote: createReturnedQuotes(failedQuote.quote),
+				}
+			}),
+			exists: postQuotesResponse.exists.map(createReturnedQuotes),
 		})
 	}
 
-	// 3 Parse/format orderbook quotes to return
-	const orderbookQuotes = postQuotesRequest.data as OrderbookQuote[]
-	const returnedQuotes = createReturnedQuotes(orderbookQuotes)
+	// All quotes exist
+	if (postQuotesRequest.status == 200) {
+		const postQuotesResponse: PostQuotesResponse = postQuotesRequest.data
+		return res.status(postQuotesRequest.status).json({
+			invalid: postQuotesResponse.failed.map((failedQuote) => {
+				return {
+					reason: failedQuote.reason,
+					quote: createReturnedQuotes(failedQuote.quote),
+				}
+			}),
+			exists: postQuotesResponse.exists.map(createReturnedQuotes),
+		})
+	}
 
-	return res.status(postQuotesRequest.status).json(returnedQuotes)
+	// Failed request
+	return res.status(postQuotesRequest.status).json(postQuotesRequest.data)
 })
 
 app.patch('/orderbook/quotes', async (req, res) => {
@@ -508,8 +526,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 	}
 
 	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
-	const returnedQuotes: ReturnedOrderbookQuote[] =
-		createReturnedQuotes(orderbookQuotes)
+	const returnedQuotes = orderbookQuotes.map(createReturnedQuotes)
 
 	return res.status(200).json(returnedQuotes)
 })
@@ -551,8 +568,7 @@ app.get('/orderbook/orders', async (req, res) => {
 	}
 
 	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
-	const returnedQuotes: ReturnedOrderbookQuote[] =
-		createReturnedQuotes(orderbookQuotes)
+	const returnedQuotes = orderbookQuotes.map(createReturnedQuotes)
 
 	return res.status(200).json(returnedQuotes)
 })
@@ -681,8 +697,7 @@ app.get('/account/orders', async (req, res) => {
 		})
 	}
 	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
-	const returnedQuotes: ReturnedOrderbookQuote[] =
-		createReturnedQuotes(orderbookQuotes)
+	const returnedQuotes = orderbookQuotes.map(createReturnedQuotes)
 
 	return res.status(200).json(returnedQuotes)
 })

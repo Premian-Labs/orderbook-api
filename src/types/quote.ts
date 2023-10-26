@@ -113,3 +113,15 @@ export interface ReturnedOrderbookQuote extends Option {
 export interface TokenAddresses {
 	[key: string]: string
 }
+
+export interface PostQuotesResponse {
+	created: OrderbookQuote[]
+	failed: {
+		reason: string
+		quote: Omit<
+			OrderbookQuote,
+			'poolAddress' & 'quoteId' & 'fillableSize' & 'ts'
+		>
+	}[]
+	exists: Omit<OrderbookQuote, 'fillableSize' & 'ts'>[]
+}
