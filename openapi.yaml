@@ -271,33 +271,329 @@ paths:
       security:
         - api_key:
             - api
-#  /orderbook/orders:
-#    get:
-#      ...
-#  /pool/settle:
-#    post:
-#      ...
-#  /pool/exercise:
-#    post:
-#      ...
-#  /pool/annihilate:
-#    post:
-#      ...
-#  /account/collateral_approval:
-#    post:
-#      ...
-#  /account/orders:
-#    get:
-#      ...
-#  /account/collateral_balances:
-#    get:
-#      ...
-#  /account/option_balances:
-#    get:
-#      ...
-#  /account/native_balance:
-#    get:
-#      ...
+  /orderbook/orders:
+    get:
+      summary: Gets quotes by quoteIds
+      parameters:
+        - name: base
+          in: query
+          required: true
+          schema:
+            quoteIds:
+              type: array
+              items:
+                type: string
+                pattern: '[a-fA-F0-9]{64}$'
+              minItems: 1
+              maxItems: 25
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReturnedOrderbookQuote'
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /pool/settle:
+    post:
+      summary: Settles options (shorts)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/PositionsRequestParams'
+        required: true
+      responses:
+        '200':
+          description: Positions settled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Option'
+                  failed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        failedOption:
+                          type: object
+                          $ref: '#/components/schemas/Option'
+                        reason:
+                          type: string
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /pool/exercise:
+    post:
+      summary: Exercise options (longs)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/PositionsRequestParams'
+        required: true
+      responses:
+        '200':
+          description: Positions exercised
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Option'
+                  failed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        failedOption:
+                          type: object
+                          $ref: '#/components/schemas/Option'
+                        reason:
+                          type: string
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /pool/annihilate:
+    post:
+      summary: Annihilate options
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/PositionsRequestParams'
+        required: true
+      responses:
+        '200':
+          description: Positions annihilated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Option'
+                  failed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        failedOption:
+                          type: object
+                          $ref: '#/components/schemas/Option'
+                        reason:
+                          type: string
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /account/collateral_approval:
+    post:
+      summary: Approve collateral for trading
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ApprovalsRequest'
+        required: true
+      responses:
+        '200':
+          description: Approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TokenApproval'
+                  failed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        failedApproval:
+                          type: object
+                          $ref: '#/components/schemas/TokenApproval'
+                        reason:
+                          type: string
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /account/orders:
+    get:
+      summary: Gets all user's quotes
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReturnedOrderbookQuote'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /account/collateral_balances:
+    get:
+      summary: Checks collateral balance
+      responses:
+        '200':
+          description: Approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TokenBalance'
+                  failed:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        failedBalanceQueries:
+                          type: string
+                        reason:
+                          type: string
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /account/native_balance:
+    get:
+      summary: Checks collateral balance
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: number
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /account/option_balances:
+    get:
+      summary: Checks option balance
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OptionPositions'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
 components:
   schemas:
     Option:
