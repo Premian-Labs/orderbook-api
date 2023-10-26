@@ -637,8 +637,8 @@ components:
       properties:
         balance:
           oneOf:
-          - type: string
-          - type: number
+            - type: string
+            - type: number
         symbol:
           type: string
         token_address:
@@ -670,7 +670,7 @@ components:
           type: string
           pattern: '[a-fA-F0-9]{64}$'
         side:
-          oneOf:
+          enum:
             - ask
             - bid
           type: string
@@ -681,7 +681,7 @@ components:
         ts:
           type: number
         type:
-          oneOf:
+          enum:
             - C
             - P
           type: string
@@ -710,18 +710,6 @@ components:
         required:
           - size
           - quoteId
-    AllQuotesRequest:
-      type: object
-      properties:
-        quoteIds:
-          type: array
-          items:
-            type: string
-            pattern: '[a-fA-F0-9]{64}$'
-          minItems: 1
-          maxItems: 25
-      required:
-        - quoteIds
     PositionsRequestParams:
       type: array
       items:
