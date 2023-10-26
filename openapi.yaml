@@ -26,10 +26,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  created:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ReturnedOrderbookQuote'
                   failed:
                     type: array
                     items:
@@ -168,8 +164,26 @@ paths:
       responses:
         '200':
           description: Quote cancelled
-        '204':
-          description: Quote not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: array
+                    items:
+                      type: string
+                      pattern: '[a-fA-F0-9]{64}$'
+                  failed:
+                    type: array
+                    items:
+                      type: string
+                      pattern: '[a-fA-F0-9]{64}$'
+                  omitted:
+                    type: array
+                    items:
+                      type: string
+                      pattern: '[a-fA-F0-9]{64}$'
         '400':
           description: Invalid parameters supplied
           content:
