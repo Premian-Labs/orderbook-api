@@ -123,5 +123,5 @@ export interface PostQuotesResponse {
 			'poolAddress' & 'quoteId' & 'fillableSize' & 'ts'
 		>
 	}[]
-	exists: Omit<OrderbookQuote, 'fillableSize' & 'ts'>[]
+	exists: OrderbookQuote[]
 }
