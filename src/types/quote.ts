@@ -122,7 +122,7 @@ export interface PostQuotesResponse {
 		reason: string
 		quote: Omit<
 			OrderbookQuote,
-			'poolAddress' & 'quoteId' & 'fillableSize' & 'ts'
+			'poolAddress' | 'quoteId' | 'fillableSize' | 'ts'
 		>
 	}[]
 	exists: OrderbookQuote[]
