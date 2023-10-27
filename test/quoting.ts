@@ -5,12 +5,18 @@ checkEnv(true)
 
 const url = `http://localhost:${process.env.HTTP_PORT}`
 
+describe('API authorisation', () => {
+	it('should prevent unauthorised access to the API', async () => {})
+})
+
 describe('post/orderbook/quotes', () => {
 	it('should post valid quotes to the orderbook', async () => {})
 
 	it('should prevent quotes with invalid deadlines from posting', async () => {})
 
 	it('should prevent quotes with invalid expirations from posting', async () => {})
+
+	it('should attempt to publish an invalid quote and receive an error message', async () => {})
 })
 
 describe('patch/orderbook/quotes', () => {
@@ -20,7 +26,9 @@ describe('patch/orderbook/quotes', () => {
 
 	it('should not attempt to fill with size of ZERO', async () => {})
 
-	it('should ignore fill attempts for bad quoteIds', async () => {})
+	it('should return quoteIds for filled and invalid to fill quotes', async () => {})
+
+	it('should ignore fill attempts for non-existent quotes', async () => {})
 
 	it('should reject fill attempts larger than fillableSize', async () => {})
 
@@ -41,12 +49,4 @@ describe('get/orderbook/quotes', () => {
 
 describe('get/orderbook/orders', () => {
 	it('should return quote objects using an array of QuoteIds', async () => {})
-})
-
-describe('websocket', () => {
-	it('should connect to ws', async () => {})
-
-	it('should receive a quote from ws', async () => {})
-
-	it('should disconnect to ws', async () => {})
 })

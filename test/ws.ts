@@ -41,4 +41,16 @@ describe('test WS connectivity', () => {
 		await delay(500)
 		expect(infoMessage).to.eq(`Session authorized. Subscriptions enabled.`)
 	})
+
+	it('should prevent unauthorised access ws')
+
+})
+
+describe('WS streaming', () => {
+	it('should request quote and subscribe on private & public Quotes stream')
+	it('should be able to unsubscribe from Quotes stream ws')
+})
+
+describe('RFQ WS flow', () => {
+	it('should be able to publish and receive rfq stream via ws')
 })
