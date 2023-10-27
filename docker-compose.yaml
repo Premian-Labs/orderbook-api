@@ -1,6 +1,6 @@
 version: '3.9'
 services:
-  api-platform:
+  premia-orderbook:
     env_file: .env
     restart: on-failure
     build: .
