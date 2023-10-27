@@ -13,6 +13,7 @@ import {
 	walletAddr,
 	availableTokens,
 	routerAddress,
+	ws_url,
 } from './config/constants'
 import {
 	Contract,
@@ -56,7 +57,8 @@ import {
 	createExpiration,
 	createReturnedQuotes,
 	createPoolKey,
-	deserializeOrderbookQuote, parseInvalidQuotes,
+	deserializeOrderbookQuote,
+	parseInvalidQuotes,
 } from './helpers/create'
 import {
 	preProcessExpOption,
@@ -808,5 +810,5 @@ const server = app.listen(process.env.HTTP_PORT, () => {
 })
 
 server.on('upgrade', (req, socket, head) => {
-	proxy.ws(req, socket, head, { target: process.env.WS_ENDPOINT })
+	proxy.ws(req, socket, head, { target: ws_url })
 })

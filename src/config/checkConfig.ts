@@ -7,7 +7,6 @@ export function checkEnv(integrationTest: boolean = false) {
 		!process.env.ENV ||
 		!process.env.WALLET_PRIVATE_KEY ||
 		!process.env.WALLET_ADDRESS ||
-		!process.env.WS_ENDPOINT ||
 		!process.env.HTTP_PORT
 	) {
 		throw new Error(`Missing Core Credentials`)

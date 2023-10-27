@@ -10,6 +10,10 @@ export const orderbook_url =
 	process.env.ENV == 'production'
 		? 'https://orderbook.premia.finance'
 		: 'https://test.orderbook.premia.finance'
+export const ws_url =
+	process.env.ENV == 'production'
+		? 'wss://quotes.premia.finance'
+		: 'wss://test.quotes.premia.finance'
 // undefined is checked in index
 export const apiKey =
 	process.env.ENV == 'production'
