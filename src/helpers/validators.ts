@@ -77,8 +77,7 @@ export const validateFillQuotes = ajv.compile({
 		properties: {
 			tradeSize: {
 				type: 'number',
-				minimum: 0,
-				exclusiveMinimum: true,
+				exclusiveMinimum: 0,
 			},
 			quoteId: {
 				type: 'string',
@@ -114,8 +113,7 @@ export const validateGetFillableQuotes = ajv.compile({
 		...validateOptionEntity,
 		size: {
 			type: 'number',
-			minimum: 0,
-			exclusiveMinimum: true,
+			exclusiveMinimum: 0,
 		},
 		side: {
 			type: 'string',
