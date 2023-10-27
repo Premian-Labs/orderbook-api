@@ -810,5 +810,9 @@ const server = app.listen(process.env.HTTP_PORT, () => {
 })
 
 server.on('upgrade', (req, socket, head) => {
-	proxy.ws(req, socket, head, { target: ws_url })
+	proxy.ws(req, socket, head, {
+		target: ws_url,
+		changeOrigin: true,
+		ws: true,
+	})
 })
