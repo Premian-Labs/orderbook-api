@@ -110,20 +110,25 @@ export interface ReturnedOrderbookQuote extends Option {
 	ts: number
 }
 
-export type InvalidOrderbookQuote = Omit<ReturnedOrderbookQuote, 'quoteId' | 'ts'>
+export type InvalidOrderbookQuote = Omit<
+	ReturnedOrderbookQuote,
+	'quoteId' | 'ts'
+>
 
 export interface TokenAddresses {
 	[key: string]: string
 }
 
+export type InvalidPostQuoteResponse = Omit<
+	OrderbookQuote,
+	'poolAddress' | 'quoteId' | 'fillableSize' | 'ts'
+>
+
 export interface PostQuotesResponse {
 	created: OrderbookQuote[]
 	failed: {
 		reason: string
-		quote: Omit<
-			OrderbookQuote,
-			'poolAddress' | 'quoteId' | 'fillableSize' | 'ts'
-		>
+		quote: InvalidPostQuoteResponse
 	}[]
 	exists: OrderbookQuote[]
 }

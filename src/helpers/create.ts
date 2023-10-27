@@ -1,6 +1,8 @@
 import moment from 'moment'
 import {
-	FillableQuote, InvalidOrderbookQuote,
+	FillableQuote,
+	InvalidOrderbookQuote,
+	InvalidPostQuoteResponse,
 	OrderbookQuote,
 	OrderbookQuoteTradeDeserialized,
 	PoolKey,
@@ -71,7 +73,7 @@ export function createExpiration(exp: string): number {
 }
 
 export function parseInvalidQuotes(
-	orderbookQuote: OrderbookQuote
+	orderbookQuote: InvalidPostQuoteResponse
 ): InvalidOrderbookQuote {
 	return {
 		base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
@@ -85,7 +87,7 @@ export function parseInvalidQuotes(
 		side: orderbookQuote.isBuy ? 'bid' : 'ask',
 		size: parseFloat(formatEther(orderbookQuote.size)),
 		price: parseFloat(formatEther(orderbookQuote.price)),
-		deadline: orderbookQuote.deadline - orderbookQuote.ts,
+		deadline: orderbookQuote.deadline,
 	}
 }
 
