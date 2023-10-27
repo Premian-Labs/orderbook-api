@@ -20,16 +20,19 @@
     "build": "tsc --build",
     "postinstall": "npx typechain --target ethers-v6 --out-dir \"./src/typechain\" \"src/abi/*.json\"",
     "start": "node ./dist/index.js",
-    "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**"
+    "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**",
+    "e2e:account": "mocha --require ts-node/register test/account.ts",
+    "e2e:expiration": "mocha --require ts-node/register test/expiration.ts",
+    "e2e:quoting": "mocha --require ts-node/register test/quoting.ts",
+    "e2e:ws": "mocha --require ts-node/register test/ws.ts"
   },
   "dependencies": {
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
     "@types/http-proxy": "^1.17.11",
     "@types/lodash": "^4.14.197",
-    "@types/mocha": "^10.0.1",
     "@types/node": "^18.13.0",
-    "ajb": "^0.0.0",
+    "@types/ws": "^8.5.4",
     "ajv": "^8.12.0",
     "axios": "^1.5.0",
     "cors": "^2.8.5",
@@ -46,9 +49,17 @@
     "typescript": "^5.2.2",
     "url": "^0.11.1",
     "web3-utils": "^1.9.0",
-    "winston": "^3.9.0"
+    "winston": "^3.9.0",
+    "ws": "^8.12.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/chai": "^4.3.9",
+    "@types/mocha": "^10.0.3",
+    "chai": "^4.3.7",
+    "js-yaml": "^4.1.0",
+    "mocha": "^10.2.0",
+    "typescript-json-schema": "^0.62.0"
+  },
   "engines": {
     "node": ">=18"
   }
