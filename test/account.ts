@@ -1,25 +1,20 @@
-import dotenv from 'dotenv';
+import dotenv from 'dotenv'
 import axios from 'axios'
-import { checkEnv } from '../src/config/checkConfig';
+import { checkEnv } from '../src/config/checkConfig'
 
-dotenv.config();
+dotenv.config()
 // NOTE: integration tests can only be run on development mode & with testnet credentials
-checkEnv(true);
+checkEnv(true)
 
 const url = `http://localhost:${process.env.HTTP_PORT}`
-describe("Balances, Approvals & Open Orders", () => {
-	it('should get option balances returned as float values', async () => {
-	});
+describe('Balances, Approvals & Open Orders', () => {
+	it('should get option balances returned as float values', async () => {})
 
-	it('should get open orders', async () => {
-	});
+	it('should get open orders', async () => {})
 
-	it('should get collateral balances', async () => {
-	});
+	it('should get collateral balances', async () => {})
 
-	it('should get native balances', async () => {
-	});
+	it('should get native balances', async () => {})
 
-	it('should set collateral approvals', async () => {
-	});
+	it('should set collateral approvals', async () => {})
 })
