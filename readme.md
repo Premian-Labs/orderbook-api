@@ -28,9 +28,14 @@ Example of required env. variables to be specified by API user: [.env.example](.
   <img src="img/architecture.png" alt='architecture' width="600">
 </p>
 
-## How to Start Guide
+## Start Guide
 1. Clone this repo
-2. Populate .env (local runtime) or specify env. variables on the host machine to be readable for the container
-3. Build and run the image
-   - For local runtime, we recommend to use [Docker Compose](https://docs.docker.com/compose/). From the repo root directory, run command in your terminal `docker-compose up` to build and run the container, and `docker-compose down` to stop it.
-   - For remote runtime, you can either build the image locally and push to the remote Docker image registry or fork the repo and set CI/CD pipeline in the cloud. Please email _support@premia.finance_ if you have questions about cloud deployment.
+2. Populate .env file (local runtime) or specify env. variables on the remote host (server) to be readable from the container
+3. Local runtime:
+   - We recommend using [Docker Compose](https://docs.docker.com/compose/). 
+   - From the repo root directory, run the following command in your terminal `docker-compose up` to build and run the container. 
+   - The API will be accessible at `http//:localhost:3000`. 
+   - `docker-compose up` requires a dedicated session in the terminal. If you want to run another process, open a new terminal session for it.
+   - To stop the container run `docker-compose down`.
+
+4. Remote runtime: For remote runtime, you can either build the image locally and push to the remote Docker image registry or fork the repo and set CI/CD pipeline in the cloud. Please email _support@premia.finance_ if you have questions about cloud deployment.
