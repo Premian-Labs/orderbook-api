@@ -10,13 +10,13 @@ import {
 } from '../config/constants'
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
-import { ERC20Base__factory } from '../typechain'
+import { IERC20__factory } from '../typechain'
 import { TokenBalance } from '../types/balances'
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
-		? arb.PoolFactoryProxy
-		: arbGoerli.PoolFactoryProxy
+		? arb.core.PoolFactoryProxy.address
+		: arbGoerli.core.PoolFactoryProxy.address
 const poolFactory = new Contract(poolFactoryAddr, PoolFactoryABI, provider)
 
 const poolMap: Map<PoolKey, string> = new Map()
@@ -62,7 +62,7 @@ export function getTokenByAddress(
 export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
 		availableTokens.map(async (token) => {
-			const erc20 = ERC20Base__factory.connect(tokenAddresses[token], provider)
+			const erc20 = IERC20__factory.connect(tokenAddresses[token], provider)
 			const tokenBalance: TokenBalance = {
 				token_address: tokenAddresses[token],
 				symbol: token,

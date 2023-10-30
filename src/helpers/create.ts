@@ -126,8 +126,8 @@ export function createPoolKey(
 				: arbGoerli.tokens[quote.quote],
 		oracleAdapter:
 			process.env.ENV == 'production'
-				? arb.ChainlinkAdapterProxy
-				: arbGoerli.ChainlinkAdapterProxy,
+				? arb.core.ChainlinkAdapterProxy.address
+				: arbGoerli.core.ChainlinkAdapterProxy.address,
 		strike: parseEther(quote.strike.toString()),
 		maturity: expiration ? expiration : quote.expiration,
 		isCallPool: quote.type === 'C',

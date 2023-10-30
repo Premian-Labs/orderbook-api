@@ -41,4 +41,6 @@ export const tokenAddresses =
 	process.env.ENV === 'production' ? arb.tokens : arbGoerli.tokens
 export const signer = new ethers.Wallet(privateKey, provider)
 export const routerAddress =
-	process.env.ENV == 'production' ? arb.core.ERC20Router.address : arbGoerli.core.ERC20Router.address
+	process.env.ENV == 'production'
+		? arb.core.ERC20Router.address
+		: arbGoerli.core.ERC20Router.address
