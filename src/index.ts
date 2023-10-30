@@ -41,7 +41,7 @@ import {
 	GetFillableQuotes,
 	PublishQuoteRequest,
 } from './types/validate'
-import { OptionPositions, TokenBalance } from './types/balances'
+import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
 import {
 	validateDeleteQuotes,
@@ -74,7 +74,7 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/sign'
-import { ERC20Base__factory, IPool__factory } from './typechain'
+import { IERC20__factory, IPool__factory } from './typechain'
 import {
 	difference,
 	find,
@@ -85,7 +85,6 @@ import {
 	zipWith,
 } from 'lodash'
 import { requestDetailed } from './helpers/util'
-import quote from 'ajv/dist/runtime/quote'
 
 dotenv.config()
 checkEnv()
@@ -756,7 +755,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 				process.env.ENV == 'production'
 					? arb.tokens[approval.token]
 					: arbGoerli.tokens[approval.token]
-			const erc20 = ERC20Base__factory.connect(erc20Addr, signer)
+			const erc20 = IERC20__factory.connect(erc20Addr, signer)
 
 			if (approval.amt === 'max') {
 				const response = await erc20.approve(
