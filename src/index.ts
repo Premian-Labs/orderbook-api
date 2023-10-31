@@ -91,6 +91,7 @@ checkEnv()
 
 const app = express()
 app.use(express.json())
+app.use(express.urlencoded({ extended: true}))
 app.use(checkTestApiKey)
 
 app.post('/orderbook/quotes', async (req, res) => {
