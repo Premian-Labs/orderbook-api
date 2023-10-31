@@ -14,6 +14,7 @@ const level = () => {
 	return isDevelopment ? 'debug' : 'info'
 }
 
+// TODO: add json parser for logging (similar to orderbook api)
 // Create the logger instance that has to be exported
 // and used to log messages.
 const Logger = createLogger({
