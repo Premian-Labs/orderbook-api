@@ -42,13 +42,13 @@ describe('test WS connectivity', () => {
 		expect(infoMessage).to.eq(`Session authorized. Subscriptions enabled.`)
 	})
 
-	it('should prevent unauthorised access ws')
+	it('should prevent unauthorised access to ws')
 
 })
 
 describe('WS streaming', () => {
 	it('should request quote and subscribe on private & public Quotes stream')
-	it('should be able to unsubscribe from Quotes stream ws')
+	it('should be able to unsubscribe from Quotes stream')
 })
 
 describe('RFQ WS flow', () => {
