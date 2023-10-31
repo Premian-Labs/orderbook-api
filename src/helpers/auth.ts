@@ -1,8 +1,5 @@
 import express from 'express'
-import axios from 'axios'
-import { UnkeyAuthRequest, UnkeyAuthResponse } from '../types/auth'
-
-// TODO: use unkey sdk which had built-in retry (more stable)
+import { verifyKey } from '@unkey/api'
 
 // UNKEY API KEY middleware
 export async function checkTestApiKey(
@@ -14,25 +11,15 @@ export async function checkTestApiKey(
 	if (!providedKey)
 		return res.status(401).json({ message: 'API key not provided' })
 
-	const authRequest: UnkeyAuthRequest = {
-		key: providedKey.toString(),
-	}
-	try {
-		const auth = await axios.post(
-			'https://api.unkey.dev/v1/keys/verify',
-			authRequest,
-			{
-				validateStatus: function (status) {
-					return status < 500
-				},
-			}
-		)
-		const response: UnkeyAuthResponse = auth.data
-		if (!response.valid)
-			return res.status(401).json({ message: 'Invalid API key' })
-	} catch (e) {
+	const { result, error } = await verifyKey(providedKey.toString())
+
+	if (error) {
 		return res.status(401).json({ message: 'Failed to validate api key' })
 	}
+
+	if (!result.valid)
+		// if key is invalid, code will give the reason (NOT_FOUND, FORBIDDEN, KEY_USAGE_EXCEEDED, RATELIMITED)
+		return res.status(401).json({ message: `${result.code}` })
 
 	next()
 }
