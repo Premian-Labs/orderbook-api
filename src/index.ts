@@ -90,9 +90,7 @@ dotenv.config()
 checkEnv()
 
 const app = express()
-app.use(cors())
 app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
 app.use(checkTestApiKey)
 
 app.post('/orderbook/quotes', async (req, res) => {
@@ -466,7 +464,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	})
 })
 
-// returns quotes up to a specific size
+// NOTE: returns quotes up to a specific size
 app.get('/orderbook/quotes', async (req, res) => {
 	const valid = validateGetFillableQuotes(req.query)
 	if (!valid) {
@@ -532,7 +530,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 	return res.status(200).json(returnedQuotes)
 })
 
-// gets quotes using an array of quoteIds
+// NOTE: gets quotes using an array of quoteIds
 app.get('/orderbook/orders', async (req, res) => {
 	const valid = validateGetAllQuotes(req.query)
 	if (!valid) {
