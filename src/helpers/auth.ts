@@ -2,6 +2,8 @@ import express from 'express'
 import axios from 'axios'
 import { UnkeyAuthRequest, UnkeyAuthResponse } from '../types/auth'
 
+// TODO: use unkey sdk which had built-in retry (more stable)
+
 // UNKEY API KEY middleware
 export async function checkTestApiKey(
 	req: express.Request,

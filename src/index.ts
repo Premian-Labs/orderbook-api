@@ -1,6 +1,5 @@
 import express from 'express'
 import httpProxy from 'http-proxy'
-import cors from 'cors'
 import dotenv from 'dotenv'
 import Logger from './lib/logger'
 import { checkEnv } from './config/checkConfig'
@@ -90,10 +89,14 @@ dotenv.config()
 checkEnv()
 
 const app = express()
+// body parser for POST requests
 app.use(express.json())
-app.use(express.urlencoded({ extended: true}))
+// url query param parser for GET requests
+app.use(express.urlencoded({ extended: true }))
+// unkey Auth check
 app.use(checkTestApiKey)
 
+// NOTE: post limit order(s)
 app.post('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validatePostQuotes(req.body)
@@ -215,6 +218,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 	return res.status(postQuotesRequest.status).json(postQuotesRequest.data)
 })
 
+// NOTE: fill quote(s)
 app.patch('/orderbook/quotes', async (req, res) => {
 	const valid = validateFillQuotes(req.body)
 	if (!valid) {
@@ -382,6 +386,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	})
 })
 
+// NOTE: cancel quote(s)
 app.delete('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validateDeleteQuotes(req.body)
@@ -573,6 +578,7 @@ app.get('/orderbook/orders', async (req, res) => {
 	return res.status(200).json(returnedQuotes)
 })
 
+// NOTE: post expiration short position settlement
 app.post('/pool/settle', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validatePositionManagement(req.body)
@@ -599,6 +605,7 @@ app.post('/pool/settle', async (req, res) => {
 	return res.status(200).json(requestSummary)
 })
 
+// NOTE: post expiration long position exercise
 app.post('/pool/exercise', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validatePositionManagement(req.body)
@@ -626,6 +633,7 @@ app.post('/pool/exercise', async (req, res) => {
 	return res.status(200).json(requestSummary)
 })
 
+// NOTE: collateral release for offsetting positions
 app.post('/pool/annihilate', async (req, res) => {
 	// 1. Validate incoming object array
 	const valid = validatePositionManagement(req.body)
@@ -655,6 +663,7 @@ app.post('/pool/annihilate', async (req, res) => {
 	return res.status(200).json(requestSummary)
 })
 
+// NOTE: option positions currently open
 app.get('/account/option_balances', async (req, res) => {
 	let optionBalancesRequest
 	try {
@@ -683,6 +692,7 @@ app.get('/account/option_balances', async (req, res) => {
 	res.status(200).json(optionBalancesRequest.data as OptionPositions)
 })
 
+// NOTE: returns all open orders
 app.get('/account/orders', async (req, res) => {
 	let proxyResponse
 	try {
@@ -702,6 +712,7 @@ app.get('/account/orders', async (req, res) => {
 	return res.status(200).json(returnedQuotes)
 })
 
+// NOTE: returns all collateral balances on Token addressed in config file
 app.get('/account/collateral_balances', async (req, res) => {
 	const [balances, failureReasons] = await getBalances()
 
@@ -723,6 +734,7 @@ app.get('/account/collateral_balances', async (req, res) => {
 	})
 })
 
+// NOTE: ETH balance
 app.get('/account/native_balance', async (req, res) => {
 	let nativeBalance: number
 	try {
@@ -737,6 +749,7 @@ app.get('/account/native_balance', async (req, res) => {
 	res.status(200).json(nativeBalance)
 })
 
+// NOTE: approval of collateral can be custom or set to `max`
 app.post('/account/collateral_approval', async (req, res) => {
 	const valid = validateApprovals(req.body)
 	if (!valid) {
