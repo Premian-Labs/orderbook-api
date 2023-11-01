@@ -7,11 +7,9 @@ Premia is a peer-to-peer options exchange and settlement engine built for the Et
 The protocol is designed to provide a set of smart contracts that advance open finance by prioritizing security, 
 self-custody, automatic execution without a trusted intermediary, and permissionless use of financial primitives.
 
-## Premia Orderbook API
-This repo contains the source code for a runtime-agnostic Docker-containerized API to  interact with the Premia v3 Orderbook and related protocol functionality for both professionals (market makers) and other advanced/programmatic users.   
-The containerized API allows for development in _any_ language. Web3 functionality is abstracted away from the developer, shortening integration time.
-Additional API methods (see `/account/*`) are available for developer's convenience.
-Check Open API 3.1 format API docs here: [openapi.yaml](openapi.yaml).
+## Premia Containerized API
+This repo contains the source code for a Docker-containerized API to interact with the Premia v3 Orderbook and 
+related protocol functionality for both professionals (market makers) and other advanced/programmatic users. The containerized API allows for development in _any_ language. Web3 functionality is abstracted away from the developer, shortening integration time.
 
 ## Prerequisites
 There are several things that are needed in order to work with the API locally. They include:
@@ -39,3 +37,7 @@ Example of required env. variables to be specified by API user: [.env.example](.
    - To stop the container run `docker-compose down`.
 
 4. Remote runtime: For remote runtime, you can either build the image locally and push to the remote Docker image registry or fork the repo and set CI/CD pipeline in the cloud. Please email _support@premia.finance_ if you have questions about cloud deployment.
+
+## OpenAPI Specification
+Premia provides the readable OpenAPI specification for the Containerized API on its website [here](https://docs.premia.blue/developer-center/api).
+The source code for the OpenAPI specification can be found in this repository. 
