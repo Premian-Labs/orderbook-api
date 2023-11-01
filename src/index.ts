@@ -102,9 +102,10 @@ app.post('/orderbook/quotes', async (req, res) => {
 	const valid = validatePostQuotes(req.body)
 	if (!valid) {
 		res.status(400)
-		Logger.error(
-			`Validation error: ${JSON.stringify(validatePostQuotes.errors)}`
-		)
+		Logger.error({
+			message: `Validation error`,
+			errors: validatePostQuotes.errors
+		})
 		return res.send(validatePostQuotes.errors)
 	}
 
@@ -223,9 +224,10 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	const valid = validateFillQuotes(req.body)
 	if (!valid) {
 		res.status(400)
-		Logger.error(
-			`Validation error: ${JSON.stringify(validateFillQuotes.errors)}`
-		)
+		Logger.error({
+			message: 'Validation error',
+			errors: validateFillQuotes.errors
+		})
 		return res.send(validateFillQuotes.errors)
 	}
 
@@ -337,9 +339,11 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				fillableQuoteDeserialized.poolAddress,
 				signer
 			)
-			Logger.debug(
-				`Filling quote ${JSON.stringify(fillableQuoteDeserialized)}...`
-			)
+			Logger.debug({
+				message: 'Filling quote',
+				fillableQuote: serializeQuote(fillableQuoteDeserialized)
+			})
+
 			const quoteOB: QuoteOB = pick(fillableQuoteDeserialized, [
 				'provider',
 				'taker',
@@ -366,7 +370,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				}
 			)
 			await provider.waitForTransaction(fillTx.hash, 1)
-			Logger.debug(`Quote ${JSON.stringify(fillableQuoteDeserialized)} filled`)
+			Logger.debug(`Quote ${JSON.stringify(fillableQuoteDeserialized.quoteId)} filled`)
 			return fillableQuoteDeserialized
 		})
 	)
@@ -392,9 +396,10 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	const valid = validateDeleteQuotes(req.body)
 	if (!valid) {
 		res.status(400)
-		Logger.error(
-			`Validation error: ${JSON.stringify(validateDeleteQuotes.errors)}`
-		)
+		Logger.error({
+			message: 'Validation error',
+			errors: validateDeleteQuotes.errors
+		})
 		return res.send(validateDeleteQuotes.errors)
 	}
 
@@ -475,9 +480,10 @@ app.get('/orderbook/quotes', async (req, res) => {
 	const valid = validateGetFillableQuotes(req.query)
 	if (!valid) {
 		res.status(400)
-		Logger.error(
-			`Validation error: ${JSON.stringify(validateGetFillableQuotes.errors)}`
-		)
+		Logger.error({
+			message: 'Validation error',
+			errors: validateGetFillableQuotes.errors
+		})
 		return res.send(validateGetFillableQuotes.errors)
 	}
 
@@ -541,9 +547,10 @@ app.get('/orderbook/orders', async (req, res) => {
 	const valid = validateGetAllQuotes(req.query)
 	if (!valid) {
 		res.status(400)
-		Logger.error(
-			`Validation error: ${JSON.stringify(validateGetAllQuotes.errors)}`
-		)
+		Logger.error({
+			message: 'Validation error',
+			errors: validateGetAllQuotes.errors
+		})
 		return res.send(validateGetAllQuotes.errors)
 	}
 
@@ -584,9 +591,10 @@ app.post('/pool/settle', async (req, res) => {
 	const valid = validatePositionManagement(req.body)
 	if (!valid) {
 		res.status(400)
-		Logger.error(
-			`Validation error: ${JSON.stringify(validatePositionManagement.errors)}`
-		)
+		Logger.error({
+			message: 'Validation error',
+			errors: validatePositionManagement.errors
+		})
 		return res.send(validatePositionManagement.errors)
 	}
 
@@ -611,9 +619,10 @@ app.post('/pool/exercise', async (req, res) => {
 	const valid = validatePositionManagement(req.body)
 	if (!valid) {
 		res.status(400)
-		Logger.error(
-			`Validation error: ${JSON.stringify(validatePositionManagement.errors)}`
-		)
+		Logger.error({
+			message: 'Validation error',
+			errors: validatePositionManagement.errors
+		})
 		return res.send(validatePositionManagement.errors)
 	}
 
@@ -639,9 +648,10 @@ app.post('/pool/annihilate', async (req, res) => {
 	const valid = validatePositionManagement(req.body)
 	if (!valid) {
 		res.status(400)
-		Logger.error(
-			`Validation error: ${JSON.stringify(validatePositionManagement.errors)}`
-		)
+		Logger.error({
+			message: 'Validation error',
+			errors: validatePositionManagement.errors
+		})
 		return res.send(validatePositionManagement.errors)
 	}
 
@@ -754,9 +764,10 @@ app.post('/account/collateral_approval', async (req, res) => {
 	const valid = validateApprovals(req.body)
 	if (!valid) {
 		res.status(400)
-		Logger.error(
-			`Validation error: ${JSON.stringify(validateApprovals.errors)}`
-		)
+		Logger.error({
+			message: 'Validation error',
+			errors: validateApprovals.errors
+		})
 		return res.send(validateApprovals.errors)
 	}
 
