@@ -34,13 +34,19 @@ export async function getPoolAddress(poolKey: PoolKey) {
 		try {
 			;[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
 		} catch (e) {
-			Logger.error(`Can not get pool address: ${JSON.stringify(e)}`)
+			Logger.error({
+				message: `Can not get pool address`,
+				error: JSON.stringify(e)
+			})
 			throw new Error(`Can not get pool address`)
 		}
 	}
 	poolAddress = poolAddress.toLowerCase()
 	if (!isDeployed) {
-		Logger.warn(`Pool is not deployed: ${JSON.stringify(poolKey)}`)
+		Logger.warn({
+			message: `Pool is not deployed`,
+			poolKey: poolKey
+		})
 	}
 	poolMap.set(poolKey, poolAddress)
 	return poolAddress

@@ -36,13 +36,13 @@ export async function preProcessAnnhilate(
 		formatEther(await pool.balanceOf(walletAddr, TokenType.LONG))
 	)
 
-	Logger.info(
-		'short token balance:',
-		shortBalance,
-		'\n',
-		'long token balance:',
-		longBalance
-	)
+	Logger.info({
+		message: 'short token balance',
+		balance: {
+			shortBalance,
+			longBalance
+		}
+	})
 
 	const annihilateSize = parseEther(
 		Math.min(shortBalance, longBalance).toString()
@@ -76,10 +76,10 @@ export async function preProcessExpOption(
 	const poolAddr = await getPoolAddress(poolKey)
 	const pool = IPool__factory.connect(poolAddr, signer)
 	const balance = await pool.balanceOf(walletAddr, tokenType)
-	Logger.info(
-		`${tokenType === 0 ? 'Short' : 'Long'} Balance: `,
-		formatEther(balance)
-	)
+	Logger.info({
+		message: `${tokenType === 0 ? 'Short' : 'Long'} Balance: `,
+		balance: formatEther(balance)
+	})
 
 	if (balance === 0n) {
 		throw new Error('No balance to settle')

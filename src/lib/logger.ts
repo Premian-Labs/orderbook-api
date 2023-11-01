@@ -1,5 +1,8 @@
-import { transports, createLogger } from 'winston'
+import { LoggingWinston } from '@google-cloud/logging-winston'
+import { transports, createLogger, format } from 'winston'
+import dotenv from 'dotenv'
 
+dotenv.config()
 const levels = {
 	error: 0,
 	warn: 1,
@@ -14,15 +17,30 @@ const level = () => {
 	return isDevelopment ? 'debug' : 'info'
 }
 
-// TODO: add json parser for logging (similar to orderbook api)
-// Create the logger instance that has to be exported
-// and used to log messages.
+const transport =
+	process.env.ENV === 'production'
+		? [new LoggingWinston()]
+		: [new transports.Console()]
+
 const Logger = createLogger({
+	format: format.combine(
+		format.json({
+			replacer: (key, value) => {
+				if (value instanceof Error) {
+					return { message: value.message, stack: value.stack }
+				}
+				return value
+			},
+		})
+		// format.prettyPrint({
+		//   colorize: true
+		// })
+	),
 	level: level(),
-	transports: [new transports.Console()],
+	transports: transport,
 	levels,
 	defaultMeta: {
-		service: 'Quotes',
+		service: 'WS-Quotes',
 	},
 })
 
