@@ -39,5 +39,5 @@ Example of required env. variables to be specified by API user: [.env.example](.
 4. Remote runtime: For remote runtime, you can either build the image locally and push to the remote Docker image registry or fork the repo and set CI/CD pipeline in the cloud. Please email _support@premia.finance_ if you have questions about cloud deployment.
 
 ## OpenAPI Specification
-Premia provides the readable OpenAPI specification for the Containerized API on its website [here](https://docs.premia.blue/developer-center/api).
+Premia provides the readable OpenAPI specification for the Containerized API on its website [here](https://docs.premia.blue/developer-center/api/containerized-api/api-specification).
 The source code for the OpenAPI specification can be found in this repository. 
