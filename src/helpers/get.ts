@@ -1,7 +1,6 @@
 import { PoolKey, TokenAddresses } from '../types/quote'
-import { Contract, formatEther } from 'ethers'
+import { formatUnits } from 'ethers'
 import Logger from '../lib/logger'
-import PoolFactoryABI from '../abi/IPoolFactory.json'
 import {
 	availableTokens,
 	provider,
@@ -10,14 +9,15 @@ import {
 } from '../config/constants'
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
-import { IERC20__factory } from '../typechain'
+import { IERC20__factory, IPoolFactory__factory } from '../typechain'
 import { TokenBalance } from '../types/balances'
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
 		? arb.core.PoolFactoryProxy.address
 		: arbGoerli.core.PoolFactoryProxy.address
-const poolFactory = new Contract(poolFactoryAddr, PoolFactoryABI, provider)
+
+const poolFactory = IPoolFactory__factory.connect(poolFactoryAddr, provider)
 
 const poolMap: Map<PoolKey, string> = new Map()
 
@@ -36,7 +36,7 @@ export async function getPoolAddress(poolKey: PoolKey) {
 		} catch (e) {
 			Logger.error({
 				message: `Can not get pool address`,
-				error: JSON.stringify(e)
+				error: JSON.stringify(e),
 			})
 			throw new Error(`Can not get pool address`)
 		}
@@ -45,7 +45,7 @@ export async function getPoolAddress(poolKey: PoolKey) {
 	if (!isDeployed) {
 		Logger.warn({
 			message: `Pool is not deployed`,
-			poolKey: poolKey
+			poolKey: poolKey,
 		})
 	}
 	poolMap.set(poolKey, poolAddress)
@@ -69,11 +69,18 @@ export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
 		availableTokens.map(async (token) => {
 			const erc20 = IERC20__factory.connect(tokenAddresses[token], provider)
+			let balance: number
+			if (token === 'WBTC') {
+				balance = parseFloat(formatUnits(await erc20.balanceOf(walletAddr), 8))
+			} else if (token === 'USDC') {
+				balance = parseFloat(formatUnits(await erc20.balanceOf(walletAddr), 6))
+			} else {
+				balance = parseFloat(formatUnits(await erc20.balanceOf(walletAddr), 18))
+			}
 			const tokenBalance: TokenBalance = {
 				token_address: tokenAddresses[token],
 				symbol: token,
-				// FIXME: fix decimals for non-standard coin (WBTC, USDC)
-				balance: parseFloat(formatEther(await erc20.balanceOf(walletAddr))),
+				balance: balance,
 			}
 			return tokenBalance
 		})

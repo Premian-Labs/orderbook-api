@@ -40,8 +40,8 @@ export async function preProcessAnnhilate(
 		message: 'short token balance',
 		balance: {
 			shortBalance,
-			longBalance
-		}
+			longBalance,
+		},
 	})
 
 	const annihilateSize = parseEther(
@@ -78,7 +78,7 @@ export async function preProcessExpOption(
 	const balance = await pool.balanceOf(walletAddr, tokenType)
 	Logger.info({
 		message: `${tokenType === 0 ? 'Short' : 'Long'} Balance: `,
-		balance: formatEther(balance)
+		balance: formatEther(balance),
 	})
 
 	if (balance === 0n) {
