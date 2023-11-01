@@ -2,7 +2,6 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-// TODO: do we need to add all env params in here as critical?
 export function checkEnv(integrationTest: boolean = false) {
 	if (
 		!process.env.ENV ||
