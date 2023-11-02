@@ -14,7 +14,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PublishQuotesRequest'
+              type: array
+              items:
+                $ref: '#/components/schemas/PublishQuotesRequest'
         required: true
       responses:
         '200':
@@ -223,12 +225,15 @@ paths:
           schema:
             type: string
             pattern: ^\d\d\w\w\w\d\d$
+            example: 03NOV23
         - name: strike
           in: query
           required: true
           description: option strike,
           schema:
             type: number
+            minimum: 0
+            example: 1100
         - name: type
           in: query
           description: call or put
@@ -244,6 +249,7 @@ paths:
           schema:
             type: number
             minimum: 0
+            example: 3
         - name: side
           in: query
           description: orderbook side
@@ -251,6 +257,7 @@ paths:
           schema:
             type: string
             pattern: "^bid$|^ask$"
+            example: bid
         - name: provider
           in: query
           description: unique address of the provider (maker)
@@ -335,9 +342,7 @@ paths:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/PositionsRequestParams'
+              $ref: '#/components/schemas/PositionsRequestParams'
         required: true
       responses:
         '200':
@@ -383,9 +388,7 @@ paths:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/PositionsRequestParams'
+              $ref: '#/components/schemas/PositionsRequestParams'
         required: true
       responses:
         '200':
@@ -431,9 +434,7 @@ paths:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/PositionsRequestParams'
+              $ref: '#/components/schemas/PositionsRequestParams'
         required: true
       responses:
         '200':
@@ -479,9 +480,7 @@ paths:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/ApprovalsRequest'
+              $ref: '#/components/schemas/ApprovalsRequest'
         required: true
       responses:
         '200':
