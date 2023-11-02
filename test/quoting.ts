@@ -35,7 +35,6 @@ describe('patch/orderbook/quotes', () => {
 	it('should ignore fill attempts for non-existent quotes', async () => {})
 
 	it('should reject fill attempts larger than fillableSize', async () => {})
-
 })
 
 describe('delete/orderbook/quotes', () => {
