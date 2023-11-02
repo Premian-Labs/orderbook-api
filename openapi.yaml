@@ -9,14 +9,12 @@ info:
 paths:
   /orderbook/quotes:
     post:
-      summary: Publishes the quote into the orderbook
+      summary: Publishes option quote(s) on-chain and into the orderbook
       requestBody:
         content:
           application/json:
             schema:
-              type: array
-              items:
-                $ref: '#/components/schemas/PublishQuotesRequest'
+              $ref: '#/components/schemas/PublishQuotesRequest'
         required: true
       responses:
         '200':
@@ -26,7 +24,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  failed:
+                  invalid:
                     type: array
                     items:
                       type: object
@@ -47,7 +45,7 @@ paths:
                             - InsufficientCollateralBalance
                             - InsufficientLongBalance
                             - InsufficientShortBalance
-                        invalidQuote:
+                        quote:
                           $ref: '#/components/schemas/ReturnedOrderbookQuote'
                   exists:
                     type: array
@@ -60,7 +58,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  failed:
+                  invalid:
                     type: array
                     items:
                       type: object
@@ -81,7 +79,7 @@ paths:
                             - InsufficientCollateralBalance
                             - InsufficientLongBalance
                             - InsufficientShortBalance
-                        invalidQuote:
+                        quote:
                           $ref: '#/components/schemas/ReturnedOrderbookQuote'
                   exists:
                     type: array
@@ -783,7 +781,6 @@ components:
       minItems: 1
       maxItems: 8
     PublishQuotesRequest:
-      type: array
       items:
         type: object
         properties:
