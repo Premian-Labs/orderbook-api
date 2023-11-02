@@ -198,52 +198,55 @@ paths:
         - api_key:
             - api
     get:
-      summary: Get all quotes for a specific option up to a specified size/qty (order of best to worst price)
+      summary: Get all quotes for a specific option up to a specified size/qty (in order of best to worst price)
       parameters:
         - name: base
           in: query
           required: true
-          description: ie WETH, WBTC, ARB, LINK
+          description: base token symbol
           schema:
             type: string
-            pattern: "^0x[a-fA-F0-9]{40}$"
+            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+            example: WETH
         - name: quote
           in: query
           required: true
-          description: ie USDC
+          description: quote token symbol
           schema:
             type: string
-            pattern: "^0x[a-fA-F0-9]{40}$"
+            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+            example: USDC
         - name: expiration
           in: query
           required: true
-          description: option expiration date. ie 03NOV23, 10NOV23, 01DEC23
+          description: option expiration
           schema:
             type: string
             pattern: ^\d\d\w\w\w\d\d$
         - name: strike
           in: query
           required: true
-          description: ie 1.1, 10, 1700, 35000,
+          description: option strike,
           schema:
             type: number
         - name: type
           in: query
-          description: option type (C for call or P for put)
+          description: call or put
           required: true
           schema:
             type: string
             pattern: ^C$|^P$
+            example: P
         - name: size
           in: query
-          description: number of contracts (ie. 1, 4.2, 5, 15.5)
+          description: number of contracts
           required: true
           schema:
             type: number
             minimum: 0
         - name: side
           in: query
-          description: orderbook side ("ask" or "bid")
+          description: orderbook side
           required: true
           schema:
             type: string
@@ -616,18 +619,25 @@ components:
       properties:
         base:
           type: string
+          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+          example: WETH
+        quote:
+          type: string
+          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+          example: USDC
         expiration:
           type: string
           pattern: ^\d\d\w\w\w\d\d$
-        quote:
-          type: string
+          example: 03NOV23
         strike:
           type: number
+          example: 1700
         type:
           enum:
             - C
             - P
           type: string
+          example: P
     NFTBalance:
       type: object
       properties:
@@ -655,20 +665,28 @@ components:
           oneOf:
             - type: string
             - type: number
+          example: 2.345
         symbol:
           type: string
+          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+          example: WETH
         token_address:
           type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+          example: 0x3D1dcc44D65C08b39029cA8673D705D7e5c4cFF2
     TokenApproval:
       type: object
       properties:
-        amt:
-          oneOf:
-            - type: string
-              pattern: 'max'
-            - type: number
         token:
           type: string
+          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+          example: WETH
+        amt:
+          oneOf:
+            - type: number
+            - type: string
+              pattern: ^max$
+          example: max
     ReturnedOrderbookQuote:
       required:
         - base
@@ -684,34 +702,47 @@ components:
       properties:
         base:
           type: string
+          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+          example: WETH
         quote:
           type: string
+          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+          example: USDC
         expiration:
           type: string
           pattern: ^\d\d\w\w\w\d\d$
+          example: 03NOV23
         strike:
           type: number
+          example: 1700
         type:
           enum:
             - C
             - P
           type: string
+          example: P
         side:
           enum:
             - ask
             - bid
           type: string
+          example: bid
         size:
           type: number
+          example: 3
         price:
           type: number
+          example: .15
         deadline:
           type: number
+          example: 184
         quoteId:
           type: string
           pattern: '[a-fA-F0-9]{64}$'
+          example: 58229484d69566752b48c49326e6eaca2b4fba5372ba638870bda5b58b4fb25e
         ts:
           type: number
+          example: 1698952534
     DeleteQuotesRequest:
       type: object
       properties:
@@ -720,6 +751,7 @@ components:
           items:
             type: string
             pattern: '[a-fA-F0-9]{64}$'
+            example: 58229484d69566752b48c49326e6eaca2b4fba5372ba638870bda5b58b4fb25e
           minItems: 1
       required:
         - quoteIds
@@ -731,9 +763,11 @@ components:
           tradeSize:
             type: number
             minimum: 0
+            example: 4
           quoteId:
             type: string
             pattern: '[a-fA-F0-9]{64}$'
+            example: 58229484d69566752b48c49326e6eaca2b4fba5372ba638870bda5b58b4fb25e
         required:
           - size
           - quoteId
@@ -744,18 +778,23 @@ components:
         properties:
           base:
             type: string
-            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+            pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+            example: WETH
           quote:
             type: string
-            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+            pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+            example: USDC
           expiration:
             type: string
             pattern: ^\d\d\w\w\w\d\d$
+            example: 03NOV23
           strike:
             type: number
+            example: 1700
           type:
             type: string
             pattern: ^C$|^P$
+            example: C
         required:
           - base
           - quote
@@ -769,57 +808,68 @@ components:
         properties:
           token:
             type: string
-            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+            pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+            example: WETH
           amt:
             oneOf:
               - type: number
               - type: string
                 pattern: ^max$
+            example: max
         required:
           - token
           - amt
       minItems: 1
       maxItems: 8
     PublishQuotesRequest:
-      items:
-        type: object
-        properties:
-          base:
-            type: string
-            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
-          quote:
-            type: string
-            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
-          expiration:
-            type: string
-            pattern: ^\d\d\w\w\w\d\d$
-          strike:
-            type: number
-          type:
-            type: string
-            pattern: ^C$|^P$
-          side:
-            type: string
-            pattern: ^bid$|^ask$
-          size:
-            type: number
-          price:
-            type: number
-          deadline:
-            type: integer
-          taker:
-            type: string
-            pattern: ^0x[a-fA-F0-9]{40}$
-        required:
-          - base
-          - quote
-          - expiration
-          - strike
-          - type
-          - side
-          - size
-          - price
-          - deadline
+      type: object
+      properties:
+        base:
+          type: string
+          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+          example: WETH
+        quote:
+          type: string
+          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+          example: USDC
+        expiration:
+          type: string
+          pattern: ^\d\d\w\w\w\d\d$
+          example: 03NOV23
+        strike:
+          type: number
+          example: 1800
+        type:
+          type: string
+          pattern: ^C$|^P$
+          example: P
+        side:
+          type: string
+          pattern: ^bid$|^ask$
+          example: bid
+        size:
+          type: number
+          example: 4
+        price:
+          type: number
+          example: .13
+        deadline:
+          type: integer
+          example: 120
+        taker:
+          type: string
+          pattern: ^0x[a-fA-F0-9]{40}$
+          example: 0x3D1dcc44D65C08b39029cA8673D705D7e5c4cFF2
+      required:
+        - base
+        - quote
+        - expiration
+        - strike
+        - type
+        - side
+        - size
+        - price
+        - deadline
     AnyValue: {}
     AuthError:
       type: object
