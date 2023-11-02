@@ -703,6 +703,7 @@ app.get('/account/option_balances', async (req, res) => {
 })
 
 // NOTE: returns all open orders
+// TODO: move this to orderbook entity (update open api and gitbook)
 app.get('/account/orders', async (req, res) => {
 	let proxyResponse
 	try {
