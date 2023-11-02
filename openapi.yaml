@@ -200,42 +200,45 @@ paths:
         - api_key:
             - api
     get:
-      summary: Get best quotes to fill the order parametrised by query params
+      summary: Get all quotes for a specific option up to a specified size/qty (order of best to worst price)
       parameters:
         - name: base
           in: query
           required: true
+          description: ie WETH, WBTC, ARB, LINK
           schema:
             type: string
             pattern: "^0x[a-fA-F0-9]{40}$"
         - name: quote
           in: query
           required: true
+          description: ie USDC
           schema:
             type: string
             pattern: "^0x[a-fA-F0-9]{40}$"
         - name: expiration
           in: query
           required: true
-          description: option expiration date
+          description: option expiration date. ie 03NOV23, 10NOV23, 01DEC23
           schema:
             type: string
             pattern: ^\d\d\w\w\w\d\d$
         - name: strike
           in: query
           required: true
+          description: ie 1.1, 10, 1700, 35000,
           schema:
             type: number
         - name: type
           in: query
-          description: option type
+          description: option type (C for call or P for put)
           required: true
           schema:
             type: string
             pattern: ^C$|^P$
         - name: size
           in: query
-          description: fill size (1 contract = 1e18)
+          description: number of contracts (ie. 1, 4.2, 5, 15.5)
           required: true
           schema:
             type: number
@@ -249,14 +252,14 @@ paths:
             pattern: "^bid$|^ask$"
         - name: provider
           in: query
-          description: unique address of the provider
+          description: unique address of the provider (maker)
           required: false
           schema:
             type: string
             pattern: "^0x[a-fA-F0-9]{40}$"
         - name: taker
           in: query
-          description: unique address of the taker (for rfq quotes)
+          description: unique address of the taker (only for rfq quotes)
           required: false
           schema:
             type: string

@@ -515,7 +515,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 			'GET',
 			{
 				poolAddress: poolAddress,
-				size: toBigInt(getQuotesQuery.size).toString(),
+				size: parseEther(getQuotesQuery.size.toString()).toString(),
 				side: getQuotesQuery.side,
 				chainId: chainId,
 				...(getQuotesQuery.provider && { provider: getQuotesQuery.provider }),

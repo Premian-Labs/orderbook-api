@@ -6,6 +6,7 @@ const ajv = new Ajv()
 const chainConfig = process.env.ENV == 'production' ? arb : arbGoerli
 const supportedTokens = Object.keys(chainConfig.tokens)
 
+// TODO: how do we add pattern to open API? (its currently incorrect in open API spec).
 const validateOptionEntity = {
 	base: {
 		type: 'string',
