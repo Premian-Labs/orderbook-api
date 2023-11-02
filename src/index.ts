@@ -189,7 +189,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		const postQuotesResponse: PostQuotesResponse = postQuotesRequest.data
 		return res.status(postQuotesRequest.status).json({
 			created: postQuotesResponse.created.map(createReturnedQuotes),
-			invalid: postQuotesResponse.failed.map((failedQuote) => {
+			failed: postQuotesResponse.failed.map((failedQuote) => {
 				return {
 					reason: failedQuote.reason,
 					quote: parseInvalidQuotes(failedQuote.quote),
@@ -203,7 +203,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 	if (postQuotesRequest.status == 200) {
 		const postQuotesResponse: PostQuotesResponse = postQuotesRequest.data
 		return res.status(postQuotesRequest.status).json({
-			invalid: postQuotesResponse.failed.map((failedQuote) => {
+			failed: postQuotesResponse.failed.map((failedQuote) => {
 				return {
 					reason: failedQuote.reason,
 					quote: parseInvalidQuotes(failedQuote.quote),

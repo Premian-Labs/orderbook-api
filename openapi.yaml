@@ -9,7 +9,11 @@ info:
 paths:
   /orderbook/quotes:
     post:
-      summary: Publishes option quote(s) on-chain and into the orderbook
+      summary: Publishes option quote(s) on-chain and into the orderbook. Please note there is no gas that is paid to
+        publish quotes. Deadline is the number of seconds the order is valid for. Price is normalized.  For calls, 
+        price is denominated in the base token (ie 0.13 WETH), and for puts price is in denominated in the 
+        quote token but normalized using strike. For example, a put price of 0.13 => (234 USDC price / 1800 Strike ) 
+        is equivalent to 234 USDC if the strike is 1800.
       requestBody:
         content:
           application/json:
@@ -26,7 +30,7 @@ paths:
               schema:
                 type: object
                 properties:
-                  invalid:
+                  failed:
                     type: array
                     items:
                       type: object
@@ -52,7 +56,9 @@ paths:
                   exists:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ReturnedOrderbookQuote'
+                      type: object
+                      properties:
+                        $ref: '#/components/schemas/ReturnedOrderbookQuote'
         '201':
           description: Quote created
           content:
@@ -60,7 +66,13 @@ paths:
               schema:
                 type: object
                 properties:
-                  invalid:
+                  created:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        $ref: '#/components/schemas/ReturnedOrderbookQuote'
+                  failed:
                     type: array
                     items:
                       type: object
@@ -86,11 +98,9 @@ paths:
                   exists:
                     type: array
                     items:
-                      $ref: '#/components/schemas/ReturnedOrderbookQuote'
-                  created:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/ReturnedOrderbookQuote'
+                      type: object
+                      properties:
+                        $ref: '#/components/schemas/ReturnedOrderbookQuote'
         '400':
           description: Bad request
           content:
@@ -107,7 +117,9 @@ paths:
         - api_key:
             - api
     patch:
-      summary: Fills the quote
+      summary: Used to fill quote(s).  Only the size and quoteId for each quote are required. All quoteIds are 
+        returned either as 'success' or 'failed'. Each limit order that is trying to be filled is an "all or nothing"
+        attempt.
       requestBody:
         content:
           application/json:
@@ -130,12 +142,14 @@ paths:
                       type: string
                       description: filled quote ids
                       pattern: "[a-fA-F0-9]{64}"
+                      example: ba638...fb25e
                   failed:
                     type: array
                     items:
                       type: string
                       description: failed to fill quote ids
                       pattern: "[a-fA-F0-9]{64}"
+                      example: ba638...fb25e
         '400':
           description: Bad request
           content:
@@ -152,7 +166,9 @@ paths:
         - api_key:
             - api
     delete:
-      summary: Deletes the quote from the orderbook
+      summary: Deletes the quote(s) from the orderbook that have not exceeded their deadline.  Please note that 
+        orders that have surpassed their deadline do NOT need to be cancelled.  They are automatically removed from
+        the orderbook and are unfillable on-chain. Cancelling orders does incur on-chain gas fees.
       requestBody:
         content:
           application/json:
@@ -174,16 +190,19 @@ paths:
                     items:
                       type: string
                       pattern: '[a-fA-F0-9]{64}$'
+                      example: ba638...fb25e
                   failed:
                     type: array
                     items:
                       type: string
                       pattern: '[a-fA-F0-9]{64}$'
+                      example: ba638...fb25e
                   omitted:
                     type: array
                     items:
                       type: string
                       pattern: '[a-fA-F0-9]{64}$'
+                      example: ba638...fb25e
         '400':
           description: Invalid parameters supplied
           content:
@@ -200,12 +219,14 @@ paths:
         - api_key:
             - api
     get:
-      summary: Get all quotes for a specific option up to a specified size/qty (in order of best to worst price)
+      summary: Get all quotes for a specific option up to a specified size/qty.   All orders will be ranked from best
+        to worst according to price. Please note that this will not show the full state of the orderbook if the total
+        market liquidity is greater than the size specified.
       parameters:
         - name: base
           in: query
           required: true
-          description: base token symbol
+          description: base token symbol (ie WETH)
           schema:
             type: string
             pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
@@ -213,7 +234,7 @@ paths:
         - name: quote
           in: query
           required: true
-          description: quote token symbol
+          description: quote token symbol (ie USDC)
           schema:
             type: string
             pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
@@ -221,7 +242,7 @@ paths:
         - name: expiration
           in: query
           required: true
-          description: option expiration
+          description: option expiration (ie 03NOV23)
           schema:
             type: string
             pattern: ^\d\d\w\w\w\d\d$
@@ -229,14 +250,14 @@ paths:
         - name: strike
           in: query
           required: true
-          description: option strike,
+          description: option strike (ie 1800)
           schema:
             type: number
             minimum: 0
-            example: 1100
+            example: 1800
         - name: type
           in: query
-          description: call or put
+          description: C or P
           required: true
           schema:
             type: string
@@ -244,7 +265,7 @@ paths:
             example: P
         - name: size
           in: query
-          description: number of contracts
+          description: number of contracts (ie 4)
           required: true
           schema:
             type: number
@@ -252,7 +273,7 @@ paths:
             example: 3
         - name: side
           in: query
-          description: orderbook side
+          description: orderbook side (ie bid)
           required: true
           schema:
             type: string
@@ -298,7 +319,7 @@ paths:
             - api
   /orderbook/orders:
     get:
-      summary: Gets quotes by quoteIds
+      summary: Gets quotes by quoteIds.  Note that a max of 25 quoteIds can be queried in a single request.
       parameters:
         - name: base
           in: query
@@ -309,6 +330,7 @@ paths:
               items:
                 type: string
                 pattern: '[a-fA-F0-9]{64}$'
+                example: ba638...fb25e
               minItems: 1
               maxItems: 25
       responses:
@@ -672,7 +694,7 @@ components:
         token_address:
           type: string
           pattern: ^0x[a-fA-F0-9]{40}$
-          example: 0x3D1dcc44D65C08b39029cA8673D705D7e5c4cFF2
+          example: 0x...4cFF2
     TokenApproval:
       type: object
       properties:
@@ -738,7 +760,7 @@ components:
         quoteId:
           type: string
           pattern: '[a-fA-F0-9]{64}$'
-          example: 58229484d69566752b48c49326e6eaca2b4fba5372ba638870bda5b58b4fb25e
+          example: ba638...fb25e
         ts:
           type: number
           example: 1698952534
@@ -750,26 +772,24 @@ components:
           items:
             type: string
             pattern: '[a-fA-F0-9]{64}$'
-            example: 58229484d69566752b48c49326e6eaca2b4fba5372ba638870bda5b58b4fb25e
+            example: ba638...fb25e
           minItems: 1
       required:
         - quoteIds
     FillQuotesRequest:
-      type: array
-      items:
-        type: object
-        properties:
-          tradeSize:
-            type: number
-            minimum: 0
-            example: 4
-          quoteId:
-            type: string
-            pattern: '[a-fA-F0-9]{64}$'
-            example: 58229484d69566752b48c49326e6eaca2b4fba5372ba638870bda5b58b4fb25e
-        required:
-          - size
-          - quoteId
+      type: object
+      properties:
+        tradeSize:
+          type: number
+          minimum: 0
+          example: 4
+        quoteId:
+          type: string
+          pattern: '[a-fA-F0-9]{64}$'
+          example: ba638...fb25e
+      required:
+        - size
+        - quoteId
     PositionsRequestParams:
       type: array
       items:
@@ -858,7 +878,7 @@ components:
         taker:
           type: string
           pattern: ^0x[a-fA-F0-9]{40}$
-          example: 0x3D1dcc44D65C08b39029cA8673D705D7e5c4cFF2
+          example: 0x...4cFF2
       required:
         - base
         - quote
