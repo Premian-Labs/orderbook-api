@@ -789,6 +789,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 				await provider.waitForTransaction(response.hash, 1)
 				Logger.info(`${approval.token} approval set to MAX`)
 			} else {
+				//FIXME: WBTC is 8 decimals
 				const qty =
 					approval.token === 'USDC'
 						? parseUnits(approval.amt.toString(), 6)

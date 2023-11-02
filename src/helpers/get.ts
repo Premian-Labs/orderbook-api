@@ -65,6 +65,7 @@ export function getTokenByAddress(
 	return tokenName
 }
 
+// TODO: how do we scale this?  The list is finited
 export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
 		availableTokens.map(async (token) => {
