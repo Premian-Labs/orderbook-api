@@ -29,14 +29,21 @@ Example of required env. variables to be specified by API user: [.env.example](.
 ## Start Guide
 1. Clone this repo
 2. Populate .env file (local runtime) or specify env. variables on the remote host (server) to be readable from the container
-3. Local runtime:
-   - We recommend using [Docker Compose](https://docs.docker.com/compose/). 
-   - From the repo root directory, run the following command in your terminal `docker-compose up` to build and run the container. 
-   - The API will be accessible at `http//:localhost:3000`. 
-   - `docker-compose up` requires a dedicated session in the terminal. If you want to run another process, open a new terminal session for it.
-   - To stop the container run `docker-compose down`.
+3. The container will only allow for trading in tokens within the token list inside [arbitrum.json](src%2Fconfig%2Farbitrum.json) 
+   and [arbitrumGoerli.json](src%2Fconfig%2FarbitrumGoerli.json).  Please add/remove tokens (if necessary) to restrict/provide access to certain markets.
 
-4. Remote runtime: For remote runtime, you can either build the image locally and push to the remote Docker image registry or fork the repo and set CI/CD pipeline in the cloud. Please email _support@premia.finance_ if you have questions about cloud deployment.
+Local runtime
+- We recommend using [Docker Compose](https://docs.docker.com/compose/) to run the container on a local host. 
+- Open a terminal, and from the repo root directory,run the following command in your terminal `docker-compose up` to 
+  build and run the container. 
+- The API should be accessible with the following url `http//:localhost:3000`. 
+- Since `docker-compose up` requires a dedicated session in the terminal. This will allow you to view container 
+  logs during runtime. Open a new terminal session for development work. 
+- To stop the container run `docker-compose down`.
+
+Remote runtime
+- Remote runtime is an advanced feature and requires knowledge of cloud infrastructure beyond the scope of a README.
+- Please email _support@premia.finance_ if you have questions about cloud deployment.
 
 ## OpenAPI Specification
 Premia provides the readable OpenAPI specification for the Containerized API on its website [here](https://docs.premia.blue/developer-center/api/containerized-api/api-specification).
