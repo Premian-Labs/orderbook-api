@@ -6,19 +6,19 @@ import { checkEnv } from './config/checkConfig'
 import {
 	gasLimit,
 	referralAddress,
-	provider,
 	chainId,
 	signer,
 	walletAddr,
 	availableTokens,
 	routerAddress,
 	ws_url,
+	rpcUrl,
 } from './config/constants'
 import {
 	parseEther,
 	MaxUint256,
 	parseUnits,
-	formatEther,
+	formatEther, ethers,
 } from 'ethers'
 import {
 	FillableQuote,
@@ -81,10 +81,12 @@ import {
 	zipWith,
 } from 'lodash'
 import { requestDetailed } from './helpers/util'
+import moment from "moment";
 
 dotenv.config()
 checkEnv()
 
+const provider = new ethers.JsonRpcProvider(rpcUrl)
 const app = express()
 // body parser for POST requests
 app.use(express.json())
@@ -111,7 +113,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 
 	for (const quote of req.body as PublishQuoteRequest[]) {
 		// 2.1 Check that deadline is valid and generate deadline timestamp
-		const ts = Math.trunc(new Date().getTime() / 1000)
+		const ts = moment.utc().unix()
 		let deadline: number
 		if (quote.deadline < 60) {
 			return res.status(400).json({
@@ -142,7 +144,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		Logger.debug(`PoolAddress: ${poolAddr}`)
 
 		// 2.5 Generate a initial quote object
-		const quoteOB = await getQuote(
+		const quoteOB = getQuote(
 			process.env.WALLET_ADDRESS!,
 			parseEther(quote.size.toString()),
 			quote.side === 'bid',
@@ -150,7 +152,11 @@ app.post('/orderbook/quotes', async (req, res) => {
 			deadline,
 			quote.taker
 		)
-		Logger.debug(`quoteOB: ${quoteOB}`)
+		Logger.debug({
+			message: 'quoteOB',
+			quoteOB: quoteOB
+		})
+
 		// 2.6 Sign quote object
 		const signedQuote = await signQuote(provider, poolAddr, quoteOB)
 		Logger.info(signedQuote)

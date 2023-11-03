@@ -23,12 +23,12 @@
     "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**",
     "e2e:account": "mocha --require ts-node/register test/account.ts",
     "e2e:expiration": "mocha --require ts-node/register test/expiration.ts",
-    "e2e:quoting": "mocha --require ts-node/register test/quoting.ts",
+    "e2e:quoting": "mocha --require ts-node/register test/quoting.ts --timeout 5000",
     "e2e:ws": "mocha --require ts-node/register test/ws.ts --timeout 5000"
   },
   "dependencies": {
     "@google-cloud/logging-winston": "^6.0.0",
-    "@premia/v3-abi": "^1.0.7",
+    "@premia/v3-abi": "^1.1.0",
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
     "@types/http-proxy": "^1.17.11",

@@ -16,18 +16,19 @@ import { ZeroAddress } from 'ethers'
 import { Provider } from 'ethers'
 import { chainId } from '../config/constants'
 import Logger from '../lib/logger'
+import moment from "moment";
 
 const randomId = () => Math.floor(Math.random() * 10000000000)
 
-export async function getQuote(
+export function getQuote(
 	makerAddr: string,
 	tradeSize: bigint,
 	isBuy: boolean,
 	price: bigint,
 	deadline: number,
 	takerAddr = ZeroAddress
-): Promise<QuoteOB> {
-	const ts = Math.trunc(new Date().getTime() / 1000)
+): QuoteOB {
+	const ts = moment.utc().unix()
 	return {
 		provider: makerAddr,
 		taker: takerAddr,
@@ -77,6 +78,9 @@ export async function signQuote(
 		message,
 	}
 	Logger.debug(`signData`)
+	Logger.debug({
+		provider, quoteProvider: quoteOB.provider, typedData
+	})
 	const sig = await signData(provider, quoteOB.provider, typedData)
 	return { ...sig, ...message }
 }

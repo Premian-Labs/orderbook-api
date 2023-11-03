@@ -96,7 +96,7 @@ export function optionExpired(exp: string) {
 		millisecond: 0,
 	})
 	const maturitySec = maturity.valueOf() / 1000
-	const ts = Math.trunc(new Date().getTime() / 1000)
+	const ts = moment.utc().unix()
 
 	return maturitySec < ts
 }
