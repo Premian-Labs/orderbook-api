@@ -624,11 +624,9 @@ components:
       properties:
         base:
           type: string
-          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
           example: WETH
         quote:
           type: string
-          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
           example: USDC
         expiration:
           type: string
@@ -676,7 +674,6 @@ components:
           example: 2.345
         symbol:
           type: string
-          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
           example: WETH
         token_address:
           type: string
@@ -687,7 +684,6 @@ components:
       properties:
         token:
           type: string
-          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
           example: WETH
         amt:
           oneOf:
@@ -710,11 +706,9 @@ components:
       properties:
         base:
           type: string
-          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
           example: WETH
         quote:
           type: string
-          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
           example: USDC
         expiration:
           type: string
@@ -782,11 +776,9 @@ components:
       properties:
         base:
           type: string
-          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
           example: WETH
         quote:
           type: string
-          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
           example: USDC
         expiration:
           type: string
@@ -812,7 +804,6 @@ components:
         properties:
           token:
             type: string
-            pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
             example: WETH
           amt:
             oneOf:
@@ -830,11 +821,9 @@ components:
       properties:
         base:
           type: string
-          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
           example: WETH
         quote:
           type: string
-          pattern: ^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
           example: USDC
         expiration:
           type: string
@@ -891,7 +880,6 @@ components:
       required:
         - failedApproval
         - reason
-    AnyValue: {}
     AuthError:
       type: object
       properties:
