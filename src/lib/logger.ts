@@ -40,7 +40,7 @@ const Logger = createLogger({
 	transports: transport,
 	levels,
 	defaultMeta: {
-		service: 'WS-Quotes',
+		service: 'Premia-API',
 	},
 })
 
