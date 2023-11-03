@@ -563,7 +563,7 @@ paths:
                     items:
                       type: object
                       properties:
-                        failedBalanceQueries:
+                        failedBalanceQuery:
                           type: string
                         reason:
                           type: string
@@ -646,10 +646,13 @@ components:
       properties:
         amount:
           type: number
+          example: 2.46
         name:
           type: string
+          example: WETH-USDC-03NOV2023-1800-P
         token_address:
           type: string
+          example: 0x...4cFF2
     OptionPositions:
       properties:
         expired:

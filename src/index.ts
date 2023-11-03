@@ -674,6 +674,7 @@ app.post('/pool/annihilate', async (req, res) => {
 })
 
 // NOTE: option positions currently open
+// TODO: how does this understand long vs short positions?
 app.get('/account/option_balances', async (req, res) => {
 	let optionBalancesRequest
 	try {
