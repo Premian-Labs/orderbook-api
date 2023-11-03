@@ -12,13 +12,13 @@ import {
 	availableTokens,
 	routerAddress,
 	ws_url,
-	rpcUrl,
+	rpcUrl, tokenAddresses,
 } from './config/constants'
 import {
 	parseEther,
 	MaxUint256,
 	parseUnits,
-	formatEther, ethers,
+	formatEther, ethers, formatUnits,
 } from 'ethers'
 import {
 	FillableQuote,
@@ -70,7 +70,7 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/sign'
-import { IERC20__factory, IPool__factory } from './typechain'
+import {IERC20__factory, IPool__factory, ISolidStateERC20__factory} from './typechain'
 import {
 	difference,
 	find,
@@ -787,7 +787,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 				process.env.ENV == 'production'
 					? arb.tokens[approval.token]
 					: arbGoerli.tokens[approval.token]
-			const erc20 = IERC20__factory.connect(erc20Addr, signer)
+			const erc20 = ISolidStateERC20__factory.connect(erc20Addr, signer)
 
 			if (approval.amt === 'max') {
 				const response = await erc20.approve(
@@ -797,18 +797,8 @@ app.post('/account/collateral_approval', async (req, res) => {
 				await provider.waitForTransaction(response.hash, 1)
 				Logger.info(`${approval.token} approval set to MAX`)
 			} else {
-				// TODO: use IERC20Metadata__factory to get decimals once new @premia/v3-abi package version is released
-				let qty
-				switch (approval.token) {
-					case 'USDC':
-						qty = parseUnits(approval.amt.toString(), 6)
-						break
-					case 'WBTC':
-						qty = parseUnits(approval.amt.toString(), 8)
-						break
-					default:
-						qty = parseUnits(approval.amt.toString(), 18)
-				}
+				const decimals = await erc20.decimals()
+				const qty = parseUnits(approval.amt.toString(), Number(decimals))
 
 				const response = await erc20.approve(routerAddress, qty)
 				await provider.waitForTransaction(response.hash, 1)

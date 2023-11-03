@@ -9,7 +9,7 @@ import {
 } from '../config/constants'
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
-import { IERC20__factory, IPoolFactory__factory } from '../typechain'
+import {IERC20__factory, IPoolFactory__factory, ISolidStateERC20__factory} from '../typechain'
 import { TokenBalance } from '../types/balances'
 
 const poolFactoryAddr =
@@ -66,19 +66,13 @@ export function getTokenByAddress(
 	return tokenName
 }
 
-// TODO: use IERC20Metadata__factory to get decimals once new @premia/v3-abi package version is released
 export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
 		availableTokens.map(async (token) => {
-			const erc20 = IERC20__factory.connect(tokenAddresses[token], provider)
-			let balance: number
-			if (token === 'WBTC') {
-				balance = parseFloat(formatUnits(await erc20.balanceOf(walletAddr), 8))
-			} else if (token === 'USDC') {
-				balance = parseFloat(formatUnits(await erc20.balanceOf(walletAddr), 6))
-			} else {
-				balance = parseFloat(formatUnits(await erc20.balanceOf(walletAddr), 18))
-			}
+			const erc20 = ISolidStateERC20__factory.connect(tokenAddresses[token], provider)
+			const decimals = await erc20.decimals()
+			const balance: number = parseFloat(formatUnits(await erc20.balanceOf(walletAddr), Number(decimals)))
+
 			const tokenBalance: TokenBalance = {
 				token_address: tokenAddresses[token],
 				symbol: token,
