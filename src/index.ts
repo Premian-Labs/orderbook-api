@@ -704,7 +704,6 @@ app.get('/account/option_balances', async (req, res) => {
 })
 
 // NOTE: returns all open orders
-// TODO: move this to orderbook entity (update open api and gitbook)
 app.get('/account/orders', async (req, res) => {
 	let proxyResponse
 	try {
@@ -790,11 +789,19 @@ app.post('/account/collateral_approval', async (req, res) => {
 				await provider.waitForTransaction(response.hash, 1)
 				Logger.info(`${approval.token} approval set to MAX`)
 			} else {
-				//FIXME: WBTC is 8 decimals
-				const qty =
-					approval.token === 'USDC'
-						? parseUnits(approval.amt.toString(), 6)
-						: parseEther(approval.amt.toString())
+				// TODO: use IERC20Metadata__factory to get decimals once new @premia/v3-abi package version is released
+				let qty
+				switch (approval.token) {
+					case 'USDC':
+						qty = parseUnits(approval.amt.toString(), 6)
+						break
+					case 'WBTC':
+						qty = parseUnits(approval.amt.toString(), 8)
+						break
+					default:
+						qty = parseUnits(approval.amt.toString(), 18)
+				}
+
 				const response = await erc20.approve(routerAddress, qty)
 				await provider.waitForTransaction(response.hash, 1)
 				Logger.info(
