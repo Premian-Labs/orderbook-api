@@ -15,6 +15,7 @@ import {
 import { ZeroAddress } from 'ethers'
 import { Provider } from 'ethers'
 import { chainId } from '../config/constants'
+import Logger from '../lib/logger'
 
 const randomId = () => Math.floor(Math.random() * 10000000000)
 
@@ -75,6 +76,7 @@ export async function signQuote(
 		domain,
 		message,
 	}
+	Logger.debug(`signData`)
 	const sig = await signData(provider, quoteOB.provider, typedData)
 	return { ...sig, ...message }
 }
@@ -85,11 +87,13 @@ const signData = async (
 	typeData: any
 ): Promise<RSV> => {
 	if (provider._signTypedData || provider.signTypedData) {
+		Logger.debug(`signWithEthers`)
 		return signWithEthers(provider, fromAddress, typeData)
 	}
 	const typeDataString =
 		typeof typeData === 'string' ? typeData : JSON.stringify(typeData)
 
+	Logger.debug(`send method`)
 	const result = await send(provider, 'eth_signTypedData_v4', [
 		fromAddress,
 		typeDataString,
@@ -156,13 +160,16 @@ export const send = (provider: any, method: string, params: any[]) =>
 			provider.provider?.provider || provider.provider || provider
 
 		if (_provider.getUncheckedSigner /* ethers provider */) {
+			Logger.debug(`ethers provider`)
 			_provider
 				.send(method, params)
 				.then((r: any) => resolve(r))
 				.catch((e: any) => reject(e))
 		} else if (_provider.sendAsync) {
+			Logger.debug(`sendAsync`)
 			_provider.sendAsync(payload, callback)
 		} else {
+			Logger.debug(`send`)
 			_provider.send(payload, callback).catch((error: any) => {
 				if (
 					error.message ===
@@ -173,6 +180,8 @@ export const send = (provider: any, method: string, params: any[]) =>
 						.then((r: any) => resolve(r))
 						.catch((e: any) => reject(e))
 				} else {
+					Logger.debug(`throw error`)
+					Logger.debug(error.message)
 					throw error
 				}
 			})

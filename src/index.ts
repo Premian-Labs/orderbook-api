@@ -18,7 +18,6 @@ import {
 	parseEther,
 	MaxUint256,
 	parseUnits,
-	toBigInt,
 	formatEther,
 } from 'ethers'
 import {
@@ -140,6 +139,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 
 		// 2.4 Get PoolAddress
 		const poolAddr = await getPoolAddress(poolKey)
+		Logger.debug(`PoolAddress: ${poolAddr}`)
 
 		// 2.5 Generate a initial quote object
 		const quoteOB = await getQuote(
@@ -150,9 +150,10 @@ app.post('/orderbook/quotes', async (req, res) => {
 			deadline,
 			quote.taker
 		)
-
+		Logger.debug(`quoteOB: ${quoteOB}`)
 		// 2.6 Sign quote object
 		const signedQuote = await signQuote(provider, poolAddr, quoteOB)
+		Logger.info(signedQuote)
 		const publishQuote = createQuote(poolKey, quoteOB, signedQuote)
 
 		// 2.7 Serialize quote
@@ -168,6 +169,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		serializedQuotes.push(publishQuoteRequest)
 	}
 
+	console.log(serializedQuotes)
 	let postQuotesRequest
 	try {
 		// 3 Submit quote object array to orderbook API

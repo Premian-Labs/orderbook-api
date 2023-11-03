@@ -42,6 +42,7 @@ export async function getPoolAddress(poolKey: PoolKey) {
 		}
 	}
 	poolAddress = poolAddress.toLowerCase()
+	//TODO: if pool is not deployed should we kill process?
 	if (!isDeployed) {
 		Logger.warn({
 			message: `Pool is not deployed`,
