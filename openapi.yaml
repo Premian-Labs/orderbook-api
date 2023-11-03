@@ -280,6 +280,7 @@ paths:
           schema:
             type: string
             pattern: "^0x[a-fA-F0-9]{40}$"
+            example: ba638...fb25e
         - name: taker
           in: query
           description: unique address of the taker (only for rfq quotes)
@@ -287,6 +288,7 @@ paths:
           schema:
             type: string
             pattern: "^0x[a-fA-F0-9]{40}$"
+            example: ba638...fb25e
       responses:
         '200':
           description: Successful operation
@@ -906,7 +908,7 @@ components:
           dataPath:
             type: string
           params:
-            type: {}
+            type: string
           message:
             type: string
   securitySchemes:
