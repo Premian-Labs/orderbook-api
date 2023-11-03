@@ -56,8 +56,6 @@ paths:
                   exists:
                     type: array
                     items:
-                      type: object
-                      properties:
                         $ref: '#/components/schemas/ReturnedOrderbookQuote'
         '201':
           description: Quote created
@@ -69,9 +67,7 @@ paths:
                   created:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        $ref: '#/components/schemas/ReturnedOrderbookQuote'
+                      $ref: '#/components/schemas/ReturnedOrderbookQuote'
                   failed:
                     type: array
                     items:
@@ -98,9 +94,7 @@ paths:
                   exists:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        $ref: '#/components/schemas/ReturnedOrderbookQuote'
+                      $ref: '#/components/schemas/ReturnedOrderbookQuote'
         '400':
           description: Bad request
           content:
@@ -385,13 +379,7 @@ paths:
                   failed:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        failedOption:
-                          type: object
-                          $ref: '#/components/schemas/Option'
-                        reason:
-                          type: string
+                      $ref: '#/components/schemas/FailedOptions'
         '400':
           description: Invalid parameters supplied
           content:
@@ -432,13 +420,7 @@ paths:
                   failed:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        failedOption:
-                          type: object
-                          $ref: '#/components/schemas/Option'
-                        reason:
-                          type: string
+                      $ref: '#/components/schemas/FailedOptions'
         '400':
           description: Invalid parameters supplied
           content:
@@ -480,13 +462,7 @@ paths:
                   failed:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        failedOption:
-                          type: object
-                          $ref: '#/components/schemas/Option'
-                        reason:
-                          type: string
+                      $ref: '#/components/schemas/FailedOptions'
         '400':
           description: Invalid parameters supplied
           content:
@@ -529,13 +505,7 @@ paths:
                   failed:
                     type: array
                     items:
-                      type: object
-                      properties:
-                        failedApproval:
-                          type: object
-                          $ref: '#/components/schemas/TokenApproval'
-                        reason:
-                          type: string
+                      $ref: '#/components/schemas/FailedApproval'
         '400':
           description: Invalid parameters supplied
           content:
@@ -616,6 +586,7 @@ paths:
             application/json:
               schema:
                 type: number
+                example: 13.4556
         '401':
           description: Not authorized
           content:
@@ -898,6 +869,23 @@ components:
         - size
         - price
         - deadline
+    FailedOptions:
+      type: object
+      properties:
+        failedOption:
+          $ref: '#/components/schemas/Option'
+        reason:
+          type: string
+    FailedApproval:
+      type: object
+      properties:
+        failedApproval:
+          $ref: '#/components/schemas/TokenApproval'
+        reason:
+          type: string
+      required:
+        - failedApproval
+        - reason
     AnyValue: {}
     AuthError:
       type: object
@@ -915,7 +903,7 @@ components:
           dataPath:
             type: string
           params:
-            $ref: '#/components/schemas/AnyValue'
+            type: {}
           message:
             type: string
   securitySchemes:
