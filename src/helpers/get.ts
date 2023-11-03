@@ -65,7 +65,7 @@ export function getTokenByAddress(
 	return tokenName
 }
 
-// TODO: how do we scale this?  The list is finited
+// TODO: use IERC20Metadata__factory to get decimals once new @premia/v3-abi package version is released
 export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
 		availableTokens.map(async (token) => {
