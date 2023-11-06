@@ -8,7 +8,8 @@ import {
 	Domain,
 	RSV,
 	QuoteOBMessage,
-	SignedQuote, TypedSignQuoteRequest,
+	SignedQuote,
+	TypedSignQuoteRequest,
 } from '../types/signature'
 import { Signer, ZeroAddress } from 'ethers'
 import { chainId } from '../config/constants'

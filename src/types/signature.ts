@@ -28,16 +28,16 @@ export interface SignedQuote extends QuoteOBMessage {
 export interface TypedSignQuoteRequest {
 	types: {
 		FillQuoteOB: [
-			{ name: 'provider', type: 'address' },
-			{ name: 'taker', type: 'address' },
-			{ name: 'price', type: 'uint256' },
-			{ name: 'size', type: 'uint256' },
-			{ name: 'isBuy', type: 'bool' },
-			{ name: 'deadline', type: 'uint256' },
-			{ name: 'salt', type: 'uint256' },
-		],
-	},
-	primaryType: 'FillQuoteOB',
-	domain: Domain,
-	message: QuoteOBMessage,
+			{ name: 'provider'; type: 'address' },
+			{ name: 'taker'; type: 'address' },
+			{ name: 'price'; type: 'uint256' },
+			{ name: 'size'; type: 'uint256' },
+			{ name: 'isBuy'; type: 'bool' },
+			{ name: 'deadline'; type: 'uint256' },
+			{ name: 'salt'; type: 'uint256' }
+		]
+	}
+	primaryType: 'FillQuoteOB'
+	domain: Domain
+	message: QuoteOBMessage
 }
