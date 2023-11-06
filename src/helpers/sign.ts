@@ -6,16 +6,13 @@ import {
 } from '../types/quote'
 import {
 	Domain,
-	EIP712Domain,
 	RSV,
 	QuoteOBMessage,
-	SignedQuote,
+	SignedQuote, TypedSignQuoteRequest,
 } from '../types/signature'
 import { Signer, ZeroAddress } from 'ethers'
 import { chainId } from '../config/constants'
 import moment from 'moment'
-
-const randomId = () => Math.floor(Math.random() * 10000000000)
 
 export function getQuote(
 	makerAddr: string,
@@ -57,10 +54,8 @@ export async function signQuote(
 		salt: quoteOB.salt.toString(),
 	}
 
-	// TODO: create typed TypedData
-	const typedData = {
+	const typedData: TypedSignQuoteRequest = {
 		types: {
-			EIP712Domain,
 			FillQuoteOB: [
 				{ name: 'provider', type: 'address' },
 				{ name: 'taker', type: 'address' },
@@ -79,14 +74,13 @@ export async function signQuote(
 	return { ...sig, ...message }
 }
 
-export const signWithEthers = async (
+const signWithEthers = async (
 	signer: Signer,
-	typeData: any
+	typeData: TypedSignQuoteRequest
 ): Promise<RSV> => {
-	const { EIP712Domain: _unused, ...types } = typeData.types
 	const rawSignature = await signer.signTypedData(
 		typeData.domain,
-		types,
+		typeData.types,
 		typeData.message
 	)
 	return splitSignatureToRSV(rawSignature)

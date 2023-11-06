@@ -4,12 +4,6 @@ export interface Domain {
 	chainId: string
 	verifyingContract: string
 }
-export const EIP712Domain = [
-	{ name: 'name', type: 'string' },
-	{ name: 'version', type: 'string' },
-	{ name: 'chainId', type: 'uint256' },
-	{ name: 'verifyingContract', type: 'address' },
-]
 export interface RSV {
 	r: string
 	s: string
@@ -31,9 +25,19 @@ export interface SignedQuote extends QuoteOBMessage {
 	v: number
 }
 
-export interface JsonRpcRequest {
-	jsonrpc: string
-	method: string
-	params: any[]
-	id: number
+export interface TypedSignQuoteRequest {
+	types: {
+		FillQuoteOB: [
+			{ name: 'provider', type: 'address' },
+			{ name: 'taker', type: 'address' },
+			{ name: 'price', type: 'uint256' },
+			{ name: 'size', type: 'uint256' },
+			{ name: 'isBuy', type: 'bool' },
+			{ name: 'deadline', type: 'uint256' },
+			{ name: 'salt', type: 'uint256' },
+		],
+	},
+	primaryType: 'FillQuoteOB',
+	domain: Domain,
+	message: QuoteOBMessage,
 }
