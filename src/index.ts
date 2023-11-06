@@ -7,18 +7,16 @@ import {
 	gasLimit,
 	referralAddress,
 	chainId,
-	signer,
 	walletAddr,
 	availableTokens,
 	routerAddress,
-	ws_url,
-	rpcUrl, tokenAddresses,
+	ws_url, rpcUrl, privateKey,
 } from './config/constants'
 import {
 	parseEther,
 	MaxUint256,
 	parseUnits,
-	formatEther, ethers, formatUnits,
+	formatEther, ethers,
 } from 'ethers'
 import {
 	FillableQuote,
@@ -68,9 +66,9 @@ import {
 	getQuote,
 	signQuote,
 	createQuote,
-	serializeQuote,
+	serializeQuote, signWithEthers,
 } from './helpers/sign'
-import {IERC20__factory, IPool__factory, ISolidStateERC20__factory} from './typechain'
+import {IPool__factory, ISolidStateERC20__factory} from './typechain'
 import {
 	difference,
 	find,
@@ -87,6 +85,7 @@ dotenv.config()
 checkEnv()
 
 const provider = new ethers.JsonRpcProvider(rpcUrl)
+const signer = new ethers.Wallet(privateKey, provider)
 const app = express()
 // body parser for POST requests
 app.use(express.json())
@@ -158,7 +157,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		})
 
 		// 2.6 Sign quote object
-		const signedQuote = await signQuote(provider, poolAddr, quoteOB)
+		const signedQuote = await signQuote(signer, poolAddr, quoteOB)
 		Logger.info(signedQuote)
 		const publishQuote = createQuote(poolKey, quoteOB, signedQuote)
 
@@ -206,23 +205,6 @@ app.post('/orderbook/quotes', async (req, res) => {
 			exists: postQuotesResponse.exists.map(createReturnedQuotes),
 		})
 	}
-
-	// All quotes exist
-	if (postQuotesRequest.status == 200) {
-		const postQuotesResponse: PostQuotesResponse = postQuotesRequest.data
-		return res.status(postQuotesRequest.status).json({
-			failed: postQuotesResponse.failed.map((failedQuote) => {
-				return {
-					reason: failedQuote.reason,
-					quote: parseInvalidQuotes(failedQuote.quote),
-				}
-			}),
-			exists: postQuotesResponse.exists.map(createReturnedQuotes),
-		})
-	}
-
-	// Failed request
-	return res.status(postQuotesRequest.status).json(postQuotesRequest.data)
 })
 
 // NOTE: fill quote(s)
@@ -361,7 +343,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			])
 
 			const signedQuoteObject = await signQuote(
-				provider,
+				signer,
 				fillableQuoteDeserialized.poolAddress,
 				quoteOB
 			)

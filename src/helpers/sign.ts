@@ -10,12 +10,9 @@ import {
 	RSV,
 	QuoteOBMessage,
 	SignedQuote,
-	JsonRpcRequest,
 } from '../types/signature'
-import { ZeroAddress } from 'ethers'
-import { Provider } from 'ethers'
+import {Signer, ZeroAddress} from 'ethers'
 import { chainId } from '../config/constants'
-import Logger from '../lib/logger'
 import moment from "moment";
 
 const randomId = () => Math.floor(Math.random() * 10000000000)
@@ -41,7 +38,7 @@ export function getQuote(
 }
 
 export async function signQuote(
-	provider: Provider,
+	signer: Signer,
 	poolAddress: string,
 	quoteOB: QuoteOB
 ): Promise<SignedQuote> {
@@ -60,6 +57,7 @@ export async function signQuote(
 		salt: quoteOB.salt.toString(),
 	}
 
+	// TODO: create typed TypedData
 	const typedData = {
 		types: {
 			EIP712Domain,
@@ -77,60 +75,16 @@ export async function signQuote(
 		domain,
 		message,
 	}
-	Logger.debug(`signData`)
-	Logger.debug({
-		provider, quoteProvider: quoteOB.provider, typedData
-	})
-	const sig = await signData(provider, quoteOB.provider, typedData)
+	const sig = await signWithEthers(signer, typedData)
 	return { ...sig, ...message }
 }
 
-const signData = async (
-	provider: any,
-	fromAddress: string,
+export const signWithEthers = async (
+	signer: Signer,
 	typeData: any
 ): Promise<RSV> => {
-	if (provider._signTypedData || provider.signTypedData) {
-		Logger.debug(`signWithEthers`)
-		return signWithEthers(provider, fromAddress, typeData)
-	}
-	const typeDataString =
-		typeof typeData === 'string' ? typeData : JSON.stringify(typeData)
-
-	Logger.debug(`send method`)
-	const result = await send(provider, 'eth_signTypedData_v4', [
-		fromAddress,
-		typeDataString,
-	]).catch((error: any) => {
-		if (error.message === 'Method eth_signTypedData_v4 not supported.') {
-			return send(provider, 'eth_signTypedData', [fromAddress, typeData])
-		} else {
-			throw error
-		}
-	})
-
-	return {
-		r: result.slice(0, 66),
-		s: '0x' + result.slice(66, 130),
-		v: parseInt(result.slice(130, 132), 16),
-	}
-}
-
-const signWithEthers = async (
-	signer: any,
-	fromAddress: string,
-	typeData: any
-): Promise<RSV> => {
-	const signerAddress = await signer.getAddress()
-	if (signerAddress.toLowerCase() !== fromAddress.toLowerCase()) {
-		throw new Error('Signer address does not match requested signing address')
-	}
-
 	const { EIP712Domain: _unused, ...types } = typeData.types
-	const rawSignature = await (signer.signTypedData
-		? signer.signTypedData(typeData.domain, types, typeData.message)
-		: signer._signTypedData(typeData.domain, types, typeData.message))
-
+	const rawSignature = await signer.signTypedData(typeData.domain, types, typeData.message)
 	return splitSignatureToRSV(rawSignature)
 }
 
@@ -140,57 +94,6 @@ const splitSignatureToRSV = (signature: string): RSV => {
 	const v = parseInt(signature.substring(2).substring(128, 130), 16)
 	return { r, s, v }
 }
-
-export const send = (provider: any, method: string, params: any[]) =>
-	new Promise<any>((resolve, reject) => {
-		const payload: JsonRpcRequest = {
-			id: randomId(),
-			method,
-			params,
-			jsonrpc: '',
-		}
-		const callback = (err: any, result: any) => {
-			if (err) {
-				reject(err)
-			} else if (result.error) {
-				console.error(result.error)
-				reject(result.error)
-			} else {
-				resolve(result.result)
-			}
-		}
-
-		const _provider =
-			provider.provider?.provider || provider.provider || provider
-
-		if (_provider.getUncheckedSigner /* ethers provider */) {
-			Logger.debug(`ethers provider`)
-			_provider
-				.send(method, params)
-				.then((r: any) => resolve(r))
-				.catch((e: any) => reject(e))
-		} else if (_provider.sendAsync) {
-			Logger.debug(`sendAsync`)
-			_provider.sendAsync(payload, callback)
-		} else {
-			Logger.debug(`send`)
-			_provider.send(payload, callback).catch((error: any) => {
-				if (
-					error.message ===
-					"Hardhat Network doesn't support JSON-RPC params sent as an object"
-				) {
-					_provider
-						.send(method, params)
-						.then((r: any) => resolve(r))
-						.catch((e: any) => reject(e))
-				} else {
-					Logger.debug(`throw error`)
-					Logger.debug(error.message)
-					throw error
-				}
-			})
-		}
-	})
 
 export function createQuote(
 	poolKey: PoolKey,

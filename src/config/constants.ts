@@ -1,4 +1,4 @@
-import { ethers, ZeroAddress } from 'ethers'
+import { ZeroAddress } from 'ethers'
 import dotenv from 'dotenv'
 import arb from './arbitrum.json'
 import arbGoerli from './arbitrumGoerli.json'
@@ -30,7 +30,6 @@ export const rpcUrl =
 
 export const privateKey = process.env.WALLET_PRIVATE_KEY!
 export const walletAddr = process.env.WALLET_ADDRESS!
-export const provider = new ethers.JsonRpcProvider(rpcUrl)
 export const chainId = process.env.ENV == 'production' ? '42161' : '421613'
 export const availableTokens =
 	process.env.ENV === 'production'
@@ -39,7 +38,6 @@ export const availableTokens =
 
 export const tokenAddresses =
 	process.env.ENV === 'production' ? arb.tokens : arbGoerli.tokens
-export const signer = new ethers.Wallet(privateKey, provider)
 export const routerAddress =
 	process.env.ENV == 'production'
 		? arb.core.ERC20Router.address

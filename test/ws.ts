@@ -1,12 +1,13 @@
 import { expect } from 'chai'
 import { RawData, WebSocket } from 'ws'
 import { checkEnv } from '../src/config/checkConfig'
-import { Wallet, ZeroAddress } from 'ethers'
-import { chainId, privateKey, provider } from '../src/config/constants'
+import {ethers, Wallet, ZeroAddress} from 'ethers'
+import {chainId, privateKey, rpcUrl} from '../src/config/constants'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
 
+const provider = new ethers.JsonRpcProvider(rpcUrl)
 const url = `ws://localhost:${process.env.HTTP_PORT}`
 const wsConnection = new WebSocket(url)
 const deployer = new Wallet(privateKey, provider)

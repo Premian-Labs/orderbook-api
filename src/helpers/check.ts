@@ -7,11 +7,14 @@ import { TokenBalance } from '../types/balances'
 import { Option } from '../types/validate'
 import { IPool, IPool__factory } from '../typechain'
 import { createExpiration, createPoolKey } from './create'
-import { signer, tokenAddresses, walletAddr } from '../config/constants'
-import { formatEther, formatUnits, parseEther } from 'ethers'
+import {privateKey, rpcUrl, tokenAddresses, walletAddr} from '../config/constants'
+import {ethers, formatEther, formatUnits, parseEther} from 'ethers'
 import Logger from '../lib/logger'
 import { getPoolAddress } from './get'
 import moment from 'moment'
+
+const provider = new ethers.JsonRpcProvider(rpcUrl)
+const signer = new ethers.Wallet(privateKey, provider)
 
 export async function preProcessAnnhilate(
 	annihilateOption: Option

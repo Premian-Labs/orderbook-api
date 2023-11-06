@@ -1,16 +1,18 @@
 import { PoolKey, TokenAddresses } from '../types/quote'
-import { formatUnits } from 'ethers'
+import {ethers, formatUnits} from 'ethers'
 import Logger from '../lib/logger'
 import {
 	availableTokens,
-	provider,
+	rpcUrl,
 	tokenAddresses,
 	walletAddr,
 } from '../config/constants'
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
-import {IERC20__factory, IPoolFactory__factory, ISolidStateERC20__factory} from '../typechain'
+import {IPoolFactory__factory, ISolidStateERC20__factory} from '../typechain'
 import { TokenBalance } from '../types/balances'
+
+const provider = new ethers.JsonRpcProvider(rpcUrl)
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
@@ -29,10 +31,10 @@ export async function getPoolAddress(poolKey: PoolKey) {
 	let isDeployed: boolean
 
 	try {
-		;[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
+		[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
 	} catch (e) {
 		try {
-			;[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
+			[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
 		} catch (e) {
 			Logger.error({
 				message: `Can not get pool address`,
