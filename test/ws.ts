@@ -3,6 +3,7 @@ import { RawData, WebSocket } from 'ws'
 import { checkEnv } from '../src/config/checkConfig'
 import {ethers, Wallet, ZeroAddress} from 'ethers'
 import {chainId, privateKey, rpcUrl} from '../src/config/constants'
+import {AuthMessage, ErrorMessage, FilterMessage, InfoMessage, RFQMessage, UnsubscribeMessage} from "../src/types/ws";
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
@@ -20,7 +21,6 @@ function delay(ms: number) {
 // 	wsConnection.close()
 // })
 
-// TODO: add WS typings
 describe('test WS connectivity', () => {
 	it('should connect to WS url', async () => {
 		await delay(500)
@@ -30,14 +30,14 @@ describe('test WS connectivity', () => {
 	it('should prevent unauthorised access to ws', async () => {
 		let errorMessage = ''
 		let subscriptionMessage = ''
-		const authMsg = {
+		const authMsg: AuthMessage = {
 			type: 'AUTH',
 			apiKey: 'DUMMY_KEY',
 			body: null,
 		}
 
 		let wsCallback = (data: RawData) => {
-			const message = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'ERROR': {
 					errorMessage = message.message
@@ -55,7 +55,7 @@ describe('test WS connectivity', () => {
 		wsConnection.off('message', wsCallback)
 		expect(errorMessage).to.eq(`NOT_FOUND`)
 
-		const webSocketFilter = {
+		const webSocketFilter: FilterMessage = {
 			type: 'FILTER',
 			channel: 'QUOTES',
 			body: {
@@ -65,7 +65,7 @@ describe('test WS connectivity', () => {
 		}
 
 		wsCallback = (data: RawData) => {
-			const message = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'ERROR': {
 					subscriptionMessage = message.message
@@ -86,14 +86,14 @@ describe('test WS connectivity', () => {
 
 	it('should authorise to ws API', async () => {
 		let infoMessage = ''
-		const authMsg = {
+		const authMsg: AuthMessage = {
 			type: 'AUTH',
-			apiKey: process.env.TESTNET_ORDERBOOK_API_KEY,
+			apiKey: process.env.TESTNET_ORDERBOOK_API_KEY!,
 			body: null,
 		}
 
 		const wsCallback = (data: RawData) => {
-			const message = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'INFO': {
 					infoMessage = message.message
@@ -118,7 +118,7 @@ describe('WS streaming', () => {
 		let infoMessages: string[] = []
 
 		// listen to public quotes AND private quotes (since we provide takerAddress)
-		const webSocketFilter = {
+		const webSocketFilter: FilterMessage = {
 			type: 'FILTER',
 			channel: 'QUOTES',
 			body: {
@@ -127,7 +127,7 @@ describe('WS streaming', () => {
 			},
 		}
 		const wsCallback = (data: RawData) => {
-			const message = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'INFO': {
 					infoMessages.push(message.message)
@@ -146,7 +146,7 @@ describe('WS streaming', () => {
 			`Subscribed to quotes:${webSocketFilter.body.chainId}:*:*:${ZeroAddress},quotes:${webSocketFilter.body.chainId}:*:*:${webSocketFilter.body.taker} channel.`
 		)
 
-		const rfqRequest = {
+		const rfqRequest: RFQMessage = {
 			type: 'RFQ',
 			body: {
 				poolAddress: '0x770f9e3eb81ed29491a2efdcfa2edd34fdd24a72', // dummy address
@@ -170,13 +170,13 @@ describe('WS streaming', () => {
 
 	it('should be able to unsubscribe from Quotes stream', async () => {
 		let infoMessage = ''
-		const msg = {
+		const msg: UnsubscribeMessage = {
 			type: 'UNSUBSCRIBE',
 			channel: 'QUOTES',
 			body: null,
 		}
 		const wsCallback = (data: RawData) => {
-			const message = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'INFO': {
 					infoMessage = message.message
@@ -201,7 +201,7 @@ describe('RFQ WS flow', () => {
 		let actionChecks: string[] = []
 		let infoMessages: string[] = []
 		// params to listen to rfq requests
-		const webSocketFilter = {
+		const webSocketFilter: FilterMessage = {
 			type: 'FILTER',
 			channel: 'RFQ',
 			body: {
@@ -209,7 +209,7 @@ describe('RFQ WS flow', () => {
 			},
 		}
 		// params to broadcast rfq request
-		const rfqRequest = {
+		const rfqRequest: RFQMessage = {
 			type: 'RFQ',
 			body: {
 				poolAddress: '0x770f9e3eb81ed29491a2efdcfa2edd34fdd24a72', // dummy lowercased address
@@ -221,7 +221,7 @@ describe('RFQ WS flow', () => {
 		}
 
 		const wsCallback = (data: RawData) => {
-			const message = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'RFQ': {
 					// expect to receive broadcast rfq request
