@@ -269,11 +269,13 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		})
 	}
 
-	const activeQuotes = activeQuotesRequest.data['validQuotes'] as OrderbookQuote[]
+	const activeQuotes = activeQuotesRequest.data[
+		'validQuotes'
+	] as OrderbookQuote[]
 
 	Logger.debug({
 		message: 'activeQuotes',
-		activeQuotes: activeQuotes
+		activeQuotes: activeQuotes,
 	})
 
 	// 1.1 Check to see which quotes from the request are still valid in the orderbook
@@ -290,8 +292,8 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	})
 
 	Logger.debug({
-		message:  'fillableQuotes' ,
-		fillableQuotes: fillableQuotes
+		message: 'fillableQuotes',
+		fillableQuotes: fillableQuotes,
 	})
 
 	// 1.2 Format the fillable quotes to Deserialized quote objects (include the tradeSize in object)
@@ -382,9 +384,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				}
 			)
 			await provider.waitForTransaction(fillTx.hash, 1)
-			Logger.debug(
-				`Quote ${fillableQuoteDeserialized.quoteId} filled`
-			)
+			Logger.debug(`Quote ${fillableQuoteDeserialized.quoteId} filled`)
 			return fillableQuoteDeserialized
 		})
 	)
