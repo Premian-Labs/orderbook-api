@@ -171,7 +171,6 @@ app.post('/orderbook/quotes', async (req, res) => {
 		serializedQuotes.push(publishQuoteRequest)
 	}
 
-	console.log(serializedQuotes)
 	let postQuotesRequest
 	try {
 		// 3 Submit quote object array to orderbook API
@@ -278,6 +277,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	})
 
 	// 1.1 Check to see which quotes from the request are still valid in the orderbook
+	// TODO: refactor to iterate over fillQuoteRequests, not activeQuotes
 	const fillableQuotes: FillableQuote[] = activeQuotes.map((activeQuote) => {
 		const matchedFromRequest = find(fillQuoteRequests, [
 			'quoteId',
