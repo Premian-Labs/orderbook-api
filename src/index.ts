@@ -279,17 +279,21 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	})
 
 	// 1.1 Check to see which quotes from the request are still valid in the orderbook
-	// TODO: refactor to iterate over fillQuoteRequests, not activeQuotes
-	const fillableQuotes: FillableQuote[] = activeQuotes.map((activeQuote) => {
-		const matchedFromRequest = find(fillQuoteRequests, [
+	const fillableQuotes: FillableQuote[] = []
+
+	for (const fillQuoteRequest of fillQuoteRequests) {
+		const matchedActiveQuote = find(activeQuotes, [
 			'quoteId',
-			activeQuote.quoteId,
-		])!
-		return {
-			...activeQuote,
-			...matchedFromRequest,
+			fillQuoteRequest.quoteId,
+		])
+
+		if (matchedActiveQuote) {
+			fillableQuotes.push({
+				...matchedActiveQuote,
+				...fillQuoteRequest,
+			})
 		}
-	})
+	}
 
 	Logger.debug({
 		message: 'fillableQuotes',
