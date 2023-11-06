@@ -1,5 +1,6 @@
 import { checkEnv } from '../src/config/checkConfig'
 import axios from 'axios';
+import { delay } from '../src/helpers/util'
 import { PublishQuoteRequest } from '../src/types/validate';
 import { PostQuotesResponse } from '../src/types/quote';
 import { expect } from 'chai'
@@ -7,6 +8,7 @@ import { expect } from 'chai'
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
 const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
+let quoteId: string
 const quote : PublishQuoteRequest = {
 	base: 'WETH',
 	quote: 'USDC',
@@ -21,17 +23,23 @@ const quote : PublishQuoteRequest = {
 
 //TODO: add token approval for test account
 
-// describe('API authorization', () => {
-// 	it('should prevent unauthorised access to the API', async () => {
-// 		const url = `${baseUrl}/orderbook/quotes`
-// 		const DUMMY_ORDERBOOK_API_KEY = 'testnet_3ZfbUdiFNZXfg4dKUqX9KH3F'
-// 		const response = await axios.post(url, [quote], {
-// 			headers: {
-// 				'x-apikey': DUMMY_ORDERBOOK_API_KEY,
-// 			}
-// 		})
-// 	})
-// })
+describe('API authorization', () => {
+	it('should prevent unauthorised access to the API', async () => {
+		const url = `${baseUrl}/orderbook/quotes`
+		const DUMMY_ORDERBOOK_API_KEY = 'testnet_3ZfbUdiFNZXfg4dKUqX9KH3F'
+		const response = await axios.post(url, [quote], {
+			headers: {
+				'x-apikey': DUMMY_ORDERBOOK_API_KEY,
+			},
+			validateStatus: function (status) {
+				return status < 500
+			}
+		})
+
+		expect(response.status).to.eq(401)
+		expect(response.data.message).to.eq('NOT_FOUND')
+	})
+})
 
 describe('post/orderbook/quotes', () => {
 	it('should post a valid quote to the orderbook', async () => {
@@ -42,10 +50,13 @@ describe('post/orderbook/quotes', () => {
 			}
 		})
 		const quotes: PostQuotesResponse = response.data
+		quoteId = quotes.created[0].quoteId
 		expect(response.status).to.eq(201)
 		expect(quotes.created.length).to.eq(1)
 		expect(quotes.failed.length).to.eq(0)
 		expect(quotes.exists.length).to.eq(0)
+		console.log('posted quote...waiting for orderbook to hydrate...')
+		await delay(5000)
 	})
 
 // 	it('should reject invalid AJV quote payload', async () => {})
@@ -54,10 +65,24 @@ describe('post/orderbook/quotes', () => {
 })
 
 
-//
-// describe('patch/orderbook/quotes', () => {
-// 	it('should fill valid quotes from the orderbook', async () => {})
-//
+
+describe('patch/orderbook/quotes', () => {
+	it('should fill valid quotes from the orderbook', async () => {
+		const url = `${baseUrl}/orderbook/quotes`
+		const fillQuote = {
+			tradeSize: quote.size,
+			quoteId: quoteId
+		}
+		const response = await axios.patch(url, [fillQuote], {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			}
+		})
+
+		expect(response.status).to.eq(200)
+		expect(response.data.success[0]).to.eq(quoteId)
+	})
+
 // 	// TODO: merge all AJV errors into a single case
 // 	// AJV error
 // 	it('should not fill more than 25 quotes per request', async () => {})
@@ -73,8 +98,8 @@ describe('post/orderbook/quotes', () => {
 // 	it('should ignore fill attempts for non-existent quotes', async () => {})
 //
 // 	it('should reject fill attempts larger than fillableSize', async () => {})
-// })
-//
+})
+
 // describe('delete/orderbook/quotes', () => {
 // 	it('should delete quotes from the orderbook', async () => {})
 //

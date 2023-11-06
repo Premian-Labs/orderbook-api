@@ -270,7 +270,12 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		})
 	}
 
-	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[]
+	const activeQuotes = activeQuotesRequest.data['validQuotes'] as OrderbookQuote[]
+
+	Logger.debug({
+		message: 'activeQuotes',
+		activeQuotes: activeQuotes
+	})
 
 	// 1.1 Check to see which quotes from the request are still valid in the orderbook
 	const fillableQuotes: FillableQuote[] = activeQuotes.map((activeQuote) => {
@@ -282,6 +287,11 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			...activeQuote,
 			...matchedFromRequest,
 		}
+	})
+
+	Logger.debug({
+		message:  'fillableQuotes' ,
+		fillableQuotes: fillableQuotes
 	})
 
 	// 1.2 Format the fillable quotes to Deserialized quote objects (include the tradeSize in object)
@@ -364,7 +374,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 
 			const fillTx = await pool.fillQuoteOB(
 				quoteOB,
-				fillableQuoteDeserialized.tradeSize,
+				fillableQuoteDeserialized.size,
 				signedQuoteObject,
 				referralAddress,
 				{
@@ -373,7 +383,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			)
 			await provider.waitForTransaction(fillTx.hash, 1)
 			Logger.debug(
-				`Quote ${JSON.stringify(fillableQuoteDeserialized.quoteId)} filled`
+				`Quote ${fillableQuoteDeserialized.quoteId} filled`
 			)
 			return fillableQuoteDeserialized
 		})

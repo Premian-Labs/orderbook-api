@@ -84,7 +84,7 @@ export const validateFillQuotes = ajv.compile({
 				pattern: '[a-fA-F0-9]{64}$',
 			},
 		},
-		required: ['size', 'quoteId'],
+		required: ['tradeSize', 'quoteId'],
 		additionalProperties: false,
 	},
 	minItems: 1,

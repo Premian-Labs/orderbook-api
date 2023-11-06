@@ -29,3 +29,8 @@ export function requestDetailed(
 		})),
 	}
 }
+
+export async function delay(t: number) {
+	await new Promise((resolve) => setTimeout(resolve, t))
+}
+
