@@ -20,6 +20,7 @@ function delay(ms: number) {
 // 	wsConnection.close()
 // })
 
+// TODO: add WS typings
 describe('test WS connectivity', () => {
 	it('should connect to WS url', async () => {
 		await delay(500)

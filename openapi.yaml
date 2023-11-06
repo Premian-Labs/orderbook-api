@@ -769,7 +769,7 @@ components:
           pattern: '[a-fA-F0-9]{64}$'
           example: ba638...fb25e
       required:
-        - size
+        - tradeSize
         - quoteId
     PositionsRequestParams:
       type: object
