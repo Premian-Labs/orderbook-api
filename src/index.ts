@@ -10,14 +10,11 @@ import {
 	walletAddr,
 	availableTokens,
 	routerAddress,
-	ws_url, rpcUrl, privateKey,
+	ws_url,
+	rpcUrl,
+	privateKey,
 } from './config/constants'
-import {
-	parseEther,
-	MaxUint256,
-	parseUnits,
-	formatEther, ethers,
-} from 'ethers'
+import { parseEther, MaxUint256, parseUnits, formatEther, ethers } from 'ethers'
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
@@ -66,9 +63,9 @@ import {
 	getQuote,
 	signQuote,
 	createQuote,
-	serializeQuote, signWithEthers,
+	serializeQuote,
 } from './helpers/sign'
-import {IPool__factory, ISolidStateERC20__factory} from './typechain'
+import { IPool__factory, ISolidStateERC20__factory } from './typechain'
 import {
 	difference,
 	find,
@@ -79,7 +76,7 @@ import {
 	zipWith,
 } from 'lodash'
 import { requestDetailed } from './helpers/util'
-import moment from "moment";
+import moment from 'moment'
 
 dotenv.config()
 checkEnv()
@@ -153,7 +150,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		)
 		Logger.debug({
 			message: 'quoteOB',
-			quoteOB: quoteOB
+			quoteOB: quoteOB,
 		})
 
 		// 2.6 Sign quote object

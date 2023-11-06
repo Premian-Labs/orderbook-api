@@ -11,9 +11,9 @@ import {
 	QuoteOBMessage,
 	SignedQuote,
 } from '../types/signature'
-import {Signer, ZeroAddress} from 'ethers'
+import { Signer, ZeroAddress } from 'ethers'
 import { chainId } from '../config/constants'
-import moment from "moment";
+import moment from 'moment'
 
 const randomId = () => Math.floor(Math.random() * 10000000000)
 
@@ -84,7 +84,11 @@ export const signWithEthers = async (
 	typeData: any
 ): Promise<RSV> => {
 	const { EIP712Domain: _unused, ...types } = typeData.types
-	const rawSignature = await signer.signTypedData(typeData.domain, types, typeData.message)
+	const rawSignature = await signer.signTypedData(
+		typeData.domain,
+		types,
+		typeData.message
+	)
 	return splitSignatureToRSV(rawSignature)
 }
 

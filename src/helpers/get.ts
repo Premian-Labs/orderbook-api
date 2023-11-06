@@ -1,5 +1,5 @@
 import { PoolKey, TokenAddresses } from '../types/quote'
-import {ethers, formatUnits} from 'ethers'
+import { ethers, formatUnits } from 'ethers'
 import Logger from '../lib/logger'
 import {
 	availableTokens,
@@ -9,7 +9,7 @@ import {
 } from '../config/constants'
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
-import {IPoolFactory__factory, ISolidStateERC20__factory} from '../typechain'
+import { IPoolFactory__factory, ISolidStateERC20__factory } from '../typechain'
 import { TokenBalance } from '../types/balances'
 
 const provider = new ethers.JsonRpcProvider(rpcUrl)
@@ -31,10 +31,10 @@ export async function getPoolAddress(poolKey: PoolKey) {
 	let isDeployed: boolean
 
 	try {
-		[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
+		;[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
 	} catch (e) {
 		try {
-			[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
+			;[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
 		} catch (e) {
 			Logger.error({
 				message: `Can not get pool address`,
@@ -71,9 +71,14 @@ export function getTokenByAddress(
 export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
 		availableTokens.map(async (token) => {
-			const erc20 = ISolidStateERC20__factory.connect(tokenAddresses[token], provider)
+			const erc20 = ISolidStateERC20__factory.connect(
+				tokenAddresses[token],
+				provider
+			)
 			const decimals = await erc20.decimals()
-			const balance: number = parseFloat(formatUnits(await erc20.balanceOf(walletAddr), Number(decimals)))
+			const balance: number = parseFloat(
+				formatUnits(await erc20.balanceOf(walletAddr), Number(decimals))
+			)
 
 			const tokenBalance: TokenBalance = {
 				token_address: tokenAddresses[token],

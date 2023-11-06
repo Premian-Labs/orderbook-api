@@ -1,54 +1,59 @@
 import { checkEnv } from '../src/config/checkConfig'
-import axios from 'axios'
+import axios from 'axios';
 import { PublishQuoteRequest } from '../src/types/validate';
+import { PostQuotesResponse } from '../src/types/quote';
+import { expect } from 'chai'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
-
 const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
+const quote : PublishQuoteRequest = {
+	base: 'WETH',
+	quote: 'USDC',
+	expiration: `10NOV23`,
+	strike: 1800,
+	type: `P`,
+	side: 'bid',
+	size: 1,
+	price: .1,
+	deadline: 120
+}
 
-describe('Local Host Smoke Test', () => {
-	it('POST -> orderbook/quotes', async () => {
-		const url = `${baseUrl}/orderbook/quotes`
-		console.log(`URL: ${url}`)
-		//TODO: add approval
-		const quote : PublishQuoteRequest = {
-			base: 'WETH',
-			quote: 'USDC',
-			expiration: `10NOV23`,
-			strike: 1800,
-			type: `P`,
-			side: 'bid',
-			size: 1,
-			price: .1,
-			deadline: 120
-		}
-		try{
-			const response = await axios.post(url, [quote], {
-				headers: {
-					'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-				}
-			})
-			console.log(response)
-		}catch(e){
-			console.log(e)
-		}
+//TODO: add token approval for test account
 
-	})
-})
-
-
-// describe('API authorisation', () => {
-// 	it('should prevent unauthorised access to the API', async () => {})
+// describe('API authorization', () => {
+// 	it('should prevent unauthorised access to the API', async () => {
+// 		const url = `${baseUrl}/orderbook/quotes`
+// 		const DUMMY_ORDERBOOK_API_KEY = 'testnet_3ZfbUdiFNZXfg4dKUqX9KH3F'
+// 		const response = await axios.post(url, [quote], {
+// 			headers: {
+// 				'x-apikey': DUMMY_ORDERBOOK_API_KEY,
+// 			}
+// 		})
+// 	})
 // })
-//
-// describe('post/orderbook/quotes', () => {
-// 	it('should post valid quotes to the orderbook', async () => {})
-//
+
+describe('post/orderbook/quotes', () => {
+	it('should post a valid quote to the orderbook', async () => {
+		const url = `${baseUrl}/orderbook/quotes`
+		const response = await axios.post(url, [quote], {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			}
+		})
+		const quotes: PostQuotesResponse = response.data
+		expect(response.status).to.eq(201)
+		expect(quotes.created.length).to.eq(1)
+		expect(quotes.failed.length).to.eq(0)
+		expect(quotes.exists.length).to.eq(0)
+	})
+
 // 	it('should reject invalid AJV quote payload', async () => {})
 //
 // 	it('should attempt to publish invalid quotes an error message', async () => {})
-// })
+})
+
+
 //
 // describe('patch/orderbook/quotes', () => {
 // 	it('should fill valid quotes from the orderbook', async () => {})
