@@ -7,6 +7,7 @@ export interface NFTBalance {
 	token_address: string
 	amount: number
 	name: string
+	exposure: 'SHORT' | 'LONG'
 }
 
 export interface OptionPositions {

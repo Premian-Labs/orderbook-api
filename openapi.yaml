@@ -653,6 +653,11 @@ components:
         token_address:
           type: string
           example: 0x...4cFF2
+        exposure:
+          type: string
+          enum:
+            - SHORT
+            - LONG
     OptionPositions:
       properties:
         expired:
