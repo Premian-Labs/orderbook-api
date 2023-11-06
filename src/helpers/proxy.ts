@@ -13,7 +13,7 @@ export async function proxyHTTPRequest(
 ) {
 	switch (method) {
 		case 'POST': {
-			return await axios.post(`${orderbook_url}/${path}`, [body], {
+			return await axios.post(`${orderbook_url}/${path}`, body, {
 				headers: {
 					'x-apikey': apiKey,
 				},
