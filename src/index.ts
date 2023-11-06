@@ -205,6 +205,23 @@ app.post('/orderbook/quotes', async (req, res) => {
 			exists: postQuotesResponse.exists.map(createReturnedQuotes),
 		})
 	}
+
+	// All quotes exist
+	if (postQuotesRequest.status == 200) {
+		const postQuotesResponse: PostQuotesResponse = postQuotesRequest.data
+		return res.status(postQuotesRequest.status).json({
+			failed: postQuotesResponse.failed.map((failedQuote) => {
+				return {
+					reason: failedQuote.reason,
+					quote: parseInvalidQuotes(failedQuote.quote),
+				}
+			}),
+			exists: postQuotesResponse.exists.map(createReturnedQuotes),
+		})
+	}
+
+	// Failed request
+	return res.status(postQuotesRequest.status).json(postQuotesRequest.data)
 })
 
 // NOTE: fill quote(s)
