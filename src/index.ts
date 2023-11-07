@@ -125,9 +125,8 @@ app.post('/orderbook/quotes', async (req, res) => {
 		try {
 			expiration = createExpiration(quote.expiration)
 		} catch (e) {
-			Logger.error(e)
 			return res.status(400).json({
-				message: e,
+				message: (e as Error).message,
 				quote: quote,
 			})
 		}
