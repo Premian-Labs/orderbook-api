@@ -901,7 +901,7 @@ components:
           dataPath:
             type: string
           params:
-            type: string
+            type: object
           message:
             type: string
   securitySchemes:
