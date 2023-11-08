@@ -41,7 +41,6 @@
     "dotenv": "^16.0.3",
     "ethers": "^6.8.1",
     "express": "^4.18.2",
-    "http-proxy": "^1.18.1",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
     "typechain": "^8.3.1",

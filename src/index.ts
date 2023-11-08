@@ -1,7 +1,7 @@
 import express from 'express'
-import httpProxy from 'http-proxy'
 import dotenv from 'dotenv'
 import Logger from './lib/logger'
+import WebSocket from 'ws'
 import { checkEnv } from './config/checkConfig'
 import {
 	gasLimit,
@@ -77,6 +77,14 @@ import {
 } from 'lodash'
 import { requestDetailed } from './helpers/util'
 import moment from 'moment'
+import {
+	DeleteQuoteMessage,
+	ErrorMessage,
+	FillQuoteMessage,
+	InfoMessage,
+	PostQuoteMessage,
+	RFQMessage,
+} from './types/ws'
 
 dotenv.config()
 checkEnv()
@@ -843,15 +851,47 @@ app.post('/account/collateral_approval', async (req, res) => {
 	})
 })
 
-const proxy = httpProxy.createProxyServer({ ws: true })
 const server = app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`)
 })
 
-server.on('upgrade', (req, socket, head) => {
-	proxy.ws(req, socket, head, {
-		target: ws_url,
-		changeOrigin: true,
-		ws: true,
+const wsProxyCloudClient = new WebSocket(ws_url)
+const wsServer = new WebSocket.Server({ server })
+wsServer.on('connection', (wsLocalConnection) => {
+	wsLocalConnection.on('message', (clientMsg) => {
+		wsProxyCloudClient.send(clientMsg.toString())
+	})
+
+	wsProxyCloudClient.on('message', (cloudMsg) => {
+		const message:
+			| InfoMessage
+			| ErrorMessage
+			| RFQMessage
+			| PostQuoteMessage
+			| FillQuoteMessage
+			| DeleteQuoteMessage = JSON.parse(cloudMsg.toString())
+
+		switch (message.type) {
+			case 'FILL_QUOTE':
+				wsLocalConnection.send(
+					JSON.stringify({
+						type: message.type,
+						body: createReturnedQuotes(message.body),
+						size: message.size,
+					})
+				)
+				break
+			case 'POST_QUOTE':
+			case 'DELETE_QUOTE':
+				wsLocalConnection.send(
+					JSON.stringify({
+						type: message.type,
+						body: createReturnedQuotes(message.body),
+					})
+				)
+				break
+			default:
+				wsLocalConnection.send(cloudMsg.toString())
+		}
 	})
 })
