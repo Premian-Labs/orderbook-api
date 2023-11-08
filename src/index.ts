@@ -286,6 +286,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	})
 
 	// 1.1 Check to see which quotes from the request are still valid in the orderbook
+	// NOTE: we only received the valid quotes from redis.
 	const fillableQuotes: FillableQuote[] = []
 
 	for (const fillQuoteRequest of fillQuoteRequests) {
@@ -302,6 +303,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		}
 	}
 
+	//NOTE: at this point we have size, fillableSize, and tradeSize in the quote object
 	Logger.debug({
 		message: 'fillableQuotes',
 		fillableQuotes: fillableQuotes,
@@ -311,6 +313,11 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	const fillableQuotesDeserialized = fillableQuotes.map(
 		deserializeOrderbookQuote
 	)
+
+	Logger.debug({
+		message: 'fillableQuotesDeserialized',
+		fillableQuotesDeserialized: fillableQuotesDeserialized
+	})
 
 	// 2. Group calls by base and puts by quote currency
 	const [callsFillQuoteRequests, putsFillQuoteRequests] = partition(
@@ -385,9 +392,10 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				quoteOB
 			)
 
+			//NOTE: we use the tradeSize the client inputs (it's a standard number)
 			const fillTx = await pool.fillQuoteOB(
 				quoteOB,
-				fillableQuoteDeserialized.size,
+				parseEther(fillableQuoteDeserialized.tradeSize.toString()),
 				signedQuoteObject,
 				referralAddress,
 				{
@@ -699,7 +707,6 @@ app.post('/pool/annihilate', async (req, res) => {
 })
 
 // NOTE: option positions currently open
-// TODO: how does this understand long vs short positions?
 app.get('/account/option_balances', async (req, res) => {
 	let optionBalancesRequest
 	try {
