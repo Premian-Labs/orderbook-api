@@ -72,9 +72,9 @@ import {
 	flatten,
 	groupBy,
 	partition,
-	pick,
-	zipWith,
-} from 'lodash'
+	pick, zip,
+	zipWith
+} from 'lodash';
 import { requestDetailed } from './helpers/util'
 import moment from 'moment'
 import {
@@ -143,8 +143,16 @@ app.post('/orderbook/quotes', async (req, res) => {
 		const poolKey = createPoolKey(quote, expiration)
 
 		// 2.4 Get PoolAddress
-		const poolAddr = await getPoolAddress(poolKey)
-		Logger.debug(`PoolAddress: ${poolAddr}`)
+		let poolAddr: string
+		try {
+			poolAddr = await getPoolAddress(poolKey)
+			Logger.debug(`PoolAddress: ${poolAddr}`)
+		} catch (e) {
+			return res.status(400).json({
+				message: (e as Error).message,
+				poolKey: poolKey,
+			})
+		}
 
 		// 2.5 Generate a initial quote object
 		const quoteOB = getQuote(
@@ -336,7 +344,14 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	)
 
 	// 1.2 Check that we have enough collateral balance to fill orders
-	const [tokenBalances] = await getBalances()
+	const [tokenBalances, rejectedTokenBalances] = await getBalances()
+
+	if (rejectedTokenBalances.length > 0) {
+		return res.status(400).json({
+			message: 'failed to get tokens balances',
+			rejectedTokenBalances: rejectedTokenBalances
+		})
+	}
 
 	// validate collateral balance sorted base token address (CALLS)
 	for (const baseToken in callsFillQuoteRequestsGroupedByCollateral) {
@@ -509,15 +524,9 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		flatten(fulfilledQuoteIds)
 	)
 
-	const omittedQuoteIds = difference(
-		deleteQuoteIds.quoteIds,
-		flatten(fulfilledQuoteIds)
-	)
-
 	return res.status(200).json({
 		success: flatten(fulfilledQuoteIds),
 		failed: failedQuoteIds,
-		omitted: omittedQuoteIds,
 	})
 })
 
@@ -770,23 +779,11 @@ app.get('/account/orders', async (req, res) => {
 
 // NOTE: returns all collateral balances on Token addressed in config file
 app.get('/account/collateral_balances', async (req, res) => {
-	const [balances, failureReasons] = await getBalances()
-
-	const failedBalanceQueries = difference(
-		availableTokens,
-		balances.map((balance) => balance.symbol)
-	)
+	const [balances, rejectedTokenBalances] = await getBalances()
 
 	return res.sendStatus(200).json({
 		success: balances,
-		failed: zipWith(
-			failedBalanceQueries,
-			failureReasons,
-			(failedBalanceQuery, reason) => ({
-				failedBalanceQuery,
-				reason,
-			})
-		),
+		failed: rejectedTokenBalances
 	})
 })
 

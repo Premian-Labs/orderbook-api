@@ -191,12 +191,6 @@ paths:
                       type: string
                       pattern: '[a-fA-F0-9]{64}$'
                       example: ba638...fb25e
-                  omitted:
-                    type: array
-                    items:
-                      type: string
-                      pattern: '[a-fA-F0-9]{64}$'
-                      example: ba638...fb25e
         '400':
           description: Invalid parameters supplied
           content:
@@ -565,8 +559,9 @@ paths:
                     items:
                       type: object
                       properties:
-                        failedBalanceQuery:
+                        token:
                           type: string
+                          example: WETH
                         reason:
                           type: string
         '401':

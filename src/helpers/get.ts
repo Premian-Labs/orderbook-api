@@ -10,7 +10,7 @@ import {
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
 import { IPoolFactory__factory, ISolidStateERC20__factory } from '../typechain'
-import { rejectedTokenBalance, TokenBalance } from '../types/balances';
+import { RejectedTokenBalance, TokenBalance } from '../types/balances'
 
 const provider = new ethers.JsonRpcProvider(rpcUrl)
 
@@ -43,14 +43,15 @@ export async function getPoolAddress(poolKey: PoolKey) {
 			throw new Error(`Can not get pool address`)
 		}
 	}
-	poolAddress = poolAddress.toLowerCase()
-	//TODO: if pool is not deployed should we kill process?
+
 	if (!isDeployed) {
 		Logger.warn({
 			message: `Pool is not deployed`,
 			poolKey: poolKey,
 		})
+		throw new Error(`Pool is not deployed`)
 	}
+	poolAddress = poolAddress.toLowerCase()
 	poolMap.set(poolKey, poolAddress)
 	return poolAddress
 }
@@ -90,17 +91,17 @@ export async function getBalances() {
 		})
 	)
 	const balances: TokenBalance[] = []
-	const reasons: any[] = []
+	const rejectedTokenBalances: any[] = []
 	promiseAll.forEach((result, index) => {
 		if (result.status === 'fulfilled') {
 			balances.push(result.value)
 		}
 		if (result.status === 'rejected') {
-			reasons.push({
+			rejectedTokenBalances.push({
 				token: availableTokens[index],
 				reason: result.reason,
 			})
 		}
 	})
-	return [balances, reasons] as [TokenBalance[], rejectedTokenBalance[]]
+	return [balances, rejectedTokenBalances] as [TokenBalance[], RejectedTokenBalance[]]
 }

@@ -116,9 +116,13 @@ export async function validateBalances(
 ) {
 	// Note: we only have balances for what is available in tokenAddresses constant
 	// value of balance is a number from getBalances()
-	const availableTokenBalance = tokenBalances.find(
+	const availableToken = tokenBalances.find(
 		(tokenBalance) => tokenBalance.token_address === collateralTokenAddr
-	)!.balance as number
+	)
+	const [availableTokenBalance, availableTokenSymbol] = [
+		Number(availableToken?.balance),
+		availableToken?.symbol,
+	]
 
 	// Sums up fillQuoteRequests tradeSizes
 	const tradesTotalSize = fillQuoteRequests
@@ -127,7 +131,7 @@ export async function validateBalances(
 
 	if (availableTokenBalance < tradesTotalSize) {
 		throw new Error(
-			`Not enough ${collateralTokenAddr} collateral to fill orders`
+			`Not enough ${availableTokenSymbol} collateral to fill orders`
 		)
 	}
 }
