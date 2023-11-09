@@ -14,16 +14,7 @@ import {
 	rpcUrl,
 	privateKey,
 } from './config/constants'
-import {
-	parseEther,
-	MaxUint256,
-	parseUnits,
-	formatEther,
-	ethers,
-	Contract,
-	ContractTransactionResponse,
-	TransactionReceipt
-} from 'ethers';
+import { parseEther, MaxUint256, parseUnits, formatEther, ethers } from 'ethers'
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
@@ -164,6 +155,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 			deadline,
 			quote.taker
 		)
+
 		Logger.debug({
 			message: 'quoteOB',
 			quoteOB: quoteOB,
@@ -319,16 +311,17 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	})
 
 	// 1.2 Format the fillable quotes to Deserialized quote objects (include the tradeSize in object)
+	// NOTE: we do NOT deserialize tradeSize here (it's not a quoteOB param)
 	const fillableQuotesDeserialized = fillableQuotes.map(
 		deserializeOrderbookQuote
 	)
 
 	Logger.debug({
 		message: 'fillableQuotesDeserialized',
-		fillableQuotesDeserialized: fillableQuotesDeserialized
+		fillableQuotesDeserialized: fillableQuotesDeserialized,
 	})
 
-	// 2. Group calls by base and puts by quote currency
+	// 2. Group calls by base and puts by quote currency (so we can check collateral requirements)
 	const [callsFillQuoteRequests, putsFillQuoteRequests] = partition(
 		fillableQuotesDeserialized,
 		(fillQuoteRequest) => fillQuoteRequest.poolKey.isCallPool
@@ -401,25 +394,26 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				quoteOB
 			)
 
-			try{
-				const fillTx = await pool.fillQuoteOB(
-					quoteOB,
-					parseEther(fillableQuoteDeserialized.tradeSize.toString()),
-					signedQuoteObject,
-					referralAddress,
-					{
-						gasLimit: gasLimit,
-					}
+			// Ensure that tradeSize is not larger than fillableSize (otherwise tx will fail)
+			if (
+				fillableQuoteDeserialized.tradeSize >
+				parseFloat(formatEther(fillableQuoteDeserialized.fillableSize))
+			) {
+				throw new Error(
+					`tradeSize > fillableSize for quoteId: ${fillableQuoteDeserialized.quoteId}`
 				)
-				const confirm = await provider.waitForTransaction(fillTx.hash, 1)
-				await provider.call(confirm!)
-			}catch(e){
-				Logger.debug({
-					message: `Error in Confirm Receipt`,
-					reason: (e as ethers.CallExceptionError).data
-				})
-				throw Error('Transaction not Successful')
 			}
+
+			const fillTx = await pool.fillQuoteOB(
+				quoteOB,
+				fillableQuoteDeserialized.tradeSize,
+				signedQuoteObject,
+				referralAddress,
+				{
+					gasLimit: gasLimit,
+				}
+			)
+			await fillTx.wait(1)
 
 			Logger.debug(`Quote ${fillableQuoteDeserialized.quoteId} filled`)
 			return fillableQuoteDeserialized
@@ -431,20 +425,14 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		if (result.status === 'fulfilled') {
 			// success
 			fulfilledQuoteIds.push(result.value.quoteId)
-		} else {
-			const ethersError = result.reason as ethers.CallExceptionError
-			console.error(ethersError)
-			// does not work somehow
-			// const parsed = IPool__factory.createInterface().parseError(ethersError.data!)
-			// console.log(parsed)
 		}
-	})
 
-	const failedQuoteIds = difference(quoteIds, fulfilledQuoteIds)
+		const failedQuoteIds = difference(quoteIds, fulfilledQuoteIds)
 
-	return res.status(200).json({
-		success: fulfilledQuoteIds,
-		failed: failedQuoteIds,
+		return res.status(200).json({
+			success: fulfilledQuoteIds,
+			failed: failedQuoteIds,
+		})
 	})
 })
 
@@ -503,7 +491,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 			Logger.debug(`Cancelling quotes ${quoteIds}...`)
 			const cancelTx = await poolContract.cancelQuotesOB(quoteIds)
-			await cancelTx.wait()
+			await cancelTx.wait(1)
 			Logger.debug(`Quotes ${quoteIds} cancelled`)
 			return quoteIds
 		})
@@ -663,7 +651,7 @@ app.post('/pool/settle', async (req, res) => {
 		options.map(async (option) => {
 			const pool = await preProcessExpOption(option, TokenType.SHORT)
 			const settleTx = await pool.settle()
-			await settleTx.wait()
+			await settleTx.wait(1)
 			return option
 		})
 	)
@@ -691,7 +679,7 @@ app.post('/pool/exercise', async (req, res) => {
 		options.map(async (option) => {
 			const pool = await preProcessExpOption(option, TokenType.LONG)
 			const exerciseTx = await pool.exercise()
-			await exerciseTx.wait()
+			await exerciseTx.wait(1)
 			return option
 		})
 	)
@@ -722,7 +710,7 @@ app.post('/pool/annihilate', async (req, res) => {
 			const annihilateTx = await pool.annihilate(size, {
 				gasLimit: gasLimit,
 			})
-			await annihilateTx.wait()
+			await annihilateTx.wait(1)
 			return option
 		})
 	)
@@ -844,14 +832,14 @@ app.post('/account/collateral_approval', async (req, res) => {
 					routerAddress,
 					MaxUint256.toString()
 				)
-				await response.wait()
+				await response.wait(1)
 				Logger.info(`${approval.token} approval set to MAX`)
 			} else {
 				const decimals = await erc20.decimals()
 				const qty = parseUnits(approval.amt.toString(), Number(decimals))
 
 				const response = await erc20.approve(routerAddress, qty)
-				await response.wait()
+				await response.wait(1)
 				Logger.info(
 					`${approval.token} approval set to ${parseFloat(
 						formatEther(approval.amt)

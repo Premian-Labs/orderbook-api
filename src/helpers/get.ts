@@ -68,6 +68,7 @@ export function getTokenByAddress(
 	return tokenName
 }
 
+// NOTE: this returns the balance in human-readable format (number)
 export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
 		availableTokens.map(async (token) => {
@@ -97,10 +98,9 @@ export async function getBalances() {
 		if (result.status === 'rejected') {
 			reasons.push({
 				token: availableTokens[index],
-				reason: result.reason
+				reason: result.reason,
 			})
 		}
 	})
-
 	return [balances, reasons] as [TokenBalance[], any[]]
 }

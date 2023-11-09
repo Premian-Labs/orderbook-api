@@ -98,7 +98,7 @@ export interface PoolKeySerialized {
 
 export interface OrderbookQuoteTradeDeserialized
 	extends OrderbookQuoteDeserialized {
-	tradeSize: BigNumberish
+	tradeSize: number
 }
 
 export interface ReturnedOrderbookQuote extends Option {

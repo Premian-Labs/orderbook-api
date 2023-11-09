@@ -159,7 +159,7 @@ export function deserializeOrderbookQuote(
 		signature: quote.signature,
 		quoteId: quote.quoteId,
 		poolAddress: quote.poolAddress,
-		tradeSize: toBigInt(quote.tradeSize),
+		tradeSize: quote.tradeSize,
 		fillableSize: toBigInt(quote.fillableSize),
 		ts: quote.ts,
 	}

@@ -120,16 +120,9 @@ export async function validateBalances(
 		(tokenBalance) => tokenBalance.token_address === collateralTokenAddr
 	)!.balance as number
 
-	// Sums up fillQuoteRequests sizes
+	// Sums up fillQuoteRequests tradeSizes
 	const tradesTotalSize = fillQuoteRequests
-		.map((fillQuoteRequest) =>
-			parseFloat(
-				formatUnits(
-					fillQuoteRequest.tradeSize,
-					collateralTokenAddr === tokenAddresses['USDC'] ? 6 : 18
-				)
-			)
-		)
+		.map((fillQuoteRequest) => fillQuoteRequest.tradeSize)
 		.reduce((sum, x) => sum + x)
 
 	if (availableTokenBalance < tradesTotalSize) {
