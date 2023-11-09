@@ -485,7 +485,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 			Logger.debug(`Cancelling quotes ${quoteIds}...`)
 			const cancelTx = await poolContract.cancelQuotesOB(quoteIds)
-			await provider.waitForTransaction(cancelTx.hash, 1)
+			await cancelTx.wait()
 			Logger.debug(`Quotes ${quoteIds} cancelled`)
 			return quoteIds
 		})
@@ -496,6 +496,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		if (result.status === 'fulfilled') {
 			fulfilledQuoteIds.push(result.value)
 		}
+		// TODO: add reasons for failed tx here
 	})
 
 	const failedQuoteIds = difference(
@@ -644,7 +645,7 @@ app.post('/pool/settle', async (req, res) => {
 		options.map(async (option) => {
 			const pool = await preProcessExpOption(option, TokenType.SHORT)
 			const settleTx = await pool.settle()
-			await provider.waitForTransaction(settleTx.hash, 1)
+			await settleTx.wait()
 			return option
 		})
 	)
@@ -672,7 +673,7 @@ app.post('/pool/exercise', async (req, res) => {
 		options.map(async (option) => {
 			const pool = await preProcessExpOption(option, TokenType.LONG)
 			const exerciseTx = await pool.exercise()
-			await provider.waitForTransaction(exerciseTx.hash, 1)
+			await exerciseTx.wait()
 			return option
 		})
 	)
@@ -703,7 +704,7 @@ app.post('/pool/annihilate', async (req, res) => {
 			const annihilateTx = await pool.annihilate(size, {
 				gasLimit: gasLimit,
 			})
-			await provider.waitForTransaction(annihilateTx.hash, 1)
+			await annihilateTx.wait()
 			return option
 		})
 	)
@@ -825,14 +826,14 @@ app.post('/account/collateral_approval', async (req, res) => {
 					routerAddress,
 					MaxUint256.toString()
 				)
-				await provider.waitForTransaction(response.hash, 1)
+				await response.wait()
 				Logger.info(`${approval.token} approval set to MAX`)
 			} else {
 				const decimals = await erc20.decimals()
 				const qty = parseUnits(approval.amt.toString(), Number(decimals))
 
 				const response = await erc20.approve(routerAddress, qty)
-				await provider.waitForTransaction(response.hash, 1)
+				await response.wait()
 				Logger.info(
 					`${approval.token} approval set to ${parseFloat(
 						formatEther(approval.amt)
