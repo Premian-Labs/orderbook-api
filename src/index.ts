@@ -311,6 +311,14 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		}
 	}
 
+	// if we have nothing to fill, then end here
+	if (fillableQuotes.length == 0){
+		return res.status(200).json({
+			success: [],
+			failed: quoteIds,
+		})
+	}
+
 	//NOTE: at this point we have size, fillableSize, and tradeSize in the quote object
 	Logger.debug({
 		message: 'fillableQuotes',
@@ -328,7 +336,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		fillableQuotesDeserialized: fillableQuotesDeserialized,
 	})
 
-	// 2. Group calls by base and puts by quote currency (so we can check collateral requirements)
+	// group calls by base and puts by quote currency (so we can check collateral requirements)
 	const [callsFillQuoteRequests, putsFillQuoteRequests] = partition(
 		fillableQuotesDeserialized,
 		(fillQuoteRequest) => fillQuoteRequest.poolKey.isCallPool
@@ -342,7 +350,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		'poolKey.quote'
 	)
 
-	// 1.2 Check that we have enough collateral balance to fill orders
+	// check that we have enough collateral balance to fill orders
 	const [tokenBalances, rejectedTokenBalances] = await getBalances()
 
 	if (rejectedTokenBalances.length > 0) {
@@ -380,7 +388,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		}
 	}
 
-	// 2.0 Process fill quotes
+	// process fill quotes
 	const promiseAll = await Promise.allSettled(
 		fillableQuotesDeserialized.map(async (fillableQuoteDeserialized) => {
 			const pool = IPool__factory.connect(
@@ -408,7 +416,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				quoteOB
 			)
 
-			// Ensure that tradeSize is not larger than fillableSize (otherwise tx will fail)
+			// ensure that tradeSize is not larger than fillableSize (otherwise tx will fail)
 			if (
 				fillableQuoteDeserialized.tradeSize >
 				parseFloat(formatEther(fillableQuoteDeserialized.fillableSize))
@@ -488,12 +496,33 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		})
 	}
 
-	const activeQuotes = activeQuotesRequest.data as OrderbookQuote[]
+	const activeQuotes = activeQuotesRequest.data[
+		'validQuotes'
+		] as OrderbookQuote[]
+
+	Logger.debug({
+		message: `active quotes`,
+		activeQuotes: activeQuotes
+	})
+
+	// if nothing exists in the orderbook, nothing to process
+	if (activeQuotes.length == 0){
+		return res.status(200).json({
+			success: [],
+			failed: [],
+			omitted: deleteQuoteIds.quoteIds
+		})
+	}
 
 	const deleteByPoolAddr = groupBy(
 		activeQuotes,
 		'poolAddress'
 	) as GroupedDeleteRequest
+
+	Logger.debug({
+		message: `delete by pool address`,
+		value: deleteByPoolAddr
+	})
 
 	const promiseAll = await Promise.allSettled(
 		Object.keys(deleteByPoolAddr).map(async (poolAddress) => {
@@ -511,21 +540,40 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		})
 	)
 
+	// NOTE: this is nested because cancel requests are done in batches per pool
+	// a fufilled promise will return back an array of quote Ids
 	const fulfilledQuoteIds: string[][] = []
 	promiseAll.forEach((result) => {
 		if (result.status === 'fulfilled') {
+			Logger.debug({
+				result: result
+			})
 			fulfilledQuoteIds.push(result.value)
 		}
 	})
 
+	Logger.debug({
+		message: `fullfilled Quote Ids`,
+		fullfilledQuoteIds: fulfilledQuoteIds,
+		flattened: flatten(fulfilledQuoteIds)
+	})
+
+	// activeQuotes are quotes that show up in the orderbook but not cancelled
 	const failedQuoteIds = difference(
 		activeQuotes.map((quote) => quote.quoteId),
 		flatten(fulfilledQuoteIds)
 	)
 
+	// submitted quoteIds that don't show up in orderbook can be omitted
+	const omittedQuoteIds = difference(
+		deleteQuoteIds.quoteIds,
+		activeQuotes.map((quote) => quote.quoteId)
+	)
+
 	return res.status(200).json({
-		success: flatten(fulfilledQuoteIds),
+		success: fulfilledQuoteIds,
 		failed: failedQuoteIds,
+		omitted: omittedQuoteIds
 	})
 })
 
