@@ -829,7 +829,8 @@ app.get('/account/orders', async (req, res) => {
 			message: e,
 		})
 	}
-	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
+
+	const orderbookQuotes = proxyResponse.data['validQuotes'] as OrderbookQuote[]
 	const returnedQuotes = orderbookQuotes.map(createReturnedQuotes)
 
 	return res.status(200).json(returnedQuotes)
@@ -839,7 +840,7 @@ app.get('/account/orders', async (req, res) => {
 app.get('/account/collateral_balances', async (req, res) => {
 	const [balances, rejectedTokenBalances] = await getBalances()
 
-	return res.sendStatus(200).json({
+	return res.status(200).json({
 		success: balances,
 		failed: rejectedTokenBalances
 	})
@@ -884,7 +885,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 			if (approval.amt === 'max') {
 				const response = await erc20.approve(
 					routerAddress,
-					MaxUint256.toString()
+					MaxUint256.toString(),
 				)
 				await response.wait(1)
 				Logger.info(`${approval.token} approval set to MAX`)
@@ -917,7 +918,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 
 	const failedApprovals = difference(approvals, approved)
 
-	return res.sendStatus(200).json({
+	return res.status(200).json({
 		success: approved,
 		failed: zipWith(failedApprovals, reasons, (failedApproval, reason) => ({
 			failedApproval,

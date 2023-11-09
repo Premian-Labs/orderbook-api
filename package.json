@@ -21,7 +21,7 @@
     "postinstall": "npx typechain --target ethers-v6 --out-dir \"./src/typechain\" \"./node_modules/@premia/v3-abi/abi/*.json\"",
     "start": "node ./dist/index.js",
     "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**",
-    "e2e:account": "mocha --require ts-node/register test/account.ts",
+    "e2e:account": "mocha --require ts-node/register test/account.ts --timeout 20000",
     "e2e:expiration": "mocha --require ts-node/register test/expiration.ts",
     "e2e:quoting": "mocha --require ts-node/register test/quoting.ts --timeout 20000",
     "e2e:ws": "mocha --require ts-node/register test/ws.ts --timeout 20000"
