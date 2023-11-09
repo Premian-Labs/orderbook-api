@@ -8,7 +8,6 @@ import {
 	referralAddress,
 	chainId,
 	walletAddr,
-	availableTokens,
 	routerAddress,
 	ws_url,
 	rpcUrl,
@@ -72,7 +71,7 @@ import {
 	flatten,
 	groupBy,
 	partition,
-	pick, zip,
+	pick,
 	zipWith
 } from 'lodash';
 import { requestDetailed } from './helpers/util'
