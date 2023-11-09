@@ -603,7 +603,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 		})
 	}
 
-	// Create Pool Key
+	// Create Pool Key (to get poolAddress)
 	const poolKey = createPoolKey(
 		pick(getQuotesQuery, ['base', 'quote', 'expiration', 'strike', 'type']),
 		expiration
@@ -681,7 +681,18 @@ app.get('/orderbook/orders', async (req, res) => {
 		})
 	}
 
-	const orderbookQuotes = proxyResponse.data as OrderbookQuote[]
+	const orderbookQuotes = proxyResponse.data[
+		'validQuotes'
+		] as OrderbookQuote[]
+
+	Logger.debug({
+		message: `orderbook quotes`,
+		orderbookQuotes: orderbookQuotes
+	})
+
+	if (orderbookQuotes.length == 0){
+		return res.status(200).json([])
+	}
 	const returnedQuotes = orderbookQuotes.map(createReturnedQuotes)
 
 	return res.status(200).json(returnedQuotes)

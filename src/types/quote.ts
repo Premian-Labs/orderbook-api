@@ -132,3 +132,9 @@ export interface PostQuotesResponse {
 	}[]
 	exists: OrderbookQuote[]
 }
+
+export interface CancelQuotesResponse {
+	success: string[]
+	failed: string[]
+	omitted: string[]
+}
