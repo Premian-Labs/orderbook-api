@@ -14,7 +14,16 @@ import {
 	rpcUrl,
 	privateKey,
 } from './config/constants'
-import { parseEther, MaxUint256, parseUnits, formatEther, ethers } from 'ethers'
+import {
+	parseEther,
+	MaxUint256,
+	parseUnits,
+	formatEther,
+	ethers,
+	Contract,
+	ContractTransactionResponse,
+	TransactionReceipt
+} from 'ethers';
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
@@ -392,21 +401,22 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				quoteOB
 			)
 
-			//NOTE: we use the tradeSize the client inputs (it's a standard number)
-			const fillTx = await pool.fillQuoteOB(
-				quoteOB,
-				parseEther(fillableQuoteDeserialized.tradeSize.toString()),
-				signedQuoteObject,
-				referralAddress,
-				{
-					gasLimit: gasLimit,
-				}
-			)
-			const fillReceipt = await provider.waitForTransaction(fillTx.hash, 1)
-			if(fillReceipt?.status == 0){
+			try{
+				const fillTx = await pool.fillQuoteOB(
+					quoteOB,
+					parseEther(fillableQuoteDeserialized.tradeSize.toString()),
+					signedQuoteObject,
+					referralAddress,
+					{
+						gasLimit: gasLimit,
+					}
+				)
+				const confirm = await provider.waitForTransaction(fillTx.hash, 1)
+				await provider.call(confirm!)
+			}catch(e){
 				Logger.debug({
-					message: 'Failed Fill Receipt',
-					data: fillReceipt
+					message: `Error in Confirm Receipt`,
+					reason: (e as ethers.CallExceptionError).data
 				})
 				throw Error('Transaction not Successful')
 			}
