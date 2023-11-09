@@ -125,6 +125,7 @@ export async function validateBalances(
 		.map((fillQuoteRequest) => fillQuoteRequest.tradeSize)
 		.reduce((sum, x) => sum + x)
 
+	//TODO: better to use token name here than address
 	if (availableTokenBalance < tradesTotalSize) {
 		throw new Error(
 			`Not enough ${collateralTokenAddr} collateral to fill orders`
