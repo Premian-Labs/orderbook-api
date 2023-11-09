@@ -338,7 +338,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	// 1.2 Check that we have enough collateral balance to fill orders
 	const [tokenBalances] = await getBalances()
 
-	// sorted base token address
+	// validate collateral balance sorted base token address (CALLS)
 	for (const baseToken in callsFillQuoteRequestsGroupedByCollateral) {
 		try {
 			await validateBalances(
@@ -352,7 +352,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		}
 	}
 
-	// sorted by quote token address
+	// validate collateral balance sorted by quote token address (PUTS)
 	for (const quoteToken in putsFillQuoteRequestsGroupedByCollateral) {
 		try {
 			await validateBalances(

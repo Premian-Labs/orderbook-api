@@ -10,7 +10,7 @@ import {
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
 import { IPoolFactory__factory, ISolidStateERC20__factory } from '../typechain'
-import { TokenBalance } from '../types/balances'
+import { rejectedTokenBalance, TokenBalance } from '../types/balances';
 
 const provider = new ethers.JsonRpcProvider(rpcUrl)
 
@@ -102,5 +102,5 @@ export async function getBalances() {
 			})
 		}
 	})
-	return [balances, reasons] as [TokenBalance[], any[]]
+	return [balances, reasons] as [TokenBalance[], rejectedTokenBalance[]]
 }

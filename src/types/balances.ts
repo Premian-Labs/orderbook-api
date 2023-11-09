@@ -14,3 +14,8 @@ export interface OptionPositions {
 	open: NFTBalance[]
 	expired: NFTBalance[]
 }
+
+export interface rejectedTokenBalance {
+	token: string
+	reason: any
+}
