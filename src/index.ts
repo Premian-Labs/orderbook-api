@@ -502,7 +502,6 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		if (result.status === 'fulfilled') {
 			fulfilledQuoteIds.push(result.value)
 		}
-		// TODO: add reasons for failed tx here
 	})
 
 	const failedQuoteIds = difference(
