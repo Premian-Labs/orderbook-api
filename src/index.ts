@@ -402,7 +402,8 @@ app.patch('/orderbook/quotes', async (req, res) => {
 					gasLimit: gasLimit,
 				}
 			)
-			await provider.waitForTransaction(fillTx.hash, 1)
+
+			await fillTx.wait()
 			Logger.debug(`Quote ${fillableQuoteDeserialized.quoteId} filled`)
 			return fillableQuoteDeserialized
 		})
@@ -412,6 +413,12 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	promiseAll.forEach((result) => {
 		if (result.status === 'fulfilled') {
 			fulfilledQuoteIds.push(result.value.quoteId)
+		} else {
+			const ethersError = result.reason as ethers.CallExceptionError
+			console.error(ethersError)
+			// does not work somehow
+			// const parsed = IPool__factory.createInterface().parseError(ethersError.data!)
+			// console.log(parsed)
 		}
 	})
 

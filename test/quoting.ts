@@ -11,7 +11,7 @@ let quoteId: string
 const quote : PublishQuoteRequest = {
 	base: 'WETH',
 	quote: 'USDC',
-	expiration: `10NOV23`,
+	expiration: `17NOV23`,
 	strike: 1800,
 	type: `P`,
 	side: 'bid',
