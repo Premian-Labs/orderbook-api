@@ -3,10 +3,17 @@ import axios from 'axios';
 import { PublishQuoteRequest } from '../src/types/validate';
 import { PostQuotesResponse } from '../src/types/quote';
 import { expect } from 'chai'
+import { IERC20__factory } from '@premia/v3-abi/typechain';
+import { ethers, ContractTransactionResponse, TransactionReceipt, MaxUint256} from 'ethers';
+import { privateKey, rpcUrl, tokenAddresses, routerAddress } from '../src/config/constants';
+import { delay } from '../src/helpers/util'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
+
 const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
+const provider = new ethers.JsonRpcProvider(rpcUrl)
+const signer = new ethers.Wallet(privateKey, provider)
 let quoteId: string
 const quote : PublishQuoteRequest = {
 	base: 'WETH',
@@ -20,7 +27,42 @@ const quote : PublishQuoteRequest = {
 	deadline: 120
 }
 
-//TODO: add token approval for test account
+// Approval for quote token
+const erc20 = IERC20__factory.connect(tokenAddresses.USDC, signer)
+
+async function setMaxApproval(){
+	let approveTX: ContractTransactionResponse
+	let confirm: TransactionReceipt | null
+	try {
+		approveTX = await erc20.approve(
+			routerAddress,
+			MaxUint256.toString(),
+		)
+		confirm = await approveTX.wait(1)
+	} catch (e) {
+		await delay(2000)
+		try {
+			approveTX = await erc20.approve(
+				routerAddress,
+				MaxUint256.toString(),
+			)
+			confirm = await approveTX.wait(1)
+		} catch (e) {
+			throw new Error(`Approval could not be set for USDC!`)
+		}
+	}
+
+	if (confirm?.status == 0) {
+		throw new Error(
+			`Max approval NOT set for USDC! Try again or check provider or ETH balance...`,
+		)
+	}
+}
+before(async() =>{
+	console.log(`Setting ${quote.quote} Approval to Max`)
+	await setMaxApproval()
+	console.log(`${quote.quote} Approval successful`)
+})
 
 // describe('API authorization', () => {
 // 	it('should prevent unauthorised access to the API', async () => {
@@ -39,7 +81,7 @@ const quote : PublishQuoteRequest = {
 // 		expect(response.data.message).to.eq('NOT_FOUND')
 // 	})
 // })
-//
+
 // describe('POST orderbook/quotes', () => {
 // 	it('should reject invalid AJV post quote payload', async () => {
 // 		const url = `${baseUrl}/orderbook/quotes`
@@ -104,8 +146,6 @@ const quote : PublishQuoteRequest = {
 // 	})
 // })
 
-
-
 describe('PATCH orderbook/quotes', () => {
 	// it('should reject invalid AJV fill quote payload', async () => {
 	// 	const url = `${baseUrl}/orderbook/quotes`
@@ -156,7 +196,6 @@ describe('PATCH orderbook/quotes', () => {
 	// 	expect(response.data.success[0]).to.eq(quoteId)
 	// })
 
-
 	it('should fill quotes even if tradeSize is larger than fillableSize', async () => {
 		const url = `${baseUrl}/orderbook/quotes`
 		// post quote to fill
@@ -171,6 +210,7 @@ describe('PATCH orderbook/quotes', () => {
 			tradeSize: 999,
 			quoteId: quoteId
 		}
+
 		const fillableSizeResponse = await axios.patch(url, [fillOversizedQuote], {
 			headers: {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
@@ -179,15 +219,15 @@ describe('PATCH orderbook/quotes', () => {
 		console.log(fillableSizeResponse.status)
 		console.log(fillableSizeResponse.data)
 	})
-
+	//
 	// it('should return quoteIds for invalid fill quote attempts', async () => {
 	// 	//TODO: not enough collateral
 	// 	//TODO: order cancelled (does not exist)
 	// })
-
-// 	it('should ignore fill attempts for non-existent quotes', async () => {})
-//
-// 	it('should reject fill attempts larger than fillableSize', async () => {})
+	//
+	// it('should ignore fill attempts for non-existent quotes', async () => {})
+	//
+	// it('should reject fill attempts larger than fillableSize', async () => {})
 })
 
 // describe('delete/orderbook/quotes', () => {

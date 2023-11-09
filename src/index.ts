@@ -402,8 +402,15 @@ app.patch('/orderbook/quotes', async (req, res) => {
 					gasLimit: gasLimit,
 				}
 			)
+			const fillReceipt = await provider.waitForTransaction(fillTx.hash, 1)
+			if(fillReceipt?.status == 0){
+				Logger.debug({
+					message: 'Failed Fill Receipt',
+					data: fillReceipt
+				})
+				throw Error('Transaction not Successful')
+			}
 
-			await fillTx.wait()
 			Logger.debug(`Quote ${fillableQuoteDeserialized.quoteId} filled`)
 			return fillableQuoteDeserialized
 		})
@@ -412,6 +419,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	const fulfilledQuoteIds: string[] = []
 	promiseAll.forEach((result) => {
 		if (result.status === 'fulfilled') {
+			// success
 			fulfilledQuoteIds.push(result.value.quoteId)
 		} else {
 			const ethersError = result.reason as ethers.CallExceptionError

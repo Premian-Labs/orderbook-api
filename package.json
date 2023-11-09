@@ -23,8 +23,8 @@
     "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**",
     "e2e:account": "mocha --require ts-node/register test/account.ts",
     "e2e:expiration": "mocha --require ts-node/register test/expiration.ts",
-    "e2e:quoting": "mocha --require ts-node/register test/quoting.ts --timeout 10000",
-    "e2e:ws": "mocha --require ts-node/register test/ws.ts --timeout 10000"
+    "e2e:quoting": "mocha --require ts-node/register test/quoting.ts --timeout 20000",
+    "e2e:ws": "mocha --require ts-node/register test/ws.ts --timeout 20000"
   },
   "dependencies": {
     "@google-cloud/logging-winston": "^6.0.0",
