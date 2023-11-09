@@ -90,12 +90,15 @@ export async function getBalances() {
 	)
 	const balances: TokenBalance[] = []
 	const reasons: any[] = []
-	promiseAll.forEach((result) => {
+	promiseAll.forEach((result, index) => {
 		if (result.status === 'fulfilled') {
 			balances.push(result.value)
 		}
 		if (result.status === 'rejected') {
-			reasons.push(result.reason)
+			reasons.push({
+				token: availableTokens[index],
+				reason: result.reason
+			})
 		}
 	})
 
