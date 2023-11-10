@@ -2,7 +2,7 @@ FROM node:18-slim
 
 COPY . ./
 
-RUN yarn install --production
+RUN yarn install --production && yarn cache clean
 
 EXPOSE 3000
 
