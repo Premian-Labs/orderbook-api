@@ -29,8 +29,8 @@ import {
 	TokenApproval,
 	FillQuoteRequest,
 	GetFillableQuotes,
-	PublishQuoteRequest,
-} from './types/validate'
+	PublishQuoteRequest, NonceTokenApproval
+} from './types/validate';
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
 import {
@@ -236,6 +236,8 @@ app.post('/orderbook/quotes', async (req, res) => {
 })
 
 // NOTE: fill quote(s)
+// IMPORTANT: if any order in the patch request is bad, it will reject the entire request.
+// TODO: the validation error does not specify which order object is the one with the error
 app.patch('/orderbook/quotes', async (req, res) => {
 	const valid = validateFillQuotes(req.body)
 	if (!valid) {
@@ -872,10 +874,27 @@ app.post('/account/collateral_approval', async (req, res) => {
 		})
 		return res.send(validateApprovals.errors)
 	}
+	// the nest nonce value for wallet
+	const nonce = await signer.getNonce()
+	Logger.debug({
+		message: `Account tx nonce`,
+		nonce: nonce
+	})
+
 
 	const approvals = req.body as TokenApproval[]
+
+	const nonceApprovals: NonceTokenApproval[] = approvals.map((tokenApproval, index) => (
+		{ ...tokenApproval, nonce: nonce + index}
+	))
+
+	Logger.debug({
+		message: `Nonce Approvals`,
+		nonceApprovals: nonceApprovals
+	})
+
 	const promiseAll = await Promise.allSettled(
-		approvals.map(async (approval) => {
+		nonceApprovals.map(async (approval) => {
 			const erc20Addr =
 				process.env.ENV == 'production'
 					? arb.tokens[approval.token]
@@ -885,7 +904,9 @@ app.post('/account/collateral_approval', async (req, res) => {
 			if (approval.amt === 'max') {
 				const response = await erc20.approve(
 					routerAddress,
-					MaxUint256.toString(),
+					MaxUint256.toString(), {
+						nonce: approval.nonce
+					}
 				)
 				await response.wait(1)
 				Logger.info(`${approval.token} approval set to MAX`)
@@ -893,12 +914,12 @@ app.post('/account/collateral_approval', async (req, res) => {
 				const decimals = await erc20.decimals()
 				const qty = parseUnits(approval.amt.toString(), Number(decimals))
 
-				const response = await erc20.approve(routerAddress, qty)
+				const response = await erc20.approve(routerAddress, qty, {
+					nonce: approval.nonce
+				})
 				await response.wait(1)
 				Logger.info(
-					`${approval.token} approval set to ${parseFloat(
-						formatEther(approval.amt)
-					)}`
+					`${approval.token} approval set to ${approval.amt}`
 				)
 			}
 			return approval

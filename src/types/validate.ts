@@ -46,3 +46,7 @@ export interface TokenApproval {
 	token: string
 	amt: number | 'max'
 }
+
+export interface NonceTokenApproval extends TokenApproval{
+	nonce: number
+}
