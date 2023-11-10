@@ -20,12 +20,12 @@ import {
 	formatEther,
 	ethers,
 	ContractTransactionResponse,
-	TransactionReceipt,
+	TransactionReceipt, EthersError,
 } from 'ethers'
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
-	OrderbookQuote,
+	OrderbookQuote, OrderbookQuoteTradeDeserialized,
 	PostQuotesResponse,
 	PublishQuoteProxyRequest,
 	QuoteOB,
@@ -85,6 +85,7 @@ import {
 	PostQuoteMessage,
 	RFQMessage,
 } from './types/ws'
+import quote from "ajv/dist/runtime/quote";
 
 dotenv.config()
 checkEnv()
@@ -391,45 +392,45 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		}
 	}
 
-	// FIXME: use sequential processing
 	// process fill quotes
-	const promiseAll = await Promise.allSettled(
-		fillableQuotesDeserialized.map(async (fillableQuoteDeserialized) => {
-			const pool = IPool__factory.connect(
-				fillableQuoteDeserialized.poolAddress,
-				signer
+	const fulfilledQuotes: OrderbookQuoteTradeDeserialized[] = []
+	const failedQuotes: OrderbookQuoteTradeDeserialized[] = []
+	for (const fillableQuoteDeserialized of fillableQuotesDeserialized) {
+		const pool = IPool__factory.connect(
+			fillableQuoteDeserialized.poolAddress,
+			signer
+		)
+		Logger.debug({
+			message: 'Filling quote',
+			fillableQuote: serializeQuote(fillableQuoteDeserialized),
+		})
+
+		const quoteOB: QuoteOB = pick(fillableQuoteDeserialized, [
+			'provider',
+			'taker',
+			'price',
+			'size',
+			'isBuy',
+			'deadline',
+			'salt',
+		])
+
+		const signedQuoteObject = await signQuote(
+			signer,
+			fillableQuoteDeserialized.poolAddress,
+			quoteOB
+		)
+
+		// ensure that tradeSize is not larger than fillableSize (otherwise tx will fail)
+		if (
+			fillableQuoteDeserialized.tradeSize >
+			parseFloat(formatEther(fillableQuoteDeserialized.fillableSize))
+		) {
+			throw new Error(
+				`tradeSize > fillableSize for quoteId: ${fillableQuoteDeserialized.quoteId}`
 			)
-			Logger.debug({
-				message: 'Filling quote',
-				fillableQuote: serializeQuote(fillableQuoteDeserialized),
-			})
-
-			const quoteOB: QuoteOB = pick(fillableQuoteDeserialized, [
-				'provider',
-				'taker',
-				'price',
-				'size',
-				'isBuy',
-				'deadline',
-				'salt',
-			])
-
-			const signedQuoteObject = await signQuote(
-				signer,
-				fillableQuoteDeserialized.poolAddress,
-				quoteOB
-			)
-
-			// ensure that tradeSize is not larger than fillableSize (otherwise tx will fail)
-			if (
-				fillableQuoteDeserialized.tradeSize >
-				parseFloat(formatEther(fillableQuoteDeserialized.fillableSize))
-			) {
-				throw new Error(
-					`tradeSize > fillableSize for quoteId: ${fillableQuoteDeserialized.quoteId}`
-				)
-			}
-
+		}
+		try {
 			const fillTx = await pool.fillQuoteOB(
 				quoteOB,
 				fillableQuoteDeserialized.tradeSize,
@@ -442,24 +443,21 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			await fillTx.wait(1)
 
 			Logger.debug(`Quote ${fillableQuoteDeserialized.quoteId} filled`)
-			return fillableQuoteDeserialized
-		})
-	)
-
-	const fulfilledQuoteIds: string[] = []
-	promiseAll.forEach((result) => {
-		if (result.status === 'fulfilled') {
-			// success
-			fulfilledQuoteIds.push(result.value.quoteId)
+			fulfilledQuotes.push(fillableQuoteDeserialized)
+		} catch (e) {
+			Logger.error({
+				message: `Filed to fill quote ${fillableQuoteDeserialized.quoteId}`,
+				error: (e as EthersError).message
+			})
+			failedQuotes.push(fillableQuoteDeserialized)
 		}
+	}
 
-		const failedQuoteIds = difference(quoteIds, fulfilledQuoteIds)
-
-		return res.status(200).json({
-			success: fulfilledQuoteIds,
-			failed: failedQuoteIds,
-		})
+	return res.status(200).json({
+		success: fulfilledQuotes.map(quote => quote.quoteId),
+		failed: failedQuotes.map(quote => quote.quoteId),
 	})
+
 })
 
 // NOTE: cancel quote(s)
@@ -528,46 +526,30 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		value: deleteByPoolAddr,
 	})
 
-	// FIXME: use sequential processing
-	const promiseAll = await Promise.allSettled(
-		Object.keys(deleteByPoolAddr).map(async (poolAddress) => {
-			const poolContract = IPool__factory.connect(poolAddress, signer)
+	const fulfilledQuoteIds: string[][] = []
+	const failedQuoteIds: string[][] = []
+	for (const poolAddress of Object.keys(deleteByPoolAddr)) {
+		const poolContract = IPool__factory.connect(poolAddress, signer)
 
-			const quoteIds = deleteByPoolAddr[poolAddress].map(
-				(quotes) => quotes.quoteId
-			)
+		const quoteIds = deleteByPoolAddr[poolAddress].map(
+			(quotes) => quotes.quoteId
+		)
 
-			Logger.debug(`Cancelling quotes ${quoteIds}...`)
+		Logger.debug(`Cancelling quotes ${quoteIds}...`)
+
+		try {
 			const cancelTx = await poolContract.cancelQuotesOB(quoteIds)
 			await cancelTx.wait(1)
 			Logger.debug(`Quotes ${quoteIds} cancelled`)
-			return quoteIds
-		})
-	)
-
-	// NOTE: this is nested because cancel requests are done in batches per pool
-	// a fufilled promise will return back an array of quote Ids
-	const fulfilledQuoteIds: string[][] = []
-	promiseAll.forEach((result) => {
-		if (result.status === 'fulfilled') {
-			Logger.debug({
-				result: result,
+			fulfilledQuoteIds.push(quoteIds)
+		} catch (e) {
+			Logger.error({
+				message: `Failed to cancel quotes: ${quoteIds}`,
+				error: (e as EthersError).message
 			})
-			fulfilledQuoteIds.push(result.value)
+			failedQuoteIds.push(quoteIds)
 		}
-	})
-
-	Logger.debug({
-		message: `fullfilled Quote Ids`,
-		fullfilledQuoteIds: fulfilledQuoteIds,
-		flattened: flatten(fulfilledQuoteIds),
-	})
-
-	// activeQuotes are quotes that show up in the orderbook but not cancelled
-	const failedQuoteIds = difference(
-		activeQuotes.map((quote) => quote.quoteId),
-		flatten(fulfilledQuoteIds)
-	)
+	}
 
 	// submitted quoteIds that don't show up in orderbook can be omitted
 	const omittedQuoteIds = difference(
@@ -576,8 +558,8 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	)
 
 	return res.status(200).json({
-		success: fulfilledQuoteIds,
-		failed: failedQuoteIds,
+		success: flatten(fulfilledQuoteIds),
+		failed: flatten(failedQuoteIds),
 		omitted: omittedQuoteIds,
 	})
 })
