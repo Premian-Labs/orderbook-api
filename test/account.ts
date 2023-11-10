@@ -1,15 +1,24 @@
 import dotenv from 'dotenv'
-import axios, { all } from 'axios';
+import axios, { all } from 'axios'
 import { checkEnv } from '../src/config/checkConfig'
 import { PublishQuoteRequest, TokenApproval } from '../src/types/validate'
-import { PostQuotesResponse, ReturnedOrderbookQuote } from '../src/types/quote';
-import { availableTokens, privateKey, routerAddress, rpcUrl } from '../src/config/constants';
+import {
+	PostQuotesResponse,
+	PostQuotesResponseParsed,
+	ReturnedOrderbookQuote,
+} from '../src/types/quote'
+import {
+	availableTokens,
+	privateKey,
+	routerAddress,
+	rpcUrl,
+} from '../src/config/constants'
 import { expect } from 'chai'
 import { RejectedTokenBalance, TokenBalance } from '../src/types/balances'
 import arb from '../src/config/arbitrum.json'
 import arbGoerli from '../src/config/arbitrumGoerli.json'
 import { ISolidStateERC20__factory } from '../src/typechain'
-import { ethers, formatUnits, MaxUint256 } from 'ethers';
+import { ethers, formatUnits, MaxUint256 } from 'ethers'
 
 dotenv.config()
 // NOTE: integration tests can only be run on development mode & with testnet credentials
@@ -91,15 +100,14 @@ describe('Balances, Approvals & Open Orders', () => {
 					: arbGoerli.tokens[approval.token]
 			const erc20 = ISolidStateERC20__factory.connect(erc20Addr, signer)
 			const decimals = await erc20.decimals()
-			const allowance = await erc20.allowance(
-				signer.address,
-				routerAddress
-			)
+			const allowance = await erc20.allowance(signer.address, routerAddress)
 
-			if (approval.amt === 'max'){
+			if (approval.amt === 'max') {
 				expect(allowance).to.eq(MaxUint256)
-			}else{
-				expect(parseInt(formatUnits(allowance, Number(decimals)))).is.eq(approval.amt)
+			} else {
+				expect(parseInt(formatUnits(allowance, Number(decimals)))).is.eq(
+					approval.amt
+				)
 			}
 		}
 	})
@@ -125,7 +133,7 @@ describe('Balances, Approvals & Open Orders', () => {
 			},
 		})
 
-		const quotes: PostQuotesResponse = quoteResponse.data
+		const quotes: PostQuotesResponseParsed = quoteResponse.data
 
 		expect(quotes.failed).is.empty
 		expect(quotes.created).is.not.empty

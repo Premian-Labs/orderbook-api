@@ -125,7 +125,7 @@ export type InvalidPostQuoteResponse = Omit<
 >
 
 export interface PostQuotesResponse {
-	created: ReturnedOrderbookQuote[]
+	created: OrderbookQuote[]
 	failed: {
 		reason: string
 		quote: InvalidPostQuoteResponse
@@ -133,7 +133,14 @@ export interface PostQuotesResponse {
 	exists: OrderbookQuote[]
 }
 
-export interface
+export interface PostQuotesResponseParsed {
+	created: ReturnedOrderbookQuote[]
+	failed: {
+		reason: string
+		quote: InvalidOrderbookQuote
+	}[]
+	exists: ReturnedOrderbookQuote[]
+}
 
 export interface CancelQuotesResponse {
 	success: string[]
