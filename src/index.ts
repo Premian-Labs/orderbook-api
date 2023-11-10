@@ -428,9 +428,12 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			fillableQuoteDeserialized.tradeSize >
 			parseFloat(formatEther(fillableQuoteDeserialized.fillableSize))
 		) {
-			throw new Error(
-				`tradeSize > fillableSize for quoteId: ${fillableQuoteDeserialized.quoteId}`
-			)
+			Logger.error({
+				message: `tradeSize > fillableSize`,
+				quoteId: fillableQuoteDeserialized.quoteId
+			})
+			failedQuotes.push(fillableQuoteDeserialized)
+			continue
 		}
 		try {
 			const fillTx = await pool.fillQuoteOB(

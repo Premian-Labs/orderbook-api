@@ -28,10 +28,10 @@ export async function preProcessAnnhilate(
 	const strExp = annihilateOption.expiration as string
 
 	// 1. validate and convert option exp to timestamp
-	annihilateOption.expiration = createExpiration(strExp)
+	const expiration = createExpiration(strExp)
 
 	// 2. create poolKey
-	const poolKey = createPoolKey(annihilateOption)
+	const poolKey = createPoolKey(annihilateOption, expiration)
 
 	// 3. get & check balances
 	const poolAddr = await getPoolAddress(poolKey)
@@ -76,11 +76,11 @@ export async function preProcessExpOption(
 		throw new Error('Option has not expired')
 	}
 	// 2. validate and convert option exp to timestamp
-	expOption.expiration = createExpiration(strExp)
+	const expiration = createExpiration(strExp)
 
 	// 3. check that there is a balance for the option being settled/exercised
 	// NOTE: Option base/quote is the name
-	const poolKey: PoolKey = createPoolKey(expOption)
+	const poolKey: PoolKey = createPoolKey(expOption, expiration)
 	const poolAddr = await getPoolAddress(poolKey)
 	const pool = IPool__factory.connect(poolAddr, signer)
 	const balance = await pool.balanceOf(walletAddr, tokenType)
