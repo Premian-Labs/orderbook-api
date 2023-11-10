@@ -20,12 +20,14 @@ import {
 	formatEther,
 	ethers,
 	ContractTransactionResponse,
-	TransactionReceipt, EthersError,
+	TransactionReceipt,
+	EthersError,
 } from 'ethers'
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
-	OrderbookQuote, OrderbookQuoteTradeDeserialized,
+	OrderbookQuote,
+	OrderbookQuoteTradeDeserialized,
 	PostQuotesResponse,
 	PublishQuoteProxyRequest,
 	QuoteOB,
@@ -85,7 +87,7 @@ import {
 	PostQuoteMessage,
 	RFQMessage,
 } from './types/ws'
-import quote from "ajv/dist/runtime/quote";
+import quote from 'ajv/dist/runtime/quote'
 
 dotenv.config()
 checkEnv()
@@ -447,17 +449,16 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		} catch (e) {
 			Logger.error({
 				message: `Filed to fill quote ${fillableQuoteDeserialized.quoteId}`,
-				error: (e as EthersError).message
+				error: (e as EthersError).message,
 			})
 			failedQuotes.push(fillableQuoteDeserialized)
 		}
 	}
 
 	return res.status(200).json({
-		success: fulfilledQuotes.map(quote => quote.quoteId),
-		failed: failedQuotes.map(quote => quote.quoteId),
+		success: fulfilledQuotes.map((quote) => quote.quoteId),
+		failed: failedQuotes.map((quote) => quote.quoteId),
 	})
-
 })
 
 // NOTE: cancel quote(s)
@@ -545,7 +546,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		} catch (e) {
 			Logger.error({
 				message: `Failed to cancel quotes: ${quoteIds}`,
-				error: (e as EthersError).message
+				error: (e as EthersError).message,
 			})
 			failedQuoteIds.push(quoteIds)
 		}
@@ -594,10 +595,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 		})
 	}
 	// Create Pool Key (to get poolAddress)
-	const poolKey = createPoolKey(
-		option,
-		expiration
-	)
+	const poolKey = createPoolKey(option, expiration)
 	const poolAddress = await getPoolAddress(poolKey)
 
 	let proxyResponse

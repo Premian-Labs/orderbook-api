@@ -21,7 +21,7 @@ const validateOptionEntity = {
 	},
 	strike: {
 		type: 'number',
-		exclusiveMinimum: 0
+		exclusiveMinimum: 0,
 	},
 	type: {
 		type: 'string',
@@ -127,7 +127,7 @@ export const validateGetFillableQuotes = ajv.compile({
 		},
 		strike: {
 			type: 'string',
-			pattern: '^\\d+$'
+			pattern: '^\\d+$',
 		},
 		type: {
 			type: 'string',
@@ -135,7 +135,7 @@ export const validateGetFillableQuotes = ajv.compile({
 		},
 		size: {
 			type: 'string',
-			pattern: '^\\d+$'
+			pattern: '^\\d+$',
 		},
 		side: {
 			type: 'string',
