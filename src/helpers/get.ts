@@ -70,6 +70,7 @@ export function getTokenByAddress(
 }
 
 // NOTE: this returns the balance in human-readable format (number)
+// IMPORTANT: Promise.allSettled works here because we do not do any on-chain tx
 export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
 		availableTokens.map(async (token) => {
@@ -103,5 +104,8 @@ export async function getBalances() {
 			})
 		}
 	})
-	return [balances, rejectedTokenBalances] as [TokenBalance[], RejectedTokenBalance[]]
+	return [balances, rejectedTokenBalances] as [
+		TokenBalance[],
+		RejectedTokenBalance[]
+	]
 }

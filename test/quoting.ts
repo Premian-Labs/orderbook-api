@@ -358,32 +358,32 @@ describe('delete/orderbook/quotes', () => {
 })
 
 
-// describe('get/orderbook/quotes', () => {
-// 	// it('should return fillable quotes for a specified market up to size', async () => {
-// 	// 	const url = `${baseUrl}/orderbook/quotes`
-// 	//
-// 	// 	await axios.post(url, [quote], {
-// 	// 		headers: {
-// 	// 			'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-// 	// 		}
-// 	// 	})
-// 	//
-// 	// 	// querying by a size equal to the quote amount
-// 	// 	const quoteParams = omit(quote, ['deadline', 'price'])
-// 	//
-// 	// 	const validGetQuotesResponse = await axios.get(url, {
-// 	// 		headers: {
-// 	// 			'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-// 	// 		},
-// 	// 		params: quoteParams
-// 	// 	})
-// 	//
-// 	// 	const quotes: ReturnedOrderbookQuote[] = validGetQuotesResponse.data
-// 	//
-// 	// 	console.log(quotes)
-// 	// })
-// })
-//
+describe('get/orderbook/quotes', () => {
+	it('should return fillable quotes for a specified market up to size', async () => {
+		const url = `${baseUrl}/orderbook/quotes`
+
+		await axios.post(url, [quote], {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			}
+		})
+
+		// querying by a size equal to the quote amount
+		const quoteParams = omit(quote, ['deadline', 'price'])
+
+		const validGetQuotesResponse = await axios.get(url, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			params: quoteParams
+		})
+
+		const quotes: ReturnedOrderbookQuote[] = validGetQuotesResponse.data
+
+		console.log(quotes)
+	})
+})
+
 // describe('get/orderbook/orders', () => {
 // 	it('should return all quotes when providing an array of QuoteIds in request params', async () => {
 // 		const quotesUrl = `${baseUrl}/orderbook/quotes`

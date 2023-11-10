@@ -13,7 +13,15 @@ import {
 	rpcUrl,
 	privateKey,
 } from './config/constants'
-import { parseEther, MaxUint256, parseUnits, formatEther, ethers } from 'ethers'
+import {
+	parseEther,
+	MaxUint256,
+	parseUnits,
+	formatEther,
+	ethers,
+	ContractTransactionResponse,
+	TransactionReceipt,
+} from 'ethers'
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
@@ -29,8 +37,9 @@ import {
 	TokenApproval,
 	FillQuoteRequest,
 	GetFillableQuotes,
-	PublishQuoteRequest, NonceTokenApproval
-} from './types/validate';
+	PublishQuoteRequest,
+	TokenApprovalError,
+} from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
 import {
@@ -65,15 +74,7 @@ import {
 	serializeQuote,
 } from './helpers/sign'
 import { IPool__factory, ISolidStateERC20__factory } from './typechain'
-import {
-	difference,
-	find,
-	flatten,
-	groupBy,
-	partition,
-	pick,
-	zipWith
-} from 'lodash';
+import { difference, find, flatten, groupBy, partition, pick } from 'lodash'
 import { requestDetailed } from './helpers/util'
 import moment from 'moment'
 import {
@@ -314,7 +315,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	}
 
 	// if we have nothing to fill, then end here
-	if (fillableQuotes.length == 0){
+	if (fillableQuotes.length == 0) {
 		return res.status(200).json({
 			success: [],
 			failed: quoteIds,
@@ -358,7 +359,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	if (rejectedTokenBalances.length > 0) {
 		return res.status(400).json({
 			message: 'failed to get tokens balances',
-			rejectedTokenBalances: rejectedTokenBalances
+			rejectedTokenBalances: rejectedTokenBalances,
 		})
 	}
 
@@ -500,19 +501,19 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	const activeQuotes = activeQuotesRequest.data[
 		'validQuotes'
-		] as OrderbookQuote[]
+	] as OrderbookQuote[]
 
 	Logger.debug({
 		message: `active quotes`,
-		activeQuotes: activeQuotes
+		activeQuotes: activeQuotes,
 	})
 
 	// if nothing exists in the orderbook, nothing to process
-	if (activeQuotes.length == 0){
+	if (activeQuotes.length == 0) {
 		return res.status(200).json({
 			success: [],
 			failed: [],
-			omitted: deleteQuoteIds.quoteIds
+			omitted: deleteQuoteIds.quoteIds,
 		})
 	}
 
@@ -523,7 +524,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	Logger.debug({
 		message: `delete by pool address`,
-		value: deleteByPoolAddr
+		value: deleteByPoolAddr,
 	})
 
 	const promiseAll = await Promise.allSettled(
@@ -548,7 +549,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	promiseAll.forEach((result) => {
 		if (result.status === 'fulfilled') {
 			Logger.debug({
-				result: result
+				result: result,
 			})
 			fulfilledQuoteIds.push(result.value)
 		}
@@ -557,7 +558,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	Logger.debug({
 		message: `fullfilled Quote Ids`,
 		fullfilledQuoteIds: fulfilledQuoteIds,
-		flattened: flatten(fulfilledQuoteIds)
+		flattened: flatten(fulfilledQuoteIds),
 	})
 
 	// activeQuotes are quotes that show up in the orderbook but not cancelled
@@ -575,7 +576,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	return res.status(200).json({
 		success: fulfilledQuoteIds,
 		failed: failedQuoteIds,
-		omitted: omittedQuoteIds
+		omitted: omittedQuoteIds,
 	})
 })
 
@@ -683,16 +684,14 @@ app.get('/orderbook/orders', async (req, res) => {
 		})
 	}
 
-	const orderbookQuotes = proxyResponse.data[
-		'validQuotes'
-		] as OrderbookQuote[]
+	const orderbookQuotes = proxyResponse.data['validQuotes'] as OrderbookQuote[]
 
 	Logger.debug({
 		message: `orderbook quotes`,
-		orderbookQuotes: orderbookQuotes
+		orderbookQuotes: orderbookQuotes,
 	})
 
-	if (orderbookQuotes.length == 0){
+	if (orderbookQuotes.length == 0) {
 		return res.status(200).json([])
 	}
 	const returnedQuotes = orderbookQuotes.map(createReturnedQuotes)
@@ -844,7 +843,7 @@ app.get('/account/collateral_balances', async (req, res) => {
 
 	return res.status(200).json({
 		success: balances,
-		failed: rejectedTokenBalances
+		failed: rejectedTokenBalances,
 	})
 })
 
@@ -874,79 +873,72 @@ app.post('/account/collateral_approval', async (req, res) => {
 		})
 		return res.send(validateApprovals.errors)
 	}
-	// the nest nonce value for wallet
-	const nonce = await signer.getNonce()
-	Logger.debug({
-		message: `Account tx nonce`,
-		nonce: nonce
-	})
-
 
 	const approvals = req.body as TokenApproval[]
 
-	const nonceApprovals: NonceTokenApproval[] = approvals.map((tokenApproval, index) => (
-		{ ...tokenApproval, nonce: nonce + index}
-	))
+	const approved: TokenApproval[] = []
+	const rejected: TokenApprovalError[] = []
 
-	Logger.debug({
-		message: `Nonce Approvals`,
-		nonceApprovals: nonceApprovals
-	})
+	// iterate through each approval request syncronously
+	for (const approval of approvals) {
+		const erc20Addr =
+			process.env.ENV == 'production'
+				? arb.tokens[approval.token]
+				: arbGoerli.tokens[approval.token]
+		const erc20 = ISolidStateERC20__factory.connect(erc20Addr, signer)
 
-	const promiseAll = await Promise.allSettled(
-		nonceApprovals.map(async (approval) => {
-			const erc20Addr =
-				process.env.ENV == 'production'
-					? arb.tokens[approval.token]
-					: arbGoerli.tokens[approval.token]
-			const erc20 = ISolidStateERC20__factory.connect(erc20Addr, signer)
-
+		let approveTX: ContractTransactionResponse
+		let confirm: TransactionReceipt | null
+		try {
 			if (approval.amt === 'max') {
-				const response = await erc20.approve(
-					routerAddress,
-					MaxUint256.toString(), {
-						nonce: approval.nonce
-					}
-				)
-				await response.wait(1)
-				Logger.info(`${approval.token} approval set to MAX`)
+				approveTX = await erc20.approve(routerAddress, MaxUint256.toString())
+				confirm = await approveTX.wait(1)
+
+				if (confirm?.status == 1) {
+					approved.push(approval)
+					Logger.info(`${approval.token} approval set to MAX`)
+				} else {
+					rejected.push({
+						message: 'approval error',
+						token: approval,
+						error: confirm,
+					})
+				}
 			} else {
 				const decimals = await erc20.decimals()
 				const qty = parseUnits(approval.amt.toString(), Number(decimals))
 
-				const response = await erc20.approve(routerAddress, qty, {
-					nonce: approval.nonce
-				})
-				await response.wait(1)
-				Logger.info(
-					`${approval.token} approval set to ${approval.amt}`
-				)
+				approveTX = await erc20.approve(routerAddress, qty)
+				confirm = await approveTX.wait(1)
+
+				if (confirm?.status == 1) {
+					approved.push(approval)
+					Logger.info(`${approval.token} approval set to ${approval.amt}`)
+				} else {
+					rejected.push({
+						message: 'approval error',
+						token: approval,
+						error: confirm,
+					})
+				}
 			}
-			return approval
-		})
-	)
-
-	const approved: TokenApproval[] = []
-	const reasons: any[] = []
-	promiseAll.forEach((result) => {
-		if (result.status === 'fulfilled') {
-			approved.push(result.value)
+		} catch (e) {
+			rejected.push({
+				message: 'approval error',
+				token: approval,
+				error: e,
+			})
 		}
-		if (result.status === 'rejected') {
-			reasons.push(result.reason)
-		}
-	})
-
-	const failedApprovals = difference(approvals, approved)
+	}
 
 	return res.status(200).json({
 		success: approved,
-		failed: zipWith(failedApprovals, reasons, (failedApproval, reason) => ({
-			failedApproval,
-			reason,
-		})),
+		failed: rejected,
 	})
 })
+
+// TODO: create endpoint to see which option markets are open for trading (deployed pools)
+// TODO: create endpoint to deploy a pool (if not available)
 
 const server = app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`)

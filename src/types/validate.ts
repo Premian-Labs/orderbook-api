@@ -47,6 +47,8 @@ export interface TokenApproval {
 	amt: number | 'max'
 }
 
-export interface NonceTokenApproval extends TokenApproval{
-	nonce: number
+export interface TokenApprovalError {
+	message: string
+	token: TokenApproval
+	error: any
 }
