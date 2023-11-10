@@ -391,6 +391,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		}
 	}
 
+	// FIXME: use sequential processing
 	// process fill quotes
 	const promiseAll = await Promise.allSettled(
 		fillableQuotesDeserialized.map(async (fillableQuoteDeserialized) => {
@@ -527,6 +528,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		value: deleteByPoolAddr,
 	})
 
+	// FIXME: use sequential processing
 	const promiseAll = await Promise.allSettled(
 		Object.keys(deleteByPoolAddr).map(async (poolAddress) => {
 			const poolContract = IPool__factory.connect(poolAddress, signer)
@@ -593,6 +595,10 @@ app.get('/orderbook/quotes', async (req, res) => {
 	}
 
 	const getQuotesQuery = req.query as unknown as GetFillableQuotes
+	const option: Option = {
+		...getQuotesQuery,
+		strike: Number(getQuotesQuery.strike),
+	}
 
 	// Validate/create timestamp expiration
 	let expiration: number
@@ -605,10 +611,9 @@ app.get('/orderbook/quotes', async (req, res) => {
 			quotesRequest: getQuotesQuery,
 		})
 	}
-
 	// Create Pool Key (to get poolAddress)
 	const poolKey = createPoolKey(
-		pick(getQuotesQuery, ['base', 'quote', 'expiration', 'strike', 'type']),
+		option,
 		expiration
 	)
 	const poolAddress = await getPoolAddress(poolKey)
@@ -620,7 +625,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 			'GET',
 			{
 				poolAddress: poolAddress,
-				size: parseEther(getQuotesQuery.size.toString()).toString(),
+				size: parseEther(getQuotesQuery.size).toString(),
 				side: getQuotesQuery.side,
 				chainId: chainId,
 				...(getQuotesQuery.provider && { provider: getQuotesQuery.provider }),

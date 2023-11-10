@@ -3,7 +3,7 @@
 export interface Option {
 	base: string //token name | token address
 	quote: string //token name | token address
-	expiration: string | number
+	expiration: string // i.e. 23NOV2023
 	strike: number
 	type: 'C' | 'P'
 }
@@ -34,8 +34,9 @@ export interface QuoteIds {
 }
 
 // validateGetFillableQuotes
-export interface GetFillableQuotes extends Option {
-	size: number
+export interface GetFillableQuotes extends Omit<Option, 'strike'> {
+	strike: string
+	size: string
 	side: 'bid' | 'ask'
 	provider?: string
 	taker?: string

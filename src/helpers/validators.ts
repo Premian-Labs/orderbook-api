@@ -19,7 +19,10 @@ const validateOptionEntity = {
 		type: 'string',
 		pattern: '^\\d\\d\\w\\w\\w\\d\\d$',
 	},
-	strike: { type: 'number' },
+	strike: {
+		type: 'number',
+		exclusiveMinimum: 0
+	},
 	type: {
 		type: 'string',
 		pattern: '^C$|^P$',
@@ -110,10 +113,29 @@ export const validateDeleteQuotes = ajv.compile({
 export const validateGetFillableQuotes = ajv.compile({
 	type: 'object',
 	properties: {
-		...validateOptionEntity,
+		base: {
+			type: 'string',
+			pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+		},
+		quote: {
+			type: 'string',
+			pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+		},
+		expiration: {
+			type: 'string',
+			pattern: '^\\d\\d\\w\\w\\w\\d\\d$',
+		},
+		strike: {
+			type: 'string',
+			pattern: '^\\d+$'
+		},
+		type: {
+			type: 'string',
+			pattern: '^C$|^P$',
+		},
 		size: {
-			type: 'number',
-			exclusiveMinimum: 0,
+			type: 'string',
+			pattern: '^\\d+$'
 		},
 		side: {
 			type: 'string',
