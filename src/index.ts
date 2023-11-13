@@ -1023,20 +1023,9 @@ app.post('/pools', async (req, res) => {
 						poolAddress,
 					})
 				} else {
-					await delay(2000)
-					const [poolAddress, isDeployed] = await poolFactory.getPoolAddress(
-						poolKey
+					throw new Error(
+						'pool TX was successful but the pool was not deployed'
 					)
-					if (isDeployed) {
-						created.push({
-							...pool,
-							poolAddress,
-						})
-					} else {
-						throw new Error(
-							'pool TX was successful but the pool was not deployed'
-						)
-					}
 				}
 			} catch (e) {
 				Logger.error({
