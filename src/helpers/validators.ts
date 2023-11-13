@@ -29,6 +29,20 @@ const validateOptionEntity = {
 	},
 }
 
+export const validatePoolEntity = ajv.compile({
+	type: 'array',
+	items: {
+		type: 'object',
+		properties: {
+			...validateOptionEntity,
+		},
+		required: ['base', 'quote', 'expiration', 'strike', 'type'],
+		additionalProperties: false,
+	},
+	minItems: 1,
+	maxItems: 100,
+})
+
 export const validatePostQuotes = ajv.compile({
 	type: 'array',
 	items: {

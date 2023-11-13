@@ -147,3 +147,8 @@ export interface CancelQuotesResponse {
 	failed: string[]
 	omitted: string[]
 }
+
+export interface Pool extends Option {}
+export interface PoolWithAddress extends Pool {
+	poolAddress: string
+}

@@ -12,6 +12,7 @@ import {
 	ws_url,
 	rpcUrl,
 	privateKey,
+	tokenAddresses,
 } from './config/constants'
 import {
 	parseEther,
@@ -28,6 +29,8 @@ import {
 	GroupedDeleteRequest,
 	OrderbookQuote,
 	OrderbookQuoteTradeDeserialized,
+	Pool,
+	PoolWithAddress,
 	PostQuotesResponse,
 	PublishQuoteProxyRequest,
 	QuoteOB,
@@ -52,8 +55,9 @@ import {
 	validatePostQuotes,
 	validatePositionManagement,
 	validateApprovals,
+	validatePoolEntity,
 } from './helpers/validators'
-import { getBalances, getPoolAddress } from './helpers/get'
+import { getBalances, getPoolAddress, getTokenByAddress } from './helpers/get'
 import {
 	createExpiration,
 	createReturnedQuotes,
@@ -75,9 +79,13 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/sign'
-import { IPool__factory, ISolidStateERC20__factory } from './typechain'
+import {
+	IPool__factory,
+	IPoolFactory__factory,
+	ISolidStateERC20__factory,
+} from './typechain'
 import { difference, find, flatten, groupBy, partition, pick } from 'lodash'
-import { requestDetailed } from './helpers/util'
+import { delay, requestDetailed } from './helpers/util'
 import moment from 'moment'
 import {
 	DeleteQuoteMessage,
@@ -94,6 +102,14 @@ checkEnv()
 
 const provider = new ethers.JsonRpcProvider(rpcUrl)
 const signer = new ethers.Wallet(privateKey, provider)
+
+const poolFactoryAddr =
+	process.env.ENV == 'production'
+		? arb.core.PoolFactoryProxy.address
+		: arbGoerli.core.PoolFactoryProxy.address
+
+const poolFactory = IPoolFactory__factory.connect(poolFactoryAddr, signer)
+
 const app = express()
 // body parser for POST requests
 app.use(express.json())
@@ -430,7 +446,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		) {
 			Logger.error({
 				message: `tradeSize > fillableSize`,
-				quoteId: fillableQuoteDeserialized.quoteId
+				quoteId: fillableQuoteDeserialized.quoteId,
 			})
 			failedQuotes.push(fillableQuoteDeserialized)
 			continue
@@ -867,7 +883,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 	const approved: TokenApproval[] = []
 	const rejected: TokenApprovalError[] = []
 
-	// iterate through each approval request syncronously
+	// iterate through each approval request synchronously
 	for (const approval of approvals) {
 		const erc20Addr =
 			process.env.ENV == 'production'
@@ -925,8 +941,118 @@ app.post('/account/collateral_approval', async (req, res) => {
 	})
 })
 
-// TODO: create endpoint to see which option markets are open for trading (deployed pools)
-// TODO: create endpoint to deploy a pool (if not available)
+app.get('/pools', async (req, res) => {
+	const deploymentEventFilter = poolFactory.getEvent('PoolDeployed')
+	const events = await poolFactory.queryFilter(deploymentEventFilter)
+
+	const deployedPools: PoolWithAddress[] = events
+		.filter((event) => Number(event.args.maturity) > moment.utc().unix() + 60)
+		.filter(
+			(event) => getTokenByAddress(tokenAddresses, event.args.base) !== ''
+		)
+		.filter(
+			(event) => getTokenByAddress(tokenAddresses, event.args.quote) !== ''
+		)
+		.map((event) => {
+			return {
+				base: getTokenByAddress(tokenAddresses, event.args.base),
+				quote: getTokenByAddress(tokenAddresses, event.args.quote),
+				expiration: moment
+					.unix(Number(event.args.maturity))
+					.format('DDMMMYY')
+					.toUpperCase(),
+				strike: parseInt(formatEther(event.args.strike)),
+				type: event.args.isCallPool ? 'C' : 'P',
+				poolAddress: event.args.poolAddress,
+			}
+		})
+
+	return res.status(200).json(deployedPools)
+})
+app.post('/pools', async (req, res) => {
+	const valid = validatePoolEntity(req.body)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'Validation error',
+			errors: validatePoolEntity.errors,
+		})
+		return res.send(validatePoolEntity.errors)
+	}
+
+	const pools: Pool[] = req.body
+	const failed: Pool[] = []
+	const created: PoolWithAddress[] = []
+	const existed: PoolWithAddress[] = []
+
+	for (const pool of pools) {
+		let expiration: number
+		try {
+			expiration = createExpiration(pool.expiration)
+		} catch (e) {
+			return res.status(400).json({
+				message: (e as Error).message,
+				quote: quote,
+			})
+		}
+
+		const poolKey = createPoolKey(pool, expiration)
+		const [poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
+
+		if (isDeployed) {
+			existed.push({
+				...pool,
+				poolAddress,
+			})
+		} else {
+			try {
+				const initializationFee = await poolFactory.initializationFee(poolKey)
+				const deploymentTx = await poolFactory.deployPool(poolKey, {
+					value: initializationFee,
+					gasLimit: gasLimit,
+				})
+
+				const [poolAddress, isDeployed] = await poolFactory.getPoolAddress(
+					poolKey
+				)
+				if (isDeployed) {
+					created.push({
+						...pool,
+						poolAddress,
+					})
+				} else {
+					await delay(2000)
+					const [poolAddress, isDeployed] = await poolFactory.getPoolAddress(
+						poolKey
+					)
+					if (isDeployed) {
+						created.push({
+							...pool,
+							poolAddress,
+						})
+					} else {
+						throw new Error(
+							'pool TX was successful but the pool was not deployed'
+						)
+					}
+				}
+			} catch (e) {
+				Logger.error({
+					message: 'fail to deploy the pool',
+					poolKey: poolKey,
+					error: (e as EthersError).message,
+				})
+				failed.push(pool)
+			}
+		}
+	}
+
+	return res.status(200).json({
+		created: created,
+		existed: existed,
+		failed: failed,
+	})
+})
 
 const server = app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`)
