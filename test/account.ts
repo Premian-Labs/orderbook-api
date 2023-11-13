@@ -1,9 +1,7 @@
-import dotenv from 'dotenv'
-import axios, { all } from 'axios'
+import axios from 'axios'
 import { checkEnv } from '../src/config/checkConfig'
 import { PublishQuoteRequest, TokenApproval } from '../src/types/validate'
 import {
-	PostQuotesResponse,
 	PostQuotesResponseParsed,
 	ReturnedOrderbookQuote,
 } from '../src/types/quote'
@@ -20,7 +18,6 @@ import arbGoerli from '../src/config/arbitrumGoerli.json'
 import { ISolidStateERC20__factory } from '../src/typechain'
 import { ethers, formatUnits, MaxUint256 } from 'ethers'
 
-dotenv.config()
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
 

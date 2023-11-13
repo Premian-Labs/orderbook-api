@@ -1,13 +1,10 @@
-import dotenv from 'dotenv'
 import axios from 'axios'
 import { checkEnv } from '../src/config/checkConfig'
 import { Pool, PoolWithAddress } from '../src/types/quote'
 import { expect } from 'chai'
 import { createExpiration } from '../src/helpers/create'
 
-dotenv.config()
 checkEnv(true)
-
 const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
 
 describe('Pool API', () => {
