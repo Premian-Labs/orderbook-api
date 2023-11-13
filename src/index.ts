@@ -44,6 +44,7 @@ import {
 	GetFillableQuotes,
 	PublishQuoteRequest,
 	TokenApprovalError,
+	GetPoolsParams,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -56,6 +57,7 @@ import {
 	validatePositionManagement,
 	validateApprovals,
 	validatePoolEntity,
+	validateGetPools,
 } from './helpers/validators'
 import { getBalances, getPoolAddress, getTokenByAddress } from './helpers/get'
 import {
@@ -943,6 +945,18 @@ app.post('/account/collateral_approval', async (req, res) => {
 
 // NOTE: returns only pools up to 90 days old to optimise queryFilter time
 app.get('/pools', async (req, res) => {
+	const valid = validateGetPools(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'Validation error',
+			errors: validateGetPools.errors,
+		})
+		return res.send(validateGetPools.errors)
+	}
+
+	const reqParams = req.query as GetPoolsParams
+
 	const ts90daysAgo = moment.utc().subtract(90, 'days').unix()
 	const blockNumber = await getBlockByTimestamp(ts90daysAgo)
 
@@ -952,7 +966,7 @@ app.get('/pools', async (req, res) => {
 		blockNumber
 	)
 
-	const deployedPools: PoolWithAddress[] = events
+	let deployedPools: PoolWithAddress[] = events
 		.filter((event) => Number(event.args.maturity) > moment.utc().unix() + 60)
 		.filter(
 			(event) => getTokenByAddress(tokenAddresses, event.args.base) !== ''
@@ -973,6 +987,19 @@ app.get('/pools', async (req, res) => {
 				poolAddress: event.args.poolAddress,
 			}
 		})
+
+	if (reqParams.base)
+		deployedPools = deployedPools.filter((pool) => pool.base === reqParams.base)
+
+	if (reqParams.quote)
+		deployedPools = deployedPools.filter(
+			(pool) => pool.quote === reqParams.quote
+		)
+
+	if (reqParams.expiration)
+		deployedPools = deployedPools.filter(
+			(pool) => pool.expiration === reqParams.expiration
+		)
 
 	return res.status(200).json(deployedPools)
 })
@@ -1007,9 +1034,9 @@ app.post('/pools', async (req, res) => {
 
 		let poolAddress: string
 		let isDeployed: boolean
-		try{
-			[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
-		}catch(e){
+		try {
+			;[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
+		} catch (e) {
 			Logger.error({
 				message: 'fail to get status of pool',
 				poolKey: poolKey,

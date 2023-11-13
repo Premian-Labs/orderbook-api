@@ -168,6 +168,26 @@ export const validateGetFillableQuotes = ajv.compile({
 	additionalProperties: false,
 })
 
+export const validateGetPools = ajv.compile({
+	type: 'object',
+	properties: {
+		base: {
+			type: 'string',
+			pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+		},
+		quote: {
+			type: 'string',
+			pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+		},
+		expiration: {
+			type: 'string',
+			pattern: '^\\d\\d\\w\\w\\w\\d\\d$',
+		},
+	},
+	required: [],
+	additionalProperties: false,
+})
+
 export const validateGetAllQuotes = ajv.compile({
 	type: 'object',
 	properties: {

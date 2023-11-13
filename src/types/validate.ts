@@ -53,3 +53,9 @@ export interface TokenApprovalError {
 	token: TokenApproval
 	error: any
 }
+
+export interface GetPoolsParams {
+	base?: string
+	quote?: string
+	expiration?: string
+}

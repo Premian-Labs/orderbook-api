@@ -358,6 +358,31 @@ paths:
                 $ref: '#/components/schemas/AuthError'
     get:
       summary: Returns all active pool up to 90 days old.
+      parameters:
+        - name: base
+          in: query
+          required: false
+          description: base token symbol (ie WETH)
+          schema:
+            type: string
+            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+            example: WETH
+        - name: quote
+          in: query
+          required: false
+          description: quote token symbol (ie USDC)
+          schema:
+            type: string
+            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
+            example: USDC
+        - name: expiration
+          in: query
+          required: false
+          description: option expiration (ie 03NOV23)
+          schema:
+            type: string
+            pattern: ^\d\d\w\w\w\d\d$
+            example: 03NOV23
       responses:
         '200':
           description: Successful operation

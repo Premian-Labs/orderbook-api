@@ -53,10 +53,14 @@ describe('Pool API', () => {
 			headers: {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
+			params: {
+				base: 'testWETH'
+			}
 		})
 
 		const deployedPools = getDeployedPools.data as PoolWithAddress[]
 		expect(deployedPools).not.be.empty
+		expect(deployedPools.every(pool => pool.base === 'testWETH')).to.be.true
 		expect(() =>
 			deployedPools.forEach((pool) => createExpiration(pool.expiration))
 		).not.throws
