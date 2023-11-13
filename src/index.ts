@@ -1012,6 +1012,8 @@ app.post('/pools', async (req, res) => {
 					gasLimit: gasLimit,
 				})
 
+				await deploymentTx.wait(1)
+
 				const [poolAddress, isDeployed] = await poolFactory.getPoolAddress(
 					poolKey
 				)
