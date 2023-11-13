@@ -997,7 +997,20 @@ app.post('/pools', async (req, res) => {
 		}
 
 		const poolKey = createPoolKey(pool, expiration)
-		const [poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
+
+		let poolAddress: string
+		let isDeployed: boolean
+		try{
+			[poolAddress, isDeployed] = await poolFactory.getPoolAddress(poolKey)
+		}catch(e){
+			Logger.error({
+				message: 'fail to get status of pool',
+				poolKey: poolKey,
+				error: (e as EthersError).message,
+			})
+			failed.push(pool)
+			continue
+		}
 
 		if (isDeployed) {
 			existed.push({
@@ -1005,6 +1018,7 @@ app.post('/pools', async (req, res) => {
 				poolAddress,
 			})
 		} else {
+			// Deploy pool process
 			try {
 				const initializationFee = await poolFactory.initializationFee(poolKey)
 				const deploymentTx = await poolFactory.deployPool(poolKey, {
@@ -1029,7 +1043,7 @@ app.post('/pools', async (req, res) => {
 				}
 			} catch (e) {
 				Logger.error({
-					message: 'fail to deploy the pool',
+					message: 'fail to deploy pool',
 					poolKey: poolKey,
 					error: (e as EthersError).message,
 				})
