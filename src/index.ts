@@ -85,7 +85,7 @@ import {
 	ISolidStateERC20__factory,
 } from './typechain'
 import { difference, find, flatten, groupBy, partition, pick } from 'lodash'
-import { delay, requestDetailed } from './helpers/util'
+import { getBlockByTimestamp, requestDetailed } from './helpers/util'
 import moment from 'moment'
 import {
 	DeleteQuoteMessage,
@@ -941,9 +941,16 @@ app.post('/account/collateral_approval', async (req, res) => {
 	})
 })
 
+// NOTE: returns only pools up to 90 days old to optimise queryFilter time
 app.get('/pools', async (req, res) => {
+	const ts90daysAgo = moment.utc().subtract(90, 'days').unix()
+	const blockNumber = await getBlockByTimestamp(ts90daysAgo)
+
 	const deploymentEventFilter = poolFactory.getEvent('PoolDeployed')
-	const events = await poolFactory.queryFilter(deploymentEventFilter)
+	const events = await poolFactory.queryFilter(
+		deploymentEventFilter,
+		blockNumber
+	)
 
 	const deployedPools: PoolWithAddress[] = events
 		.filter((event) => Number(event.args.maturity) > moment.utc().unix() + 60)

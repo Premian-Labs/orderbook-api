@@ -42,3 +42,8 @@ export const routerAddress =
 	process.env.ENV == 'production'
 		? arb.core.ERC20Router.address
 		: arbGoerli.core.ERC20Router.address
+
+export const blockByTsEndpoint =
+	process.env.ENV == 'production'
+		? 'https://api.arbiscan.io/api'
+		: 'https://api-goerli.arbiscan.io/api'

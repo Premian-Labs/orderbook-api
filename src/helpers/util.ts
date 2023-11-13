@@ -1,5 +1,7 @@
 import { Option } from '../types/validate'
 import { difference, zipWith } from 'lodash'
+import axios from 'axios'
+import { blockByTsEndpoint } from '../config/constants'
 
 export function requestDetailed(
 	promiseAll: PromiseSettledResult<Option>[],
@@ -32,4 +34,24 @@ export function requestDetailed(
 
 export async function delay(t: number) {
 	await new Promise((resolve) => setTimeout(resolve, t))
+}
+
+export async function getBlockByTimestamp(ts: number) {
+	const blockRequest = await axios.get(blockByTsEndpoint, {
+		params: {
+			module: 'block',
+			action: 'getblocknobytime',
+			closest: 'before',
+			timestamp: ts,
+		},
+	})
+
+	const status = blockRequest.data['status']
+
+	if (Number(status) === 1) {
+		return Number(blockRequest.data['result'])
+	} else {
+		await delay(2000)
+		return getBlockByTimestamp(ts)
+	}
 }
