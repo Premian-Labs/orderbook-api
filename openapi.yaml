@@ -313,6 +313,69 @@ paths:
       security:
         - api_key:
             - api
+  /pools:
+    post:
+      summary: Creates new pools.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Option'
+        required: true
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PoolWithAddress'
+                  existed:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PoolWithAddress'
+                  failed:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Option'
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+    get:
+      summary: Returns all active pool up to 90 days old.
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PoolWithAddress'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /orderbook/orders:
     get:
       summary: Gets quote(s) by quoteId(s).  Note that a max of 25 quoteIds can be queried in a single request. The 
@@ -642,6 +705,14 @@ components:
             - P
           type: string
           example: P
+    PoolWithAddress:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/Option"
+      properties:
+        poolAddress:
+          type: string
+          example: 0x...4cFF2
     NFTBalance:
       type: object
       properties:
