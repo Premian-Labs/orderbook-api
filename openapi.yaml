@@ -315,7 +315,7 @@ paths:
             - api
   /pools:
     post:
-      summary: Creates new pools.
+      summary: Creates new option pools.
       requestBody:
         content:
           application/json:
