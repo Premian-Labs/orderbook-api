@@ -185,18 +185,17 @@ app.post('/orderbook/quotes', async (req, res) => {
 			quote.taker
 		)
 
-		Logger.debug({
-			message: 'quoteOB',
-			quoteOB: quoteOB,
-		})
-
 		// 2.6 Sign quote object
 		const signedQuote = await signQuote(signer, poolAddr, quoteOB)
-		Logger.info(signedQuote)
 		const publishQuote = createQuote(poolKey, quoteOB, signedQuote)
 
 		// 2.7 Serialize quote
 		const serializedQuote = serializeQuote(publishQuote)
+
+		Logger.debug({
+			message: serializedQuote,
+			serializedQuote: serializedQuote,
+		})
 
 		// 2.8 Add chain id to quote object
 		const publishQuoteRequest = {
