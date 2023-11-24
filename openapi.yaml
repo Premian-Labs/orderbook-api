@@ -221,9 +221,9 @@ paths:
         - api_key:
             - api
     get:
-      summary: Get all quotes for a specific option up to a specified size/qty.   All orders will be ranked from best
+      summary: Get all quotes for a specific option up to a specified size/qty. All orders will be ranked from best
         to worst according to price. Please note that this will not show the full state of the orderbook if the total
-        market liquidity is greater than the size specified.
+        market liquidity is greater than the size specified. Important! size can only be integer.
       parameters:
         - name: base
           in: query
@@ -270,7 +270,7 @@ paths:
           description: number of contracts (ie 4)
           required: true
           schema:
-            type: number
+            type: integer
             minimum: 0
             example: 3
         - name: side

@@ -351,11 +351,6 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		deserializeOrderbookQuote
 	)
 
-	Logger.debug({
-		message: 'fillableQuotesDeserialized',
-		fillableQuotesDeserialized: fillableQuotesDeserialized,
-	})
-
 	// group calls by base and puts by quote currency (so we can check collateral requirements)
 	const [callsFillQuoteRequests, putsFillQuoteRequests] = partition(
 		fillableQuotesDeserialized,
@@ -452,7 +447,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		try {
 			const fillTx = await pool.fillQuoteOB(
 				quoteOB,
-				fillableQuoteDeserialized.tradeSize,
+				parseEther(fillableQuoteDeserialized.tradeSize.toString()),
 				signedQuoteObject,
 				referralAddress,
 				{
@@ -465,7 +460,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			fulfilledQuotes.push(fillableQuoteDeserialized)
 		} catch (e) {
 			Logger.error({
-				message: `Filed to fill quote ${fillableQuoteDeserialized.quoteId}`,
+				message: `Failed to fill quote ${fillableQuoteDeserialized.quoteId}`,
 				error: (e as EthersError).message,
 			})
 			failedQuotes.push(fillableQuoteDeserialized)

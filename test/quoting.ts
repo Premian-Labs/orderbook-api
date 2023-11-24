@@ -47,7 +47,7 @@ const quote1: PublishQuoteRequest = {
 	strike: 1800,
 	type: `P`,
 	side: 'bid',
-	size: 1,
+	size: 1.1,
 	price: 0.1,
 	deadline: 120,
 }
@@ -59,7 +59,7 @@ const quote2: PublishQuoteRequest = {
 	strike: 1800,
 	type: `C`,
 	side: 'bid',
-	size: 1,
+	size: 1.1,
 	price: 0.1,
 	deadline: 120,
 }
@@ -295,7 +295,7 @@ describe('PATCH orderbook/quotes', () => {
 				quoteId: quoteId_1,
 			},
 			{
-				tradeSize: 1,
+				tradeSize: 1.1,
 				quoteId: quoteId_2,
 			},
 		]
@@ -417,8 +417,9 @@ describe('get/orderbook/quotes', () => {
 			},
 		})
 
-		// querying by a size equal to the quote amount
+		// IMPORTANT!!! quoteParams.size can not be decimal number. always ceil it up!
 		const quoteParams = omit(quote1, ['deadline', 'price'])
+		quoteParams.size = Math.ceil(quoteParams.size)
 
 		const validGetQuotesResponse = await axios.get(url, {
 			headers: {
