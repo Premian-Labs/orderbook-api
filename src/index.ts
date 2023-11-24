@@ -659,13 +659,6 @@ app.get('/orderbook/orders', async (req, res) => {
 
 	const quotesQuery = req.query as unknown as QuoteIds
 
-	if (quotesQuery.quoteIds.length > 25) {
-		Logger.error('Quotes quantity is up to 25 per request!')
-		return res.status(400).json({
-			message: 'Quotes quantity is up to 25 per request!',
-		})
-	}
-
 	let proxyResponse
 	try {
 		proxyResponse = await proxyHTTPRequest('orders', 'GET', quotesQuery, null)
