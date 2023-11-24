@@ -114,7 +114,7 @@ paths:
         - api_key:
             - api
     patch:
-      summary: Used to fill quote(s) (max quotes quantity is 200).  
+      summary: Used to fill quote(s) (max quotes quantity is 25).  
         Only the size and quoteId for each quote are required. All quoteIds are returned either as 'success' or 'failed'.
         Each limit order that is trying to be filled is an "all or nothing" attempt.
       requestBody:
