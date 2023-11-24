@@ -72,7 +72,7 @@ export const validatePostQuotes = ajv.compile({
 		additionalProperties: false,
 	},
 	minItems: 1,
-	maxItems: 1000,
+	maxItems: 200,
 })
 
 export const validatePositionManagement = ajv.compile({
@@ -105,7 +105,7 @@ export const validateFillQuotes = ajv.compile({
 		additionalProperties: false,
 	},
 	minItems: 1,
-	maxItems: 1000,
+	maxItems: 25,
 })
 
 export const validateDeleteQuotes = ajv.compile({
@@ -118,6 +118,7 @@ export const validateDeleteQuotes = ajv.compile({
 				pattern: '[a-fA-F0-9]{64}$',
 			},
 			minItems: 1,
+			maxItems: 25,
 		},
 	},
 	required: ['quoteIds'],
