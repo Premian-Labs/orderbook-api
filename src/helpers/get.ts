@@ -1,5 +1,5 @@
 import { PoolKey, TokenAddresses } from '../types/quote'
-import { ethers, formatUnits } from 'ethers'
+import { ethers, formatUnits, formatEther } from 'ethers'
 import Logger from '../lib/logger'
 import {
 	availableTokens,
@@ -47,7 +47,11 @@ export async function getPoolAddress(poolKey: PoolKey) {
 	if (!isDeployed) {
 		Logger.warn({
 			message: `Pool is not deployed`,
-			poolKey: poolKey,
+			poolKey: {
+				...poolKey,
+				strike: formatEther(poolKey.strike.toString()),
+				maturity: Number(poolKey.maturity),
+			},
 		})
 		throw new Error(`Pool is not deployed`)
 	}

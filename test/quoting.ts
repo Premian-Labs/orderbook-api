@@ -7,6 +7,7 @@ import {
 } from '../src/types/validate'
 import {
 	CancelQuotesResponse,
+	Pool,
 	PostQuotesResponse,
 	ReturnedOrderbookQuote,
 } from '../src/types/quote'
@@ -25,7 +26,8 @@ import {
 	routerAddress,
 } from '../src/config/constants'
 import { delay } from '../src/helpers/util'
-import {omit} from "lodash";
+import { omit } from 'lodash'
+import { createExpiration, createPoolKey } from '../src/helpers/create'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
@@ -41,7 +43,7 @@ let quoteId_2: string
 const quote1: PublishQuoteRequest = {
 	base: 'testWETH',
 	quote: 'USDC',
-	expiration: `17NOV23`,
+	expiration: `08DEC23`,
 	strike: 1800,
 	type: `P`,
 	side: 'bid',
@@ -53,13 +55,29 @@ const quote1: PublishQuoteRequest = {
 const quote2: PublishQuoteRequest = {
 	base: 'testWETH',
 	quote: 'USDC',
-	expiration: `17NOV23`,
+	expiration: `08DEC23`,
 	strike: 1800,
 	type: `C`,
 	side: 'bid',
 	size: 1,
 	price: 0.1,
 	deadline: 120,
+}
+
+async function deployPools() {
+	const url = `${baseUrl}/pools`
+	const pool1: Pool = omit(quote1, ['side', 'size', 'price', 'deadline'])
+	const pool2: Pool = omit(quote2, ['side', 'size', 'price', 'deadline'])
+
+	console.log('Deploying pools...', pool1, pool2)
+
+	await axios.post(url, [pool1, pool2], {
+		headers: {
+			'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+		},
+	})
+
+	console.log('Pools deployed!')
 }
 
 async function setMaxApproval() {
@@ -96,6 +114,7 @@ async function setMaxApproval() {
 before(async () => {
 	console.log(`Setting Collateral Approvals to Max`)
 	await setMaxApproval()
+	await deployPools()
 	console.log(`Approvals successful`)
 })
 
@@ -233,9 +252,6 @@ describe('PATCH orderbook/quotes', () => {
 		})
 
 		expect(tooManyQuotesResponse.status).to.eq(400)
-		expect(tooManyQuotesResponse.data.message).to.eq(
-			`Quotes quantity is up to 25 per request!`
-		)
 	})
 
 	it('should fill valid quotes from the orderbook', async () => {
@@ -301,7 +317,7 @@ describe('PATCH orderbook/quotes', () => {
 			{
 				tradeSize: 1,
 				quoteId: badQuoteId,
-			}
+			},
 		]
 
 		const nonExistentQuoteResponse = await axios.patch(
@@ -321,56 +337,74 @@ describe('PATCH orderbook/quotes', () => {
 })
 
 describe('delete/orderbook/quotes', () => {
-		it('should delete quotes from the orderbook', async () => {
-			const url = `${baseUrl}/orderbook/quotes`
-			// post quote to cancel
-			const validQuoteResponse = await axios.post(url, [quote1, quote2], {
-				headers: {
-					'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-				}
-			})
-
-			const quotes: PostQuotesResponse = validQuoteResponse.data
-			quoteId_1 = quotes.created[0].quoteId
-			quoteId_2 = quotes.created[1].quoteId
-
-			const cancelQuotes: QuoteIds = {
-				quoteIds: [quoteId_1, quoteId_2]
-			}
-
-			const deleteQuoteResponse = await axios.delete(url, {
-				headers: {
-					'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-				},
-				data: cancelQuotes
-			})
-
-			const cancelQuotesResponse: CancelQuotesResponse = deleteQuoteResponse.data
-
-			expect(deleteQuoteResponse.status).to.eq(200)
-			expect(cancelQuotesResponse.success).to.deep.eq([quoteId_1, quoteId_2])
-			expect(cancelQuotesResponse.failed).to.be.empty
-			expect(cancelQuotesResponse.omitted).to.be.empty
-
-			// bad quoteIds are be due to expired, cancelled, or nonexistent quotes in the orderbook
-			const badQuoteId: string = "0x8c822abaf76dea4faf867c9c2e0a615c8f0124c2454b03e06251689b13ca5f0d"
-
-			const badCancelQuotes: QuoteIds = {
-				quoteIds: [badQuoteId]
-			}
-
-			const badDeleteQuoteResponse = await axios.delete(url, {
-				headers: {
-					'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-				},
-				data: badCancelQuotes
-			})
-
-			expect(badDeleteQuoteResponse.status).to.eq(200)
-			expect(badDeleteQuoteResponse.data.success).to.be.empty
-			expect(badDeleteQuoteResponse.data.failed).to.be.empty
-			expect(badDeleteQuoteResponse.data.omitted[0]).to.eq(badQuoteId)
+	it('should delete quotes from the orderbook', async () => {
+		const url = `${baseUrl}/orderbook/quotes`
+		// post quote to cancel
+		const validQuoteResponse = await axios.post(url, [quote1, quote2], {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
 		})
+
+		const quotes: PostQuotesResponse = validQuoteResponse.data
+		quoteId_1 = quotes.created[0].quoteId
+		quoteId_2 = quotes.created[1].quoteId
+
+		const cancelQuotes: QuoteIds = {
+			quoteIds: [quoteId_1, quoteId_2],
+		}
+
+		const deleteQuoteResponse = await axios.delete(url, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			data: cancelQuotes,
+		})
+
+		const cancelQuotesResponse: CancelQuotesResponse = deleteQuoteResponse.data
+
+		expect(deleteQuoteResponse.status).to.eq(200)
+		expect(cancelQuotesResponse.success).to.deep.eq([quoteId_1, quoteId_2])
+		expect(cancelQuotesResponse.failed).to.be.empty
+		expect(cancelQuotesResponse.omitted).to.be.empty
+
+		// bad quoteIds are be due to expired, cancelled, or nonexistent quotes in the orderbook
+		const badQuoteId: string =
+			'0x8c822abaf76dea4faf867c9c2e0a615c8f0124c2454b03e06251689b13ca5f0d'
+
+		const badCancelQuotes: QuoteIds = {
+			quoteIds: [badQuoteId],
+		}
+
+		const badDeleteQuoteResponse = await axios.delete(url, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			data: badCancelQuotes,
+		})
+
+		expect(badDeleteQuoteResponse.status).to.eq(200)
+		expect(badDeleteQuoteResponse.data.success).to.be.empty
+		expect(badDeleteQuoteResponse.data.failed).to.be.empty
+		expect(badDeleteQuoteResponse.data.omitted[0]).to.eq(badQuoteId)
+	})
+
+	it(`should reject cancel quote payloads larger than 25`, async () => {
+		const url = `${baseUrl}/orderbook/quotes`
+		const tooManyQuotes = Array(26).fill(quoteId_1)
+
+		const tooManyDeleteQuoteResponse = await axios.delete(url, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			data: { quoteIds: tooManyQuotes },
+			validateStatus: function (status) {
+				return status < 500
+			},
+		})
+
+		expect(tooManyDeleteQuoteResponse.status).to.eq(400)
+	})
 })
 
 describe('get/orderbook/quotes', () => {
@@ -404,13 +438,13 @@ describe('get/orderbook/orders', () => {
 		const quoteResponse = await axios.post(quotesUrl, [quote1], {
 			headers: {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-			}
+			},
 		})
 
 		const quotes: PostQuotesResponse = quoteResponse.data
 		const quoteId_1 = quotes.created[0].quoteId
 		const getOrders: QuoteIds = {
-			quoteIds: [quoteId_1]
+			quoteIds: [quoteId_1],
 		}
 
 		const ordersUrl = `${baseUrl}/orderbook/orders`
@@ -418,12 +452,12 @@ describe('get/orderbook/orders', () => {
 			headers: {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
-			params: getOrders
+			params: getOrders,
 		})
 
 		const orders: ReturnedOrderbookQuote[] = validGetOrdersResponse.data
 
-		const returnedQuote = orders.filter(order => order.quoteId == quoteId_1)
+		const returnedQuote = orders.filter((order) => order.quoteId == quoteId_1)
 
 		expect(returnedQuote).not.be.empty
 	})

@@ -171,7 +171,11 @@ app.post('/orderbook/quotes', async (req, res) => {
 		} catch (e) {
 			return res.status(400).json({
 				message: (e as Error).message,
-				poolKey: poolKey,
+				poolKey: {
+					...poolKey,
+					strike: formatEther(poolKey.strike.toString()),
+					maturity: Number(poolKey.maturity),
+				},
 			})
 		}
 
