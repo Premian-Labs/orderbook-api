@@ -1096,11 +1096,33 @@ const server = app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`)
 })
 
-const wsProxyCloudClient = new WebSocket(ws_url)
 const wsServer = new WebSocket.Server({ server })
 wsServer.on('connection', (wsLocalConnection) => {
+	const wsProxyCloudClient = new WebSocket(ws_url)
+	Logger.debug('WS connection opened')
+
 	wsLocalConnection.on('message', (clientMsg) => {
 		wsProxyCloudClient.send(clientMsg.toString())
+	})
+
+	wsLocalConnection.on('error', (error) => {
+		wsProxyCloudClient.close()
+		Logger.error({
+			message: 'WS connection error',
+			error: error,
+		})
+	})
+
+	wsProxyCloudClient.on('close', (code, reason) => {
+		Logger.warn({
+			message: 'WS connection closed by the server',
+			reason: reason.toString(),
+		})
+	})
+
+	wsLocalConnection.on('close', () => {
+		wsProxyCloudClient.close()
+		Logger.debug('WS connection closed')
 	})
 
 	wsProxyCloudClient.on('message', (cloudMsg) => {
