@@ -1036,9 +1036,7 @@ app.post('/pools', async (req, res) => {
 		} else {
 			// Deploy pool process
 			try {
-				const initializationFee = await poolFactory.initializationFee(poolKey)
 				const deploymentTx = await poolFactory.deployPool(poolKey, {
-					value: initializationFee,
 					gasLimit: gasLimit,
 				})
 

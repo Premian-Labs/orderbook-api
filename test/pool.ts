@@ -15,14 +15,14 @@ describe('Pool API', () => {
 				base: 'testWETH',
 				quote: 'USDC',
 				expiration: '28JUN24',
-				strike: 2300,
+				strike: 2100,
 				type: 'C',
 			},
 			{
 				base: 'testWETH',
 				quote: 'USDC',
 				expiration: '28JUN24',
-				strike: 1700,
+				strike: 1900,
 				type: 'P',
 			},
 		]
