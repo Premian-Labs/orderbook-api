@@ -115,8 +115,6 @@ const poolFactory = IPoolFactory__factory.connect(poolFactoryAddr, signer)
 const app = express()
 // body parser for POST requests
 app.use(express.json())
-// url query param parser for GET requests
-app.use(express.urlencoded({ extended: true }))
 // unkey Auth check
 app.use(checkTestApiKey)
 
