@@ -23,6 +23,7 @@ import {
 	ContractTransactionResponse,
 	TransactionReceipt,
 	EthersError,
+	NonceManager,
 } from 'ethers'
 import {
 	FillableQuote,
@@ -97,13 +98,13 @@ import {
 	PostQuoteMessage,
 	RFQMessage,
 } from './types/ws'
-import quote from 'ajv/dist/runtime/quote'
 
 dotenv.config()
 checkEnv()
 
 const provider = new ethers.JsonRpcProvider(rpcUrl)
 const signer = new ethers.Wallet(privateKey, provider)
+const managedSigner = new NonceManager(signer)
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
@@ -404,46 +405,46 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	// process fill quotes
 	const fulfilledQuotes: OrderbookQuoteTradeDeserialized[] = []
 	const failedQuotes: OrderbookQuoteTradeDeserialized[] = []
-	for (const fillableQuoteDeserialized of fillableQuotesDeserialized) {
-		const pool = IPool__factory.connect(
-			fillableQuoteDeserialized.poolAddress,
-			signer
-		)
-		Logger.debug({
-			message: 'Filling quote',
-			fillableQuote: serializeQuote(fillableQuoteDeserialized),
-		})
 
-		const quoteOB: QuoteOB = pick(fillableQuoteDeserialized, [
-			'provider',
-			'taker',
-			'price',
-			'size',
-			'isBuy',
-			'deadline',
-			'salt',
-		])
-
-		const signedQuoteObject = await signQuote(
-			signer,
-			fillableQuoteDeserialized.poolAddress,
-			quoteOB
-		)
-
-		// ensure that tradeSize is not larger than fillableSize (otherwise tx will fail)
-		if (
-			fillableQuoteDeserialized.tradeSize >
-			parseFloat(formatEther(fillableQuoteDeserialized.fillableSize))
-		) {
-			Logger.error({
-				message: `tradeSize > fillableSize`,
-				quoteId: fillableQuoteDeserialized.quoteId,
+	const fillTxPromises = await Promise.allSettled(
+		fillableQuotesDeserialized.map(async (fillableQuoteDeserialized) => {
+			const pool = IPool__factory.connect(
+				fillableQuoteDeserialized.poolAddress,
+				managedSigner
+			)
+			Logger.debug({
+				message: 'Filling quote',
+				fillableQuote: serializeQuote(fillableQuoteDeserialized),
 			})
-			failedQuotes.push(fillableQuoteDeserialized)
-			continue
-		}
-		try {
-			const fillTx = await pool.fillQuoteOB(
+
+			const quoteOB: QuoteOB = pick(fillableQuoteDeserialized, [
+				'provider',
+				'taker',
+				'price',
+				'size',
+				'isBuy',
+				'deadline',
+				'salt',
+			])
+
+			const signedQuoteObject = await signQuote(
+				signer,
+				fillableQuoteDeserialized.poolAddress,
+				quoteOB
+			)
+
+			// ensure that tradeSize is not larger than fillableSize (otherwise tx will fail)
+			if (
+				fillableQuoteDeserialized.tradeSize >
+				parseFloat(formatEther(fillableQuoteDeserialized.fillableSize))
+			) {
+				Logger.error({
+					message: `tradeSize > fillableSize`,
+					quoteId: fillableQuoteDeserialized.quoteId,
+				})
+				throw new Error('tradeSize > fillableSize')
+			}
+			return pool.fillQuoteOB(
 				quoteOB,
 				parseEther(fillableQuoteDeserialized.tradeSize.toString()),
 				signedQuoteObject,
@@ -452,17 +453,20 @@ app.patch('/orderbook/quotes', async (req, res) => {
 					gasLimit: gasLimit,
 				}
 			)
-			await fillTx.wait(1)
+		})
+	)
 
-			Logger.debug(`Quote ${fillableQuoteDeserialized.quoteId} filled`)
-			fulfilledQuotes.push(fillableQuoteDeserialized)
-		} catch (e) {
-			Logger.error({
-				message: `Failed to fill quote ${fillableQuoteDeserialized.quoteId}`,
-				error: (e as EthersError).message,
-			})
-			failedQuotes.push(fillableQuoteDeserialized)
-		}
+	const result = await Promise.allSettled(
+		fillTxPromises.map((tx) => {
+			if (tx.status === 'fulfilled') return tx.value?.wait(1)
+			throw new Error(tx.reason)
+		})
+	)
+
+	for (const [i, txResult] of result.entries()) {
+		const quote = fillableQuotesDeserialized[i]
+		if (txResult.status === 'fulfilled') fulfilledQuotes.push(quote)
+		else failedQuotes.push(quote)
 	}
 
 	return res.status(200).json({
@@ -471,6 +475,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	})
 })
 
+// TODO: use nonceManager
 // NOTE: cancel quote(s)
 app.delete('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
@@ -1008,7 +1013,7 @@ app.post('/pools', async (req, res) => {
 		} catch (e) {
 			return res.status(400).json({
 				message: (e as Error).message,
-				quote: quote,
+				pool: pool,
 			})
 		}
 
