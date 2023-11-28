@@ -194,7 +194,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		const serializedQuote = serializeQuote(publishQuote)
 
 		Logger.debug({
-			message: serializedQuote,
+			message: 'serializedQuote',
 			serializedQuote: serializedQuote,
 		})
 
