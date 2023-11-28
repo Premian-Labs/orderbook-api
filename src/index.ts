@@ -442,7 +442,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 					message: `tradeSize > fillableSize`,
 					quoteId: fillableQuoteDeserialized.quoteId,
 				})
-				throw new Error('tradeSize > fillableSize')
+				return Promise.reject('tradeSize > fillableSize')
 			}
 			return pool.fillQuoteOB(
 				quoteOB,
@@ -459,7 +459,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	const result = await Promise.allSettled(
 		fillTxPromises.map((tx) => {
 			if (tx.status === 'fulfilled') return tx.value?.wait(1)
-			throw new Error(tx.reason)
+			return Promise.reject(tx.reason)
 		})
 	)
 
