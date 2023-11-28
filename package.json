@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "description": "Containerize API for Premia V3 Orderbook",
   "author": "research@premia.finance",
-  "license": "MIT",
+  "license": "BSD-3-Clause",
   "keywords": [
     "premia",
     "v3",
