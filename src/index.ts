@@ -262,6 +262,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 // NOTE: fill quote(s)
 // IMPORTANT: if any order in the patch request is bad, it will reject the entire request.
 // TODO: the validation error does not specify which order object is the one with the error
+// TODO: failover scenario (reset NONCE, too many requests)
 app.patch('/orderbook/quotes', async (req, res) => {
 	const valid = validateFillQuotes(req.body)
 	if (!valid) {
@@ -459,6 +460,10 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	const result = await Promise.allSettled(
 		fillTxPromises.map((tx) => {
 			if (tx.status === 'fulfilled') return tx.value?.wait(1)
+			Logger.error({
+				message: 'failed filling quotes request',
+				reason: tx.reason
+			})
 			return Promise.reject(tx.reason)
 		})
 	)
@@ -466,7 +471,13 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	for (const [i, txResult] of result.entries()) {
 		const quote = fillableQuotesDeserialized[i]
 		if (txResult.status === 'fulfilled') fulfilledQuotes.push(quote)
-		else failedQuotes.push(quote)
+		else {
+			Logger.error({
+				message: 'failed filling quotes tx',
+				reason: txResult.reason
+			})
+			failedQuotes.push(quote)
+		}
 	}
 
 	return res.status(200).json({
@@ -475,7 +486,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	})
 })
 
-// TODO: use nonceManager
+// TODO: failover scenario (reset NONCE, too many requests)
 // NOTE: cancel quote(s)
 app.delete('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
@@ -544,24 +555,50 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	const fulfilledQuoteIds: string[][] = []
 	const failedQuoteIds: string[][] = []
-	for (const poolAddress of Object.keys(deleteByPoolAddr)) {
-		const poolContract = IPool__factory.connect(poolAddress, signer)
 
+	const cancelTxPromises = await Promise.allSettled(
+		Object.keys(deleteByPoolAddr).map((poolAddress) => {
+			const poolContract = IPool__factory.connect(poolAddress, managedSigner)
+
+			const quoteIds = deleteByPoolAddr[poolAddress].map(
+				(quotes) => quotes.quoteId
+			)
+
+			Logger.debug(`Cancelling quotes ${quoteIds}...`)
+
+			try {
+				return poolContract.cancelQuotesOB(quoteIds)
+			} catch (e) {
+				Logger.error({
+					message: `Failed to cancel quotes: ${quoteIds}`,
+					error: (e as EthersError).message,
+				})
+				return Promise.reject(quoteIds)
+			}
+		})
+	)
+
+	const result = await Promise.allSettled(
+		cancelTxPromises.map((tx) => {
+			if (tx.status === 'fulfilled') return tx.value?.wait(1)
+			Logger.error({
+				message: 'failed cancel quotes request',
+				reason: tx.reason
+			})
+			return Promise.reject(tx.reason)
+		})
+	)
+
+	for (const [i, txResult] of result.entries()) {
+		const poolAddress = Object.keys(deleteByPoolAddr)[i]
 		const quoteIds = deleteByPoolAddr[poolAddress].map(
 			(quotes) => quotes.quoteId
 		)
-
-		Logger.debug(`Cancelling quotes ${quoteIds}...`)
-
-		try {
-			const cancelTx = await poolContract.cancelQuotesOB(quoteIds)
-			await cancelTx.wait(1)
-			Logger.debug(`Quotes ${quoteIds} cancelled`)
-			fulfilledQuoteIds.push(quoteIds)
-		} catch (e) {
+		if (txResult.status === 'fulfilled') fulfilledQuoteIds.push(quoteIds)
+		else {
 			Logger.error({
-				message: `Failed to cancel quotes: ${quoteIds}`,
-				error: (e as EthersError).message,
+				message: 'failed cancel quotes tx',
+				reason: txResult.reason
 			})
 			failedQuoteIds.push(quoteIds)
 		}
