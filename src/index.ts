@@ -97,7 +97,6 @@ import {
 	PostQuoteMessage,
 	RFQMessage,
 } from './types/ws'
-import quote from 'ajv/dist/runtime/quote'
 
 dotenv.config()
 checkEnv()
@@ -1008,7 +1007,7 @@ app.post('/pools', async (req, res) => {
 		} catch (e) {
 			return res.status(400).json({
 				message: (e as Error).message,
-				quote: quote,
+				quote: pool,
 			})
 		}
 
@@ -1121,7 +1120,7 @@ wsServer.on('connection', (wsLocalConnection) => {
 					JSON.stringify({
 						type: message.type,
 						body: createReturnedQuotes(message.body),
-						size: message.size,
+						size: formatEther(message.size),
 					})
 				)
 				break
