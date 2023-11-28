@@ -18,7 +18,6 @@
   ],
   "scripts": {
     "build": "tsc --build",
-    "postinstall": "npx typechain --target ethers-v6 --out-dir \"./src/typechain\" \"./node_modules/@premia/v3-abi/abi/*.json\"",
     "start": "node ./dist/index.js",
     "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**",
     "e2e:account": "mocha --require ts-node/register test/account.ts --timeout 20000",
@@ -42,8 +41,6 @@
     "express": "^4.18.2",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
-    "typechain": "^8.3.1",
-    "typechain-target-ethers-v6": "^0.1.0",
     "typescript": "^5.2.2",
     "web3-utils": "^1.9.0",
     "winston": "^3.9.0",

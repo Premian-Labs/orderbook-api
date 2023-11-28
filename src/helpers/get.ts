@@ -9,7 +9,10 @@ import {
 } from '../config/constants'
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
-import { IPoolFactory__factory, ISolidStateERC20__factory } from '../typechain'
+import {
+	IPoolFactory__factory,
+	ISolidStateERC20__factory,
+} from '@premia/v3-abi/typechain'
 import { RejectedTokenBalance, TokenBalance } from '../types/balances'
 
 const provider = new ethers.JsonRpcProvider(rpcUrl)

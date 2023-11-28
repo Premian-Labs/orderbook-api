@@ -85,7 +85,7 @@ import {
 	IPool__factory,
 	IPoolFactory__factory,
 	ISolidStateERC20__factory,
-} from './typechain'
+} from '@premia/v3-abi/typechain'
 import { difference, find, flatten, groupBy, partition, pick } from 'lodash'
 import { getBlockByTimestamp, requestDetailed } from './helpers/util'
 import moment from 'moment'

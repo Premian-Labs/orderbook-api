@@ -27,7 +27,6 @@ import {
 } from '../src/config/constants'
 import { delay } from '../src/helpers/util'
 import { omit } from 'lodash'
-import { createExpiration, createPoolKey } from '../src/helpers/create'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
