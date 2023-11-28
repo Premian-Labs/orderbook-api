@@ -15,7 +15,7 @@ import { expect } from 'chai'
 import { RejectedTokenBalance, TokenBalance } from '../src/types/balances'
 import arb from '../src/config/arbitrum.json'
 import arbGoerli from '../src/config/arbitrumGoerli.json'
-import { ISolidStateERC20__factory } from '../src/typechain'
+import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
 import { ethers, formatUnits, MaxUint256 } from 'ethers'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials

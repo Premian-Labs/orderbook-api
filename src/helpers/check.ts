@@ -5,15 +5,10 @@ import {
 } from '../types/quote'
 import { TokenBalance } from '../types/balances'
 import { Option } from '../types/validate'
-import { IPool, IPool__factory } from '../typechain'
+import { IPool, IPool__factory } from '@premia/v3-abi/typechain'
 import { createExpiration, createPoolKey } from './create'
-import {
-	privateKey,
-	rpcUrl,
-	tokenAddresses,
-	walletAddr,
-} from '../config/constants'
-import { ethers, formatEther, formatUnits, parseEther } from 'ethers'
+import { privateKey, rpcUrl, walletAddr } from '../config/constants'
+import { ethers, formatEther, parseEther } from 'ethers'
 import Logger from '../lib/logger'
 import { getPoolAddress } from './get'
 import moment from 'moment'

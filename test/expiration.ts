@@ -1,5 +1,4 @@
 import dotenv from 'dotenv'
-import axios from 'axios'
 import { checkEnv } from '../src/config/checkConfig'
 
 dotenv.config()
