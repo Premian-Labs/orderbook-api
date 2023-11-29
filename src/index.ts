@@ -23,6 +23,7 @@ import {
 	ContractTransactionResponse,
 	TransactionReceipt,
 	EthersError,
+	NonceManager,
 } from 'ethers'
 import {
 	FillableQuote,
@@ -404,46 +405,47 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	// process fill quotes
 	const fulfilledQuotes: OrderbookQuoteTradeDeserialized[] = []
 	const failedQuotes: OrderbookQuoteTradeDeserialized[] = []
-	for (const fillableQuoteDeserialized of fillableQuotesDeserialized) {
-		const pool = IPool__factory.connect(
-			fillableQuoteDeserialized.poolAddress,
-			signer
-		)
-		Logger.debug({
-			message: 'Filling quote',
-			fillableQuote: serializeQuote(fillableQuoteDeserialized),
-		})
+	const managedSigner = new NonceManager(signer)
 
-		const quoteOB: QuoteOB = pick(fillableQuoteDeserialized, [
-			'provider',
-			'taker',
-			'price',
-			'size',
-			'isBuy',
-			'deadline',
-			'salt',
-		])
-
-		const signedQuoteObject = await signQuote(
-			signer,
-			fillableQuoteDeserialized.poolAddress,
-			quoteOB
-		)
-
-		// ensure that tradeSize is not larger than fillableSize (otherwise tx will fail)
-		if (
-			fillableQuoteDeserialized.tradeSize >
-			parseFloat(formatEther(fillableQuoteDeserialized.fillableSize))
-		) {
-			Logger.error({
-				message: `tradeSize > fillableSize`,
-				quoteId: fillableQuoteDeserialized.quoteId,
+	const fillTxPromises = await Promise.allSettled(
+		fillableQuotesDeserialized.map(async (fillableQuoteDeserialized) => {
+			const pool = IPool__factory.connect(
+				fillableQuoteDeserialized.poolAddress,
+				managedSigner
+			)
+			Logger.debug({
+				message: 'Filling quote',
+				fillableQuote: serializeQuote(fillableQuoteDeserialized),
 			})
-			failedQuotes.push(fillableQuoteDeserialized)
-			continue
-		}
-		try {
-			const fillTx = await pool.fillQuoteOB(
+
+			const quoteOB: QuoteOB = pick(fillableQuoteDeserialized, [
+				'provider',
+				'taker',
+				'price',
+				'size',
+				'isBuy',
+				'deadline',
+				'salt',
+			])
+
+			const signedQuoteObject = await signQuote(
+				signer,
+				fillableQuoteDeserialized.poolAddress,
+				quoteOB
+			)
+
+			// ensure that tradeSize is not larger than fillableSize (otherwise tx will fail)
+			if (
+				fillableQuoteDeserialized.tradeSize >
+				parseFloat(formatEther(fillableQuoteDeserialized.fillableSize))
+			) {
+				Logger.error({
+					message: `tradeSize > fillableSize`,
+					quoteId: fillableQuoteDeserialized.quoteId,
+				})
+				return Promise.reject('tradeSize > fillableSize')
+			}
+			return pool.fillQuoteOB(
 				quoteOB,
 				parseEther(fillableQuoteDeserialized.tradeSize.toString()),
 				signedQuoteObject,
@@ -452,16 +454,29 @@ app.patch('/orderbook/quotes', async (req, res) => {
 					gasLimit: gasLimit,
 				}
 			)
-			await fillTx.wait(1)
+		})
+	)
 
-			Logger.debug(`Quote ${fillableQuoteDeserialized.quoteId} filled`)
-			fulfilledQuotes.push(fillableQuoteDeserialized)
-		} catch (e) {
+	const result = await Promise.allSettled(
+		fillTxPromises.map((tx) => {
+			if (tx.status === 'fulfilled') return tx.value?.wait(1)
 			Logger.error({
-				message: `Failed to fill quote ${fillableQuoteDeserialized.quoteId}`,
-				error: (e as EthersError).message,
+				message: 'failed filling quotes request',
+				reason: tx.reason
 			})
-			failedQuotes.push(fillableQuoteDeserialized)
+			return Promise.reject(tx.reason)
+		})
+	)
+
+	for (const [i, txResult] of result.entries()) {
+		const quote = fillableQuotesDeserialized[i]
+		if (txResult.status === 'fulfilled') fulfilledQuotes.push(quote)
+		else {
+			Logger.error({
+				message: 'failed filling quotes tx',
+				reason: txResult.reason
+			})
+			failedQuotes.push(quote)
 		}
 	}
 
@@ -539,24 +554,51 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	const fulfilledQuoteIds: string[][] = []
 	const failedQuoteIds: string[][] = []
-	for (const poolAddress of Object.keys(deleteByPoolAddr)) {
-		const poolContract = IPool__factory.connect(poolAddress, signer)
+	const managedSigner = new NonceManager(signer)
 
+	const cancelTxPromises = await Promise.allSettled(
+		Object.keys(deleteByPoolAddr).map((poolAddress) => {
+			const poolContract = IPool__factory.connect(poolAddress, managedSigner)
+
+			const quoteIds = deleteByPoolAddr[poolAddress].map(
+				(quotes) => quotes.quoteId
+			)
+
+			Logger.debug(`Cancelling quotes ${quoteIds}...`)
+
+			try {
+				return poolContract.cancelQuotesOB(quoteIds)
+			} catch (e) {
+				Logger.error({
+					message: `Failed to cancel quotes: ${quoteIds}`,
+					error: (e as EthersError).message,
+				})
+				return Promise.reject(quoteIds)
+			}
+		})
+	)
+
+	const result = await Promise.allSettled(
+		cancelTxPromises.map((tx) => {
+			if (tx.status === 'fulfilled') return tx.value?.wait(1)
+			Logger.error({
+				message: 'failed cancel quotes request',
+				reason: tx.reason
+			})
+			return Promise.reject(tx.reason)
+		})
+	)
+
+	for (const [i, txResult] of result.entries()) {
+		const poolAddress = Object.keys(deleteByPoolAddr)[i]
 		const quoteIds = deleteByPoolAddr[poolAddress].map(
 			(quotes) => quotes.quoteId
 		)
-
-		Logger.debug(`Cancelling quotes ${quoteIds}...`)
-
-		try {
-			const cancelTx = await poolContract.cancelQuotesOB(quoteIds)
-			await cancelTx.wait(1)
-			Logger.debug(`Quotes ${quoteIds} cancelled`)
-			fulfilledQuoteIds.push(quoteIds)
-		} catch (e) {
+		if (txResult.status === 'fulfilled') fulfilledQuoteIds.push(quoteIds)
+		else {
 			Logger.error({
-				message: `Failed to cancel quotes: ${quoteIds}`,
-				error: (e as EthersError).message,
+				message: 'failed cancel quotes tx',
+				reason: txResult.reason
 			})
 			failedQuoteIds.push(quoteIds)
 		}
