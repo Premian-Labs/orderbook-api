@@ -192,18 +192,24 @@ export const validateGetPools = ajv.compile({
 export const validateGetAllQuotes = ajv.compile({
 	type: 'object',
 	properties: {
-		quoteIds: {
-			type: 'array',
-			items: {
-				type: 'string',
-				pattern: '[a-fA-F0-9]{64}$',
-			},
-			minItems: 1,
-			// 2048 chars is max params length for GET requests
-			maxItems: 25,
+		poolAddress: {
+			type: 'string',
+			pattern: '^0x[a-fA-F0-9]{40}$',
+		},
+		size: {
+			type: 'string',
+			pattern: '^[0-9]*$',
+		},
+		side: {
+			type: 'string',
+			pattern: '^bid$|^ask$',
+		},
+		provider: {
+			type: 'string',
+			pattern: '^0x[a-fA-F0-9]{40}$',
 		},
 	},
-	required: ['quoteIds'],
+	required: [],
 	additionalProperties: false,
 })
 

@@ -27,7 +27,6 @@ import {
 } from '../src/config/constants'
 import { delay } from '../src/helpers/util'
 import { omit } from 'lodash'
-import { createExpiration, createPoolKey } from '../src/helpers/create'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
@@ -336,7 +335,7 @@ describe('PATCH orderbook/quotes', () => {
 	})
 })
 
-describe('delete/orderbook/quotes', () => {
+describe('DELETE orderbook/quotes', () => {
 	it('should delete quotes from the orderbook', async () => {
 		const url = `${baseUrl}/orderbook/quotes`
 		// post quote to cancel
@@ -408,7 +407,7 @@ describe('delete/orderbook/quotes', () => {
 	})
 })
 
-describe('get/orderbook/quotes', () => {
+describe('GET orderbook/quotes', () => {
 	it('should return fillable quotes for a specified market up to size', async () => {
 		const url = `${baseUrl}/orderbook/quotes`
 
@@ -434,8 +433,8 @@ describe('get/orderbook/quotes', () => {
 	})
 })
 
-describe('get/orderbook/orders', () => {
-	it('should return all quotes when providing an array of QuoteIds in request params', async () => {
+describe('GET orderbook/orders', () => {
+	it('should return quote without filter param', async () => {
 		const quotesUrl = `${baseUrl}/orderbook/quotes`
 		const quoteResponse = await axios.post(quotesUrl, [quote1], {
 			headers: {
@@ -445,16 +444,12 @@ describe('get/orderbook/orders', () => {
 
 		const quotes: PostQuotesResponse = quoteResponse.data
 		const quoteId_1 = quotes.created[0].quoteId
-		const getOrders: QuoteIds = {
-			quoteIds: [quoteId_1],
-		}
 
 		const ordersUrl = `${baseUrl}/orderbook/orders`
 		const validGetOrdersResponse = await axios.get(ordersUrl, {
 			headers: {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
-			params: getOrders,
 		})
 
 		const orders: ReturnedOrderbookQuote[] = validGetOrdersResponse.data
@@ -464,5 +459,22 @@ describe('get/orderbook/orders', () => {
 		expect(returnedQuote).not.be.empty
 	})
 
-	it('should return all quotes for specified market', async () => {})
+	it ('should not return quotes with filter param', async () => {
+		const ordersUrl = `${baseUrl}/orderbook/orders`
+		// NOTE: quote1 is a bid so if we filter by ask we should only have asks (if any)
+		const askGetOrdersResponse = await axios.get(ordersUrl, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			params:{
+				side: 'ask'
+			}
+		})
+
+		const askOrders: ReturnedOrderbookQuote[] = askGetOrdersResponse.data
+
+		const noQuoteResponse = askOrders.filter((order) => order.quoteId == quoteId_1)
+
+		expect(noQuoteResponse).to.be.empty
+	})
 })

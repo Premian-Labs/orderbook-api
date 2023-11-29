@@ -46,6 +46,7 @@ import {
 	PublishQuoteRequest,
 	TokenApprovalError,
 	GetPoolsParams,
+	GetOrdersRequest,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -86,7 +87,7 @@ import {
 	IPool__factory,
 	IPoolFactory__factory,
 	ISolidStateERC20__factory,
-} from './typechain'
+} from '@premia/v3-abi/typechain'
 import { difference, find, flatten, groupBy, partition, pick } from 'lodash'
 import { getBlockByTimestamp, requestDetailed } from './helpers/util'
 import moment from 'moment'
@@ -195,7 +196,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 		const serializedQuote = serializeQuote(publishQuote)
 
 		Logger.debug({
-			message: serializedQuote,
+			message: 'serializedQuote',
 			serializedQuote: serializedQuote,
 		})
 
@@ -695,7 +696,9 @@ app.get('/orderbook/orders', async (req, res) => {
 		return res.send(validateGetAllQuotes.errors)
 	}
 
-	const quotesQuery = req.query as unknown as QuoteIds
+	// NOTE: query comes without a chainId
+	let quotesQuery = req.query as unknown as GetOrdersRequest
+	quotesQuery.chainId = process.env.ENV == 'production' ? '42161': '421613'
 
 	let proxyResponse
 	try {
@@ -1049,7 +1052,7 @@ app.post('/pools', async (req, res) => {
 		} catch (e) {
 			return res.status(400).json({
 				message: (e as Error).message,
-				pool: pool,
+				quote: pool,
 			})
 		}
 
@@ -1162,7 +1165,7 @@ wsServer.on('connection', (wsLocalConnection) => {
 					JSON.stringify({
 						type: message.type,
 						body: createReturnedQuotes(message.body),
-						size: message.size,
+						size: formatEther(message.size),
 					})
 				)
 				break

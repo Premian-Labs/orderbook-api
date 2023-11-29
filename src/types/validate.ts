@@ -22,6 +22,15 @@ export interface PublishQuoteRequest {
 	taker?: string
 }
 
+// validateGetAllQuotes
+export interface GetOrdersRequest {
+	poolAddress?: string
+	size?: string
+	side?: 'bid' | 'ask'
+	provider?: string
+	chainId?: string
+}
+
 // validateFillQuotes
 export interface FillQuoteRequest {
 	tradeSize: number
