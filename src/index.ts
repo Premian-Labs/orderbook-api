@@ -45,6 +45,7 @@ import {
 	PublishQuoteRequest,
 	TokenApprovalError,
 	GetPoolsParams,
+	GetOrdersRequest,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -653,7 +654,9 @@ app.get('/orderbook/orders', async (req, res) => {
 		return res.send(validateGetAllQuotes.errors)
 	}
 
-	const quotesQuery = req.query as unknown as QuoteIds
+	// NOTE: query comes without a chainId
+	let quotesQuery = req.query as unknown as GetOrdersRequest
+	quotesQuery.chainId = process.env.ENV == 'production' ? '42161': '421613'
 
 	let proxyResponse
 	try {

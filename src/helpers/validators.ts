@@ -190,51 +190,27 @@ export const validateGetPools = ajv.compile({
 })
 
 export const validateGetAllQuotes = ajv.compile({
-	oneOf: [
-		{
-			type: 'object',
-			properties: {
-				quoteIds: {
-					type: 'array',
-					items: {
-						type: 'string',
-						pattern: '[a-fA-F0-9]{64}$',
-					},
-					minItems: 1,
-					maxItems: 25,
-				},
-			},
-			required: ['quoteIds'],
-			additionalProperties: false,
+	type: 'object',
+	properties: {
+		poolAddress: {
+			type: 'string',
+			pattern: '^0x[a-fA-F0-9]{40}$',
 		},
-		{
-			type: 'object',
-			properties: {
-				poolAddress: {
-					type: 'string',
-					pattern: '^0x[a-fA-F0-9]{40}$',
-				},
-				size: {
-					type: 'string',
-					pattern: '^[0-9]*$',
-				},
-				side: {
-					type: 'string',
-					pattern: '^bid$|^ask$',
-				},
-				chainId: {
-					type: 'string',
-					pattern: '^42161$|^421613$',
-				},
-				provider: {
-					type: 'string',
-					pattern: '^0x[a-fA-F0-9]{40}$',
-				},
-			},
-			required: ['chainId'],
-			additionalProperties: false,
+		size: {
+			type: 'string',
+			pattern: '^[0-9]*$',
 		},
-	],
+		side: {
+			type: 'string',
+			pattern: '^bid$|^ask$',
+		},
+		provider: {
+			type: 'string',
+			pattern: '^0x[a-fA-F0-9]{40}$',
+		},
+	},
+	required: [],
+	additionalProperties: false,
 })
 
 export const validateApprovals = ajv.compile({
