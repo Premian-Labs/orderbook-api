@@ -654,8 +654,9 @@ app.get('/orderbook/orders', async (req, res) => {
 		return res.send(validateGetAllQuotes.errors)
 	}
 
-	const quotesQuery = req.query as unknown as GetOrdersRequest
-	// TODO: add chain based on env
+	// NOTE: query comes without a chainId
+	let quotesQuery = req.query as unknown as GetOrdersRequest
+	quotesQuery.chainId = process.env.ENV == 'production' ? '42161': '421613'
 
 	let proxyResponse
 	try {
