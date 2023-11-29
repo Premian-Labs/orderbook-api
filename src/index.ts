@@ -104,7 +104,6 @@ checkEnv()
 
 const provider = new ethers.JsonRpcProvider(rpcUrl)
 const signer = new ethers.Wallet(privateKey, provider)
-const managedSigner = new NonceManager(signer)
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
@@ -406,6 +405,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	// process fill quotes
 	const fulfilledQuotes: OrderbookQuoteTradeDeserialized[] = []
 	const failedQuotes: OrderbookQuoteTradeDeserialized[] = []
+	const managedSigner = new NonceManager(signer)
 
 	const fillTxPromises = await Promise.allSettled(
 		fillableQuotesDeserialized.map(async (fillableQuoteDeserialized) => {
@@ -555,6 +555,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 
 	const fulfilledQuoteIds: string[][] = []
 	const failedQuoteIds: string[][] = []
+	const managedSigner = new NonceManager(signer)
 
 	const cancelTxPromises = await Promise.allSettled(
 		Object.keys(deleteByPoolAddr).map((poolAddress) => {
