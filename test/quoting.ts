@@ -364,7 +364,8 @@ describe('delete/orderbook/quotes', () => {
 		const cancelQuotesResponse: CancelQuotesResponse = deleteQuoteResponse.data
 
 		expect(deleteQuoteResponse.status).to.eq(200)
-		expect(cancelQuotesResponse.success).to.deep.eq([quoteId_1, quoteId_2])
+		// ordering may not be preserved
+		expect(cancelQuotesResponse.success).to.have.members([quoteId_1, quoteId_2])
 		expect(cancelQuotesResponse.failed).to.be.empty
 		expect(cancelQuotesResponse.omitted).to.be.empty
 
