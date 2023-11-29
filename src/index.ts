@@ -261,7 +261,6 @@ app.post('/orderbook/quotes', async (req, res) => {
 // NOTE: fill quote(s)
 // IMPORTANT: if any order in the patch request is bad, it will reject the entire request.
 // TODO: the validation error does not specify which order object is the one with the error
-// TODO: failover scenario (reset NONCE, too many requests)
 app.patch('/orderbook/quotes', async (req, res) => {
 	const valid = validateFillQuotes(req.body)
 	if (!valid) {
@@ -486,7 +485,6 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	})
 })
 
-// TODO: failover scenario (reset NONCE, too many requests)
 // NOTE: cancel quote(s)
 app.delete('/orderbook/quotes', async (req, res) => {
 	// 1. Validate incoming object array
