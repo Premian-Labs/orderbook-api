@@ -232,3 +232,33 @@ export const validateApprovals = ajv.compile({
 	minItems: 1,
 	maxItems: supportedTokens.length,
 })
+
+export const validateGetStrikes = ajv.compile({
+	oneOf: [
+		{
+			type: 'object',
+			properties: {
+				base: {
+					type: 'string',
+					pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+				},
+				quote: {
+					type: 'string',
+					pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+				},
+			},
+			required: ['base', 'quote'],
+			additionalProperties: false,
+		},
+		{
+			type: 'object',
+			properties: {
+				spotPrice: {
+					type: 'string',
+				},
+			},
+			required: ['spotPrice'],
+			additionalProperties: false,
+		},
+	],
+})

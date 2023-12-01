@@ -47,6 +47,8 @@ import {
 	TokenApprovalError,
 	GetPoolsParams,
 	GetOrdersRequest,
+	StrikesRequestSpot,
+	StrikesRequestSymbols,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -60,6 +62,7 @@ import {
 	validateApprovals,
 	validatePoolEntity,
 	validateGetPools,
+	validateGetStrikes,
 } from './helpers/validators'
 import { getBalances, getPoolAddress, getTokenByAddress } from './helpers/get'
 import {
@@ -99,6 +102,8 @@ import {
 	PostQuoteMessage,
 	RFQMessage,
 } from './types/ws'
+import { nextYearOfMaturities } from './helpers/maturities'
+import { getSurroundingStrikes } from './helpers/strikes'
 
 dotenv.config()
 checkEnv()
@@ -462,7 +467,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			if (tx.status === 'fulfilled') return tx.value?.wait(1)
 			Logger.error({
 				message: 'failed filling quotes request',
-				reason: tx.reason
+				reason: tx.reason,
 			})
 			return Promise.reject(tx.reason)
 		})
@@ -474,7 +479,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 		else {
 			Logger.error({
 				message: 'failed filling quotes tx',
-				reason: txResult.reason
+				reason: txResult.reason,
 			})
 			failedQuotes.push(quote)
 		}
@@ -583,7 +588,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 			if (tx.status === 'fulfilled') return tx.value?.wait(1)
 			Logger.error({
 				message: 'failed cancel quotes request',
-				reason: tx.reason
+				reason: tx.reason,
 			})
 			return Promise.reject(tx.reason)
 		})
@@ -598,7 +603,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 		else {
 			Logger.error({
 				message: 'failed cancel quotes tx',
-				reason: txResult.reason
+				reason: txResult.reason,
 			})
 			failedQuoteIds.push(quoteIds)
 		}
@@ -698,7 +703,7 @@ app.get('/orderbook/orders', async (req, res) => {
 
 	// NOTE: query comes without a chainId
 	let quotesQuery = req.query as unknown as GetOrdersRequest
-	quotesQuery.chainId = process.env.ENV == 'production' ? '42161': '421613'
+	quotesQuery.chainId = process.env.ENV == 'production' ? '42161' : '421613'
 
 	let proxyResponse
 	try {
@@ -1115,6 +1120,54 @@ app.post('/pools', async (req, res) => {
 		existed: existed,
 		failed: failed,
 	})
+})
+
+app.get('/pools/strikes', (req, res) => {
+	const valid = validateGetStrikes(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'AJV get all quotes req params validation error',
+			error: validateGetStrikes.errors,
+		})
+		return res.send(validateGetStrikes.errors)
+	}
+
+	const request = req.query as unknown as
+		| StrikesRequestSpot
+		| StrikesRequestSymbols
+
+	if (request.hasOwnProperty('spotPrice')) {
+		const strikeEstimate = request as StrikesRequestSpot
+		const spotPrice = parseFloat(strikeEstimate.spotPrice)
+
+		if (Number.isNaN(spotPrice)) {
+			return res.status(400).json({
+				message: 'spotPrice must be a number',
+				spotPrice: strikeEstimate.spotPrice
+			})
+		}
+
+		if (spotPrice <= 0) {
+			return res.status(400).json({
+				message: 'spotPrice must be gte 0',
+				spotPrice: strikeEstimate.spotPrice
+			})
+		}
+
+		const suggestedStrikes = getSurroundingStrikes(spotPrice)
+		return res.status(200).json(suggestedStrikes)
+	} else {
+		return res.status(200).json('not implemented')
+	}
+})
+
+app.get('/pools/maturities', (req, res) => {
+	const maturities = nextYearOfMaturities()
+	const maturitiesSerialised = maturities.map((x) =>
+		x.format('DDMMMYY').toUpperCase()
+	)
+	return res.status(200).json(maturitiesSerialised)
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {
