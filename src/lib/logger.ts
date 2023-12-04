@@ -1,4 +1,3 @@
-import { LoggingWinston } from '@google-cloud/logging-winston'
 import { transports, createLogger, format } from 'winston'
 import dotenv from 'dotenv'
 
@@ -17,10 +16,7 @@ const level = () => {
 	return isDevelopment ? 'debug' : 'info'
 }
 
-const transport =
-	process.env.ENV === 'production'
-		? [new LoggingWinston()]
-		: [new transports.Console()]
+const transport = [new transports.Console()]
 
 const Logger = createLogger({
 	format: format.combine(
@@ -40,7 +36,7 @@ const Logger = createLogger({
 	transports: transport,
 	levels,
 	defaultMeta: {
-		service: 'Premia-API',
+		service: 'Premia-v3-API',
 	},
 })
 

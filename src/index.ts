@@ -1144,14 +1144,14 @@ app.get('/pools/strikes', (req, res) => {
 		if (Number.isNaN(spotPrice)) {
 			return res.status(400).json({
 				message: 'spotPrice must be a number',
-				spotPrice: strikeEstimate.spotPrice
+				spotPrice: strikeEstimate.spotPrice,
 			})
 		}
 
 		if (spotPrice <= 0) {
 			return res.status(400).json({
 				message: 'spotPrice must be gte 0',
-				spotPrice: strikeEstimate.spotPrice
+				spotPrice: strikeEstimate.spotPrice,
 			})
 		}
 
