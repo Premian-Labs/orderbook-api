@@ -43,8 +43,8 @@ Local runtime
 - To stop the container run `docker-compose down`.
 
 Remote runtime
-- Remote runtime is an advanced feature and requires knowledge of cloud infrastructure beyond the scope of a README.
-- Please email _support@premia.finance_ if you have questions about cloud deployment.
+- For remote runtime, users can access the docker image directly [here](https://hub.docker.com/r/premiaresearch/orderbook-api)
+- Please email _research@premia.finance_ if you have questions about cloud deployment.
 
 ## OpenAPI Specification
 Premia provides the readable OpenAPI specification for the Containerized API on its website [here](https://docs.premia.blue/developer-center/api/containerized-api/api-specification).
