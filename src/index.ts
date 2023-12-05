@@ -1212,6 +1212,7 @@ wsServer.on('connection', (wsLocalConnection) => {
 			| FillQuoteMessage
 			| DeleteQuoteMessage = JSON.parse(cloudMsg.toString())
 
+		// TODO: add RFQ message parser
 		switch (message.type) {
 			case 'FILL_QUOTE':
 				wsLocalConnection.send(
