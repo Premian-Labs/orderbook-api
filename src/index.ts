@@ -1127,7 +1127,7 @@ app.get('/pools/strikes', (req, res) => {
 	if (!valid) {
 		res.status(400)
 		Logger.error({
-			message: 'AJV get all quotes req params validation error',
+			message: 'AJV get all strikes req params validation error',
 			error: validateGetStrikes.errors,
 		})
 		return res.send(validateGetStrikes.errors)
