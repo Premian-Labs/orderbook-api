@@ -88,10 +88,10 @@ describe('Pools Helpers API', () => {
 		const tomorrow = moment.utc().add(1, 'day')
 		const afterTomorrow = moment.utc().add(2, 'day')
 
-		const firstThreeMaturities = [tomorrow, afterTomorrow].map((ts) =>
+		const firstTwoMaturities = [tomorrow, afterTomorrow].map((ts) =>
 			moment(ts).format('DDMMMYY').toUpperCase()
 		)
-		expect(firstThreeMaturities).to.be.deep.eq(maturities.slice(0, 2))
+		expect(firstTwoMaturities).to.be.deep.eq(maturities.slice(0, 2))
 
 		// Check that next days after tomorrow and the day after tomorrow are Fridays
 		expect(
@@ -117,6 +117,7 @@ describe('Pools Helpers API', () => {
 
 		expect(suggestedStrikes).not.be.empty
 
+		// NOTE: this test is specific to spotPrice = 10000
 		expect(Math.min(...suggestedStrikes)).be.eq(spotPrice / 2)
 		expect(Math.max(...suggestedStrikes)).be.eq(spotPrice * 2)
 
