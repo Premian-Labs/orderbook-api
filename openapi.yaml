@@ -417,7 +417,7 @@ paths:
             - api
   /pools/strikes:
     get:
-      summary: Returns all valid strike given input spot price between (spot price / 2) and (spot price * 2).
+      summary: Returns all valid strike for a given market.
       parameters:
         - name: spotPrice
           in: query
