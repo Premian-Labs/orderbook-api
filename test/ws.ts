@@ -9,9 +9,10 @@ import {
 	FilterMessage,
 	InfoMessage,
 	RFQMessage,
+	RFQMessageParsed,
 	UnsubscribeMessage,
 } from '../src/types/ws'
-import { createExpiration, createPoolKey } from '../src/helpers/create'
+import {createExpiration, createPoolKey, mapRFQMessage} from '../src/helpers/create'
 import { Option } from '../src/types/validate'
 import { Pool, PoolKeySerialized, PoolWithAddress } from '../src/types/quote'
 import axios from 'axios'
@@ -278,11 +279,11 @@ describe('RFQ WS flow', () => {
 		}
 
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessageParsed = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'RFQ': {
 					// expect to receive broadcast rfq request
-					expect(message).deep.eq(rfqRequest)
+					expect(message.body).deep.eq(mapRFQMessage(rfqRequest.body))
 					actionChecks.push('RFQ')
 					break
 				}
