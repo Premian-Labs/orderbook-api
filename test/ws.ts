@@ -49,6 +49,7 @@ const poolKeySerialised: PoolKeySerialized = {
 
 let poolAddress: string
 async function deployPool() {
+	const url = `http://localhost:${process.env.HTTP_PORT}/pools`
 	const pool = option as Pool
 	console.log('Deploying pool...', pool)
 
@@ -75,6 +76,7 @@ async function deployPool() {
 			console.log('Pool exists!')
 		} else throw `Failed to deploy pool ${pool}`
 	}
+	poolAddress = poolAddress.toLowerCase()
 }
 
 before(async () => {
