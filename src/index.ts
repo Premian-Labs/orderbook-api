@@ -1014,7 +1014,7 @@ app.get('/pools', async (req, res) => {
 					.unix(Number(event.args.maturity))
 					.format('DDMMMYY')
 					.toUpperCase(),
-				strike: parseInt(formatEther(event.args.strike)),
+				strike: parseFloat(formatEther(event.args.strike)),
 				type: event.args.isCallPool ? 'C' : 'P',
 				poolAddress: event.args.poolAddress,
 			}

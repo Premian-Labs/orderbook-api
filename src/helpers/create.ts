@@ -83,7 +83,7 @@ export function parseInvalidQuotes(
 			.unix(orderbookQuote.poolKey.maturity)
 			.format('DDMMMYY')
 			.toUpperCase(),
-		strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
+		strike: parseFloat(formatEther(orderbookQuote.poolKey.strike)),
 		type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
 		side: orderbookQuote.isBuy ? 'bid' : 'ask',
 		size: parseFloat(formatEther(orderbookQuote.size)),

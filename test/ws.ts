@@ -38,6 +38,8 @@ const option: Option = {
 }
 
 const expiration = createExpiration(option.expiration)
+
+// NOTE: createPoolKey key converts strike to bigint (web3 representation)
 const poolKey = createPoolKey(option, expiration)
 const poolKeySerialised: PoolKeySerialized = {
 	...poolKey,
