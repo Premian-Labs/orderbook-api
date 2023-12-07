@@ -1,4 +1,5 @@
-import { OrderbookQuote } from './quote'
+import { OrderbookQuote, PoolKeySerialized } from './quote'
+import { Option } from './validate'
 
 export type ChannelType = 'QUOTES' | 'RFQ'
 
@@ -31,13 +32,22 @@ export interface AuthMessage {
 export interface RFQMessage {
 	type: 'RFQ'
 	body: {
-		poolAddress: string
+		poolKey: PoolKeySerialized
 		side: 'bid' | 'ask'
 		chainId: string
 		// bigInt string representation
 		size: string
 		taker: string
 	}
+}
+
+export interface RFQMessageParsed {
+	type: 'RFQ'
+	body: {
+		side: 'bid' | 'ask'
+		size: number
+		taker: string
+	} & Option
 }
 
 export interface InfoMessage {

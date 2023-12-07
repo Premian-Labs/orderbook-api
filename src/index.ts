@@ -71,6 +71,7 @@ import {
 	createPoolKey,
 	deserializeOrderbookQuote,
 	parseInvalidQuotes,
+	mapRFQMessage,
 } from './helpers/create'
 import {
 	preProcessExpOption,
@@ -1013,7 +1014,7 @@ app.get('/pools', async (req, res) => {
 					.unix(Number(event.args.maturity))
 					.format('DDMMMYY')
 					.toUpperCase(),
-				strike: parseInt(formatEther(event.args.strike)),
+				strike: parseFloat(formatEther(event.args.strike)),
 				type: event.args.isCallPool ? 'C' : 'P',
 				poolAddress: event.args.poolAddress,
 			}
@@ -1212,8 +1213,15 @@ wsServer.on('connection', (wsLocalConnection) => {
 			| FillQuoteMessage
 			| DeleteQuoteMessage = JSON.parse(cloudMsg.toString())
 
-		// TODO: add RFQ message parser
 		switch (message.type) {
+			case 'RFQ':
+				wsLocalConnection.send(
+					JSON.stringify({
+						type: message.type,
+						body: mapRFQMessage(message.body),
+					})
+				)
+				break
 			case 'FILL_QUOTE':
 				wsLocalConnection.send(
 					JSON.stringify({

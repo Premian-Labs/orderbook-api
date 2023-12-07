@@ -9,12 +9,7 @@ export interface Option {
 }
 
 // validatePostQuotes
-export interface PublishQuoteRequest {
-	base: string // token name
-	quote: string // token name
-	expiration: string
-	strike: number
-	type: 'C' | 'P'
+export interface PublishQuoteRequest extends Option {
 	side: 'bid' | 'ask'
 	size: number
 	price: number

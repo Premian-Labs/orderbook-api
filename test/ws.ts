@@ -1,9 +1,21 @@
 import { expect } from 'chai'
 import { RawData, WebSocket } from 'ws'
 import { checkEnv } from '../src/config/checkConfig'
-import {ethers, Wallet, ZeroAddress} from 'ethers'
-import {chainId, privateKey, rpcUrl} from '../src/config/constants'
-import {AuthMessage, ErrorMessage, FilterMessage, InfoMessage, RFQMessage, UnsubscribeMessage} from "../src/types/ws";
+import { ethers, Wallet, ZeroAddress } from 'ethers'
+import { chainId, privateKey, rpcUrl } from '../src/config/constants'
+import {
+	AuthMessage,
+	ErrorMessage,
+	FilterMessage,
+	InfoMessage,
+	RFQMessage,
+	RFQMessageParsed,
+	UnsubscribeMessage,
+} from '../src/types/ws'
+import {createExpiration, createPoolKey, mapRFQMessage} from '../src/helpers/create'
+import { Option } from '../src/types/validate'
+import { Pool, PoolKeySerialized, PoolWithAddress } from '../src/types/quote'
+import axios from 'axios'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
@@ -17,9 +29,57 @@ function delay(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// after("closing WS connection", () => {
-// 	wsConnection.close()
-// })
+const option: Option = {
+	base: 'testWETH',
+	quote: 'USDC',
+	expiration: `15DEC23`,
+	strike: 2200,
+	type: `C`,
+}
+
+const expiration = createExpiration(option.expiration)
+
+// NOTE: createPoolKey key converts strike to bigint (web3 representation)
+const poolKey = createPoolKey(option, expiration)
+const poolKeySerialised: PoolKeySerialized = {
+	...poolKey,
+	strike: poolKey.strike.toString(),
+	maturity: Number(poolKey.maturity),
+}
+
+let poolAddress: string
+async function deployPool() {
+	const pool = option as Pool
+	console.log('Deploying pool...', pool)
+
+	const response = await axios.post(url, [pool], {
+		headers: {
+			'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+		},
+	})
+
+	interface createPoolsResponse {
+		created: PoolWithAddress[]
+		existed: PoolWithAddress[]
+		failed: Pool[]
+	}
+
+	const createPoolsResponse = response.data as createPoolsResponse
+
+	if (createPoolsResponse.created.length > 0) {
+		poolAddress = createPoolsResponse.created[0].poolAddress
+		console.log('Pool deployed!')
+	} else {
+		if (createPoolsResponse.existed.length > 0) {
+			poolAddress = createPoolsResponse.existed[0].poolAddress
+			console.log('Pool exists!')
+		} else throw `Failed to deploy pool ${pool}`
+	}
+}
+
+before(async () => {
+	await deployPool()
+})
 
 describe('test WS connectivity', () => {
 	it('should connect to WS url', async () => {
@@ -149,7 +209,7 @@ describe('WS streaming', () => {
 		const rfqRequest: RFQMessage = {
 			type: 'RFQ',
 			body: {
-				poolAddress: '0x770f9e3eb81ed29491a2efdcfa2edd34fdd24a72', // dummy address
+				poolKey: poolKeySerialised,
 				side: 'ask',
 				chainId: chainId,
 				size: '1000000000000000',
@@ -157,7 +217,7 @@ describe('WS streaming', () => {
 			},
 		}
 
-		const RFQChannelKey = `rfq:${rfqRequest.body.chainId}:${rfqRequest.body.poolAddress}:${rfqRequest.body.side}:${rfqRequest.body.taker}`
+		const RFQChannelKey = `rfq:${rfqRequest.body.chainId}:${poolAddress}:${rfqRequest.body.side}:${rfqRequest.body.taker}`
 
 		// request a quote
 		wsConnection.send(JSON.stringify(rfqRequest))
@@ -212,7 +272,7 @@ describe('RFQ WS flow', () => {
 		const rfqRequest: RFQMessage = {
 			type: 'RFQ',
 			body: {
-				poolAddress: '0x770f9e3eb81ed29491a2efdcfa2edd34fdd24a72', // dummy lowercased address
+				poolKey: poolKeySerialised,
 				side: 'bid',
 				chainId: chainId,
 				size: '1000000000000000',
@@ -221,11 +281,11 @@ describe('RFQ WS flow', () => {
 		}
 
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessageParsed = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'RFQ': {
 					// expect to receive broadcast rfq request
-					expect(message).deep.eq(rfqRequest)
+					expect(message.body).deep.eq(mapRFQMessage(rfqRequest.body))
 					actionChecks.push('RFQ')
 					break
 				}
@@ -256,7 +316,7 @@ describe('RFQ WS flow', () => {
 		expect(actionChecks.includes('RFQ')).to.be.true
 
 		expect(infoMessages[0]).eq('Subscribed to rfq:421613:*:*:* channel.')
-		const RFQChannelKey = `rfq:${rfqRequest.body.chainId}:${rfqRequest.body.poolAddress}:${rfqRequest.body.side}:${rfqRequest.body.taker}`
+		const RFQChannelKey = `rfq:${rfqRequest.body.chainId}:${poolAddress}:${rfqRequest.body.side}:${rfqRequest.body.taker}`
 		expect(infoMessages[1]).eq(
 			`Published RFQ to ${RFQChannelKey} Redis channel`
 		)

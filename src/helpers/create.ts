@@ -15,6 +15,7 @@ import { formatEther, parseEther, toBigInt } from 'ethers'
 import { getTokenByAddress } from './get'
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
+import { RFQMessage, RFQMessageParsed } from '../types/ws'
 
 /*
 Expiration Rules:
@@ -82,7 +83,7 @@ export function parseInvalidQuotes(
 			.unix(orderbookQuote.poolKey.maturity)
 			.format('DDMMMYY')
 			.toUpperCase(),
-		strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
+		strike: parseFloat(formatEther(orderbookQuote.poolKey.strike)),
 		type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
 		side: orderbookQuote.isBuy ? 'bid' : 'ask',
 		size: parseFloat(formatEther(orderbookQuote.size)),
@@ -101,7 +102,7 @@ export function createReturnedQuotes(
 			.unix(orderbookQuote.poolKey.maturity)
 			.format('DDMMMYY')
 			.toUpperCase(),
-		strike: parseInt(formatEther(orderbookQuote.poolKey.strike)),
+		strike: parseFloat(formatEther(orderbookQuote.poolKey.strike)),
 		type: orderbookQuote.poolKey.isCallPool ? 'C' : 'P',
 		side: orderbookQuote.isBuy ? 'bid' : 'ask',
 		size: parseFloat(formatEther(orderbookQuote.fillableSize)),
@@ -162,5 +163,23 @@ export function deserializeOrderbookQuote(
 		tradeSize: quote.tradeSize,
 		fillableSize: toBigInt(quote.fillableSize),
 		ts: quote.ts,
+	}
+}
+
+export function mapRFQMessage(
+	rfqMessage: RFQMessage['body']
+): RFQMessageParsed['body'] {
+	return {
+		base: getTokenByAddress(tokenAddresses, rfqMessage.poolKey.base),
+		quote: getTokenByAddress(tokenAddresses, rfqMessage.poolKey.quote),
+		expiration: moment
+			.unix(rfqMessage.poolKey.maturity)
+			.format('DDMMMYY')
+			.toUpperCase(),
+		strike: parseFloat(formatEther(rfqMessage.poolKey.strike)),
+		type: rfqMessage.poolKey.isCallPool ? 'C' : 'P',
+		side: rfqMessage.side,
+		size: parseFloat(formatEther(rfqMessage.size)),
+		taker: rfqMessage.taker,
 	}
 }
