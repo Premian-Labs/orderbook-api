@@ -20,7 +20,7 @@ export const apiKey =
 		? process.env.MAINNET_ORDERBOOK_API_KEY
 		: process.env.TESTNET_ORDERBOOK_API_KEY
 
-export const gasLimit: number = 1400000
+export const gasLimit: number = 10_000_000
 
 export const referralAddress = ZeroAddress
 export const rpcUrl =
