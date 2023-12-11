@@ -1193,10 +1193,8 @@ wsServer.on('connection', (wsLocalConnection) => {
 	})
 
 	wsProxyCloudClient.on('close', (code, reason) => {
-		Logger.warn({
-			message: 'WS connection closed by the server',
-			reason: reason.toString(),
-		})
+		wsLocalConnection.close()
+		Logger.warn('WS connection closed by the server')
 	})
 
 	wsLocalConnection.on('close', () => {
