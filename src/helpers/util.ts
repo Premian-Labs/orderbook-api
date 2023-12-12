@@ -37,21 +37,26 @@ export async function delay(t: number) {
 }
 
 export async function getBlockByTimestamp(ts: number) {
-	const blockRequest = await axios.get(blockByTsEndpoint, {
-		params: {
-			module: 'block',
-			action: 'getblocknobytime',
-			closest: 'before',
-			timestamp: ts,
-		},
-	})
+	let blockRequest
+	try {
+		blockRequest = await axios.get(blockByTsEndpoint, {
+			params: {
+				module: 'block',
+				action: 'getblocknobytime',
+				closest: 'before',
+				timestamp: ts,
+			},
+		})
+		const status = blockRequest.data['status']
 
-	const status = blockRequest.data['status']
+		if (Number(status) === 1) {
+			return Number(blockRequest.data['result'])
+		}
 
-	if (Number(status) === 1) {
-		return Number(blockRequest.data['result'])
-	} else {
-		await delay(2000)
-		return getBlockByTimestamp(ts)
+		throw new Error('Failed to get block number')
+
+		} catch (e) {
+		// TODO: estimate using provider.getBlock() - 90 days
+		return 1
 	}
 }
