@@ -1,7 +1,10 @@
 import { Option } from '../types/validate'
 import { difference, zipWith } from 'lodash'
 import axios from 'axios'
-import { blockByTsEndpoint } from '../config/constants'
+import {blockByTsEndpoint, rpcUrl} from '../config/constants'
+import Logger from "../lib/logger";
+import {ethers} from "ethers";
+const provider = new ethers.JsonRpcProvider(rpcUrl)
 
 export function requestDetailed(
 	promiseAll: PromiseSettledResult<Option>[],
@@ -56,7 +59,14 @@ export async function getBlockByTimestamp(ts: number) {
 		throw new Error('Failed to get block number')
 
 		} catch (e) {
-		// TODO: estimate using provider.getBlock() - 90 days
-		return 1
+		Logger.warn({
+			message: 'getBlockByTimestamp from arbiscan API failed',
+			error: (e as Error).message
+		})
+
+		const blockInADay = 288000
+		const blockIn90Days = blockInADay * 90
+		const lastBlock = await provider.getBlockNumber()
+		return lastBlock - blockIn90Days
 	}
 }
