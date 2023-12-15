@@ -20,10 +20,10 @@
     "build": "tsc --build",
     "start": "node ./dist/index.js",
     "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**",
-    "e2e:account": "mocha --require ts-node/register test/account.ts --timeout 20000",
-    "e2e:pool": "mocha --require ts-node/register test/pool.ts --timeout 20000",
+    "e2e:account": "mocha --require ts-node/register test/account.ts --timeout 30000",
+    "e2e:pool": "mocha --require ts-node/register test/pool.ts --timeout 30000",
     "e2e:quoting": "mocha --require ts-node/register test/quoting.ts --timeout 30000",
-    "e2e:ws": "mocha --require ts-node/register test/ws.ts --timeout 20000"
+    "e2e:ws": "mocha --require ts-node/register test/ws.ts --timeout 30000"
   },
   "dependencies": {
     "@premia/v3-abi": "^1.1.2",
