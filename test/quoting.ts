@@ -42,7 +42,7 @@ let quoteId_2: string
 const quote1: PublishQuoteRequest = {
 	base: 'testWETH',
 	quote: 'USDC',
-	expiration: `08DEC23`,
+	expiration: `29DEC23`,
 	strike: 1800,
 	type: `P`,
 	side: 'bid',
@@ -54,7 +54,7 @@ const quote1: PublishQuoteRequest = {
 const quote2: PublishQuoteRequest = {
 	base: 'testWETH',
 	quote: 'USDC',
-	expiration: `08DEC23`,
+	expiration: `29DEC23`,
 	strike: 1800,
 	type: `C`,
 	side: 'bid',

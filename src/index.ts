@@ -4,7 +4,6 @@ import Logger from './lib/logger'
 import WebSocket from 'ws'
 import { checkEnv } from './config/checkConfig'
 import {
-	gasLimit,
 	referralAddress,
 	chainId,
 	walletAddr,
@@ -451,13 +450,21 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				})
 				return Promise.reject('tradeSize > fillableSize')
 			}
+
+			const fillQuoteOBGasEst = await pool.fillQuoteOB.estimateGas(
+				quoteOB,
+				parseEther(fillableQuoteDeserialized.tradeSize.toString()),
+				signedQuoteObject,
+				referralAddress
+			)
+
 			return pool.fillQuoteOB(
 				quoteOB,
 				parseEther(fillableQuoteDeserialized.tradeSize.toString()),
 				signedQuoteObject,
 				referralAddress,
 				{
-					gasLimit: gasLimit,
+					gasLimit: fillQuoteOBGasEst,
 				}
 			)
 		})
@@ -812,8 +819,9 @@ app.post('/pool/annihilate', async (req, res) => {
 	const promiseAll = await Promise.allSettled(
 		options.map(async (option) => {
 			const [pool, size] = await preProcessAnnhilate(option)
+
 			const annihilateTx = await pool.annihilate(size, {
-				gasLimit: gasLimit,
+				gasLimit: await pool.annihilate.estimateGas(size),
 			})
 			await annihilateTx.wait(1)
 			return option
@@ -1087,7 +1095,7 @@ app.post('/pools', async (req, res) => {
 			// Deploy pool process
 			try {
 				const deploymentTx = await poolFactory.deployPool(poolKey, {
-					gasLimit: gasLimit,
+					gasLimit: await poolFactory.deployPool.estimateGas(poolKey),
 				})
 
 				await deploymentTx.wait(1)

@@ -113,7 +113,7 @@ describe('Balances, Approvals & Open Orders', () => {
 		const quote: PublishQuoteRequest = {
 			base: 'WETH',
 			quote: 'USDC',
-			expiration: `08DEC23`,
+			expiration: `29DEC23`,
 			strike: 1800,
 			type: `P`,
 			side: 'ask',
