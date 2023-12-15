@@ -32,7 +32,7 @@ function delay(ms: number) {
 const option: Option = {
 	base: 'testWETH',
 	quote: 'USDC',
-	expiration: `15DEC23`,
+	expiration: `29DEC23`,
 	strike: 2200,
 	type: `C`,
 }
