@@ -49,3 +49,12 @@ Remote runtime
 ## OpenAPI Specification
 Premia provides the readable OpenAPI specification for the Containerized API on its website [here](https://docs.premia.blue/developer-center/api/containerized-api/api-specification).
 The source code for the OpenAPI specification can be found in this repository. 
+
+
+## Docker Image Updates (Development Team Only)
+1. Log in to Premia Docker Hub
+2. Build new image from root directory and include updated version: 
+```docker build -t premiaresearch/orderbook-api:version .```
+Always update `package.json` version to be the same as Docker image version.
+3. Push image to Docker Hub:
+```docker push premiaresearch/orderbook-api:version```
