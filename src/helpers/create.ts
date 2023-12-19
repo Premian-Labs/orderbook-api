@@ -88,6 +88,8 @@ export function parseInvalidQuotes(
 		side: orderbookQuote.isBuy ? 'bid' : 'ask',
 		size: parseFloat(formatEther(orderbookQuote.size)),
 		price: parseFloat(formatEther(orderbookQuote.price)),
+		provider: orderbookQuote.provider,
+		taker: orderbookQuote.taker,
 		deadline: orderbookQuote.deadline,
 	}
 }
@@ -107,6 +109,8 @@ export function createReturnedQuotes(
 		side: orderbookQuote.isBuy ? 'bid' : 'ask',
 		size: parseFloat(formatEther(orderbookQuote.fillableSize)),
 		price: parseFloat(formatEther(orderbookQuote.price)),
+		provider: orderbookQuote.provider,
+		taker: orderbookQuote.taker,
 		deadline: orderbookQuote.deadline - orderbookQuote.ts,
 		quoteId: orderbookQuote.quoteId,
 		ts: orderbookQuote.ts,

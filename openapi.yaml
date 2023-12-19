@@ -900,7 +900,10 @@ components:
         - side
         - size
         - price
+        - provider
+        - taker
         - deadline
+        - ts
       type: object
       properties:
         base:
@@ -931,6 +934,14 @@ components:
         size:
           type: number
           example: 3
+        provider:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+          example: ba638...fb25e
+        taker:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+          example: 0x0000000000000000000000000000000000000000
         price:
           type: number
           example: .15
