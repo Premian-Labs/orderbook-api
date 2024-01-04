@@ -39,10 +39,11 @@ const collateralTypes = ['testWETH', 'USDC']
 let quoteId_1: string
 let quoteId_2: string
 
+// TODO: automate the expiration date
 const quote1: PublishQuoteRequest = {
 	base: 'testWETH',
 	quote: 'USDC',
-	expiration: `29DEC23`,
+	expiration: `19JAN24`,
 	strike: 1800,
 	type: `P`,
 	side: 'bid',
@@ -54,7 +55,7 @@ const quote1: PublishQuoteRequest = {
 const quote2: PublishQuoteRequest = {
 	base: 'testWETH',
 	quote: 'USDC',
-	expiration: `29DEC23`,
+	expiration: `19JAN24`,
 	strike: 1800,
 	type: `C`,
 	side: 'bid',

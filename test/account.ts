@@ -110,10 +110,12 @@ describe('Balances, Approvals & Open Orders', () => {
 	})
 
 	it('should get open orders', async () => {
+		// TODO: automate expiration
+		// TODO: automate deploy pool
 		const quote: PublishQuoteRequest = {
-			base: 'WETH',
+			base: 'testWETH',
 			quote: 'USDC',
-			expiration: `29DEC23`,
+			expiration: `19JAN24`,
 			strike: 1800,
 			type: `P`,
 			side: 'ask',
