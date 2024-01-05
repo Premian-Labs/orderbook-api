@@ -35,9 +35,13 @@ export function createExpiration(exp: string): number {
 	const today = moment.utc().startOf('day')
 	// NOTE: this returns a floor integer value for day (ie 1.9 days -> 1)
 	const daysToExpiration = expirationMoment.diff(today, 'days')
+	const hoursToExpiration = expirationMoment
+		.clone()
+		.add('8', 'hours')
+		.diff(moment().utc(), 'hours')
 
-	// 1.1 check if option alread expired
-	if (daysToExpiration <= 0) {
+	// 1.1 check if option already expired
+	if (daysToExpiration <= 0 && hoursToExpiration <= 0) {
 		throw new Error(`Invalid expiration date: ${exp} is in the past`)
 	}
 

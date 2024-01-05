@@ -105,8 +105,8 @@ export interface ReturnedOrderbookQuote extends Option {
 	side: 'bid' | 'ask'
 	size: number
 	price: number
-	provider: string,
-	taker: string,
+	provider: string
+	taker: string
 	deadline: number
 	quoteId: string
 	ts: number
