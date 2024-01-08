@@ -2,6 +2,7 @@ import axios from 'axios'
 import { checkEnv } from '../src/config/checkConfig'
 import { PublishQuoteRequest, TokenApproval } from '../src/types/validate'
 import {
+	Pool,
 	PostQuotesResponseParsed,
 	ReturnedOrderbookQuote,
 } from '../src/types/quote'
@@ -17,9 +18,41 @@ import arb from '../src/config/arbitrum.json'
 import arbGoerli from '../src/config/arbitrumGoerli.json'
 import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
 import { ethers, formatUnits, MaxUint256 } from 'ethers'
+import {omit} from "lodash";
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
+
+const quote: PublishQuoteRequest = {
+	base: 'WETH',
+	quote: 'USDC',
+	expiration: `12JAN24`,
+	strike: 1800,
+	type: `P`,
+	side: 'ask',
+	size: 1,
+	price: 0.1,
+	deadline: 120,
+}
+
+async function deployPools() {
+	const url = `${baseUrl}/pools`
+	const pool: Pool = omit(quote, ['side', 'size', 'price', 'deadline'])
+
+	console.log('Deploying pools...', pool)
+
+	await axios.post(url, [pool], {
+		headers: {
+			'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+		},
+	})
+
+	console.log('Pools deployed!')
+}
+
+before(async () => {
+	await deployPools()
+})
 
 const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
 describe('Balances, Approvals & Open Orders', () => {
@@ -110,18 +143,6 @@ describe('Balances, Approvals & Open Orders', () => {
 	})
 
 	it('should get open orders', async () => {
-		const quote: PublishQuoteRequest = {
-			base: 'WETH',
-			quote: 'USDC',
-			expiration: `29DEC23`,
-			strike: 1800,
-			type: `P`,
-			side: 'ask',
-			size: 1,
-			price: 0.1,
-			deadline: 120,
-		}
-
 		const quotesURL = `${baseUrl}/orderbook/quotes`
 		// post quote to cancel
 		const quoteResponse = await axios.post(quotesURL, [quote], {
