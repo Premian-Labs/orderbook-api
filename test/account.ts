@@ -19,14 +19,27 @@ import arbGoerli from '../src/config/arbitrumGoerli.json'
 import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
 import { ethers, formatUnits, MaxUint256 } from 'ethers'
 import {omit} from "lodash";
+import moment from 'moment/moment';
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
+const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
+
+const maturity = moment()
+	.utcOffset(0)
+	.add(7, 'd')
+	.day(5)
+	.set({ hour: 8, minute: 0, second: 0, millisecond: 0 })
+
+const maturityString = moment
+	.unix(maturity.valueOf() / 1000)
+	.format('DDMMMYY')
+	.toUpperCase()
 
 const quote: PublishQuoteRequest = {
 	base: 'WETH',
 	quote: 'USDC',
-	expiration: `12JAN24`,
+	expiration: maturityString,
 	strike: 1800,
 	type: `P`,
 	side: 'ask',
@@ -39,22 +52,28 @@ async function deployPools() {
 	const url = `${baseUrl}/pools`
 	const pool: Pool = omit(quote, ['side', 'size', 'price', 'deadline'])
 
-	console.log('Deploying pools...', pool)
+	console.log('Deploying pool...')
 
-	await axios.post(url, [pool], {
+	const poolDeployment = (await axios.post(url, [pool], {
 		headers: {
 			'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 		},
-	})
+	}))
 
-	console.log('Pools deployed!')
+	if (poolDeployment.data['created'].length == 1)
+		console.log('Pool deployed!')
+	else if (poolDeployment.data['existed'].length == 1)
+		console.log('Pool already deployed!')
+	else if (poolDeployment.data['failed'].length == 1)
+		console.log('Pool FAILED to deployed!')
+	else
+		console.log('Error trying to deploy pool!')
 }
 
 before(async () => {
 	await deployPools()
 })
 
-const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
 describe('Balances, Approvals & Open Orders', () => {
 	it('should get option balances returned as float values', async () => {
 		// TODO: implement once Moralis introduces ARB testnet support
@@ -143,18 +162,6 @@ describe('Balances, Approvals & Open Orders', () => {
 	})
 
 	it('should get open orders', async () => {
-		const quote: PublishQuoteRequest = {
-			base: 'WETH',
-			quote: 'USDC',
-			expiration: `29DEC23`,
-			strike: 1800,
-			type: `P`,
-			side: 'ask',
-			size: 1,
-			price: 0.1,
-			deadline: 120,
-		}
-
 		const quotesURL = `${baseUrl}/orderbook/quotes`
 		// post quote to cancel
 		const quoteResponse = await axios.post(quotesURL, [quote], {
