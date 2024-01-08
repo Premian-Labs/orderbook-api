@@ -2,7 +2,6 @@ import axios from 'axios'
 import { checkEnv } from '../src/config/checkConfig'
 import { PublishQuoteRequest, TokenApproval } from '../src/types/validate'
 import {
-	Pool,
 	PostQuotesResponseParsed,
 	ReturnedOrderbookQuote,
 } from '../src/types/quote'
@@ -18,28 +17,18 @@ import arb from '../src/config/arbitrum.json'
 import arbGoerli from '../src/config/arbitrumGoerli.json'
 import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
 import { ethers, formatUnits, MaxUint256 } from 'ethers'
-import {omit} from "lodash";
-import moment from 'moment/moment';
+import { baseUrl, deployPools, getMaturity, setMaxApproval } from './helpers/utils';
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
-const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
 
-const maturity = moment()
-	.utcOffset(0)
-	.add(7, 'd')
-	.day(5)
-	.set({ hour: 8, minute: 0, second: 0, millisecond: 0 })
-
-const maturityString = moment
-	.unix(maturity.valueOf() / 1000)
-	.format('DDMMMYY')
-	.toUpperCase()
-
+const provider = new ethers.JsonRpcProvider(rpcUrl)
+const signer = new ethers.Wallet(privateKey, provider)
+const collateralTypes = ['USDC']
 const quote: PublishQuoteRequest = {
 	base: 'WETH',
 	quote: 'USDC',
-	expiration: maturityString,
+	expiration: getMaturity(),
 	strike: 1800,
 	type: `P`,
 	side: 'ask',
@@ -48,30 +37,11 @@ const quote: PublishQuoteRequest = {
 	deadline: 120,
 }
 
-async function deployPools() {
-	const url = `${baseUrl}/pools`
-	const pool: Pool = omit(quote, ['side', 'size', 'price', 'deadline'])
-
-	console.log('Deploying pool...')
-
-	const poolDeployment = (await axios.post(url, [pool], {
-		headers: {
-			'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-		},
-	}))
-
-	if (poolDeployment.data['created'].length == 1)
-		console.log('Pool deployed!')
-	else if (poolDeployment.data['existed'].length == 1)
-		console.log('Pool already deployed!')
-	else if (poolDeployment.data['failed'].length == 1)
-		console.log('Pool FAILED to deployed!')
-	else
-		console.log('Error trying to deploy pool!')
-}
-
 before(async () => {
-	await deployPools()
+	console.log(`Setting Collateral Approvals to Max and Deploying Pool(s)`)
+	await setMaxApproval(collateralTypes, signer)
+	await deployPools([quote])
+	console.log(`Initialization Complete`)
 })
 
 describe('Balances, Approvals & Open Orders', () => {
