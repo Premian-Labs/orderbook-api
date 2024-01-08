@@ -27,7 +27,7 @@ const wsConnection = new WebSocket(url)
 const deployer = new Wallet(privateKey, provider)
 
 const quote: PublishQuoteRequest = {
-	base: 'WETH',
+	base: 'testWETH',
 	quote: 'USDC',
 	expiration: getMaturity(),
 	strike: 2200,
@@ -49,7 +49,20 @@ const poolKeySerialised: PoolKeySerialized = {
 let poolAddress: string
 
 before(async () => {
-	await deployPools([quote])
+	const deployment = await deployPools([quote])
+
+	// get pool address (used for redis key)
+	if (deployment.created.length > 0) {
+		poolAddress = deployment.created[0].poolAddress
+		console.log('Pool deployed!')
+	} else if (deployment.existed.length > 0) {
+		poolAddress = deployment.existed[0].poolAddress
+		console.log('Pool exists!')
+	} else {
+		console.log(`Failed to deploy pool!`)
+	}
+
+	poolAddress = poolAddress.toLowerCase()
 })
 
 describe('test WS connectivity', () => {
@@ -68,9 +81,7 @@ describe('test WS connectivity', () => {
 		}
 
 		let wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
-				data.toString()
-			)
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'ERROR': {
 					errorMessage = message.message
@@ -98,9 +109,7 @@ describe('test WS connectivity', () => {
 		}
 
 		wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
-				data.toString()
-			)
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'ERROR': {
 					subscriptionMessage = message.message
@@ -128,9 +137,7 @@ describe('test WS connectivity', () => {
 		}
 
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
-				data.toString()
-			)
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'INFO': {
 					infoMessage = message.message
@@ -164,9 +171,7 @@ describe('WS streaming', () => {
 			},
 		}
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
-				data.toString()
-			)
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'INFO': {
 					infoMessages.push(message.message)
@@ -215,9 +220,7 @@ describe('WS streaming', () => {
 			body: null,
 		}
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
-				data.toString()
-			)
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'INFO': {
 					infoMessage = message.message
@@ -262,9 +265,7 @@ describe('RFQ WS flow', () => {
 		}
 
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessageParsed = JSON.parse(
-				data.toString()
-			)
+			const message: InfoMessage | ErrorMessage | RFQMessageParsed = JSON.parse(data.toString())
 			switch (message.type) {
 				case 'RFQ': {
 					// expect to receive broadcast rfq request

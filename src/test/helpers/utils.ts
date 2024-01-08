@@ -39,6 +39,8 @@ export async function deployPools(quotes: PublishQuoteRequest[]) {
 	else if (deployment.failed.length > 0)
 		console.log('One or more Pools FAILED to deploy!')
 	else console.log('Error trying to deploy one or more pools!')
+
+	return deployment
 }
 
 export async function setMaxApproval(
