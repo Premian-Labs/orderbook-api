@@ -13,7 +13,11 @@ import {
 	RFQMessageParsed,
 	UnsubscribeMessage,
 } from '../types/ws'
-import { createPoolKey, mapRFQMessage } from '../helpers/create'
+import {
+	createExpiration,
+	createPoolKey,
+	mapRFQMessage,
+} from '../helpers/create'
 import { PublishQuoteRequest } from '../types/validate'
 import { PoolKeySerialized } from '../types/quote'
 import { delay, deployPools, getMaturity } from './helpers/utils'
@@ -43,7 +47,7 @@ const poolKey = createPoolKey(quote)
 const poolKeySerialised: PoolKeySerialized = {
 	...poolKey,
 	strike: poolKey.strike.toString(),
-	maturity: Number(poolKey.maturity),
+	maturity: createExpiration(quote.expiration),
 }
 
 let poolAddress: string
@@ -81,7 +85,9 @@ describe('test WS connectivity', () => {
 		}
 
 		let wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'ERROR': {
 					errorMessage = message.message
@@ -109,7 +115,9 @@ describe('test WS connectivity', () => {
 		}
 
 		wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'ERROR': {
 					subscriptionMessage = message.message
@@ -137,7 +145,9 @@ describe('test WS connectivity', () => {
 		}
 
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'INFO': {
 					infoMessage = message.message
@@ -171,7 +181,9 @@ describe('WS streaming', () => {
 			},
 		}
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'INFO': {
 					infoMessages.push(message.message)
@@ -220,7 +232,9 @@ describe('WS streaming', () => {
 			body: null,
 		}
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'INFO': {
 					infoMessage = message.message
@@ -265,7 +279,9 @@ describe('RFQ WS flow', () => {
 		}
 
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessageParsed = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessageParsed = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'RFQ': {
 					// expect to receive broadcast rfq request
