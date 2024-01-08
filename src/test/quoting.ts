@@ -1,37 +1,30 @@
-import { checkEnv } from '../src/config/checkConfig'
 import axios from 'axios'
+import { expect } from 'chai'
+import { ethers } from 'ethers'
+import { omit } from 'lodash'
+
+import { checkEnv } from '../config/checkConfig'
 import {
 	FillQuoteRequest,
 	PublishQuoteRequest,
 	QuoteIds,
-} from '../src/types/validate'
+} from '../types/validate'
 import {
 	CancelQuotesResponse,
-	Pool,
 	PostQuotesResponse,
 	ReturnedOrderbookQuote,
-} from '../src/types/quote'
-import { expect } from 'chai'
-import { IERC20__factory } from '@premia/v3-abi/typechain'
+} from '../types/quote'
+import { privateKey, rpcUrl } from '../config/constants'
 import {
-	ethers,
-	ContractTransactionResponse,
-	TransactionReceipt,
-	MaxUint256,
-} from 'ethers'
-import {
-	privateKey,
-	rpcUrl,
-	tokenAddresses,
-	routerAddress,
-} from '../src/config/constants'
-import { delay } from '../src/helpers/util'
-import { omit } from 'lodash'
+	baseUrl,
+	deployPools,
+	getMaturity,
+	setMaxApproval,
+} from './helpers/utils'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
 
-const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
 const provider = new ethers.JsonRpcProvider(rpcUrl)
 const signer = new ethers.Wallet(privateKey, provider)
 const collateralTypes = ['testWETH', 'USDC']
@@ -42,7 +35,7 @@ let quoteId_2: string
 const quote1: PublishQuoteRequest = {
 	base: 'testWETH',
 	quote: 'USDC',
-	expiration: `12JAN24`,
+	expiration: getMaturity(),
 	strike: 1800,
 	type: `P`,
 	side: 'bid',
@@ -54,7 +47,7 @@ const quote1: PublishQuoteRequest = {
 const quote2: PublishQuoteRequest = {
 	base: 'testWETH',
 	quote: 'USDC',
-	expiration: `12JAN24`,
+	expiration: getMaturity(),
 	strike: 1800,
 	type: `C`,
 	side: 'bid',
@@ -63,58 +56,11 @@ const quote2: PublishQuoteRequest = {
 	deadline: 120,
 }
 
-async function deployPools() {
-	const url = `${baseUrl}/pools`
-	const pool1: Pool = omit(quote1, ['side', 'size', 'price', 'deadline'])
-	const pool2: Pool = omit(quote2, ['side', 'size', 'price', 'deadline'])
-
-	console.log('Deploying pools...', pool1, pool2)
-
-	await axios.post(url, [pool1, pool2], {
-		headers: {
-			'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-		},
-	})
-
-	console.log('Pools deployed!')
-}
-
-async function setMaxApproval() {
-	for (const token in collateralTypes) {
-		const erc20 = IERC20__factory.connect(
-			tokenAddresses[collateralTypes[token]],
-			signer
-		)
-
-		let approveTX: ContractTransactionResponse
-		let confirm: TransactionReceipt | null
-		try {
-			approveTX = await erc20.approve(routerAddress, MaxUint256.toString())
-			confirm = await approveTX.wait(1)
-			console.log(`Max approval set for ${collateralTypes[token]}`)
-		} catch (e) {
-			await delay(2000)
-			try {
-				approveTX = await erc20.approve(routerAddress, MaxUint256.toString())
-				confirm = await approveTX.wait(1)
-				console.log(`Max approval set for ${collateralTypes[token]}`)
-			} catch (e) {
-				throw new Error(`Approval could not be set for USDC!`)
-			}
-		}
-
-		if (confirm?.status == 0) {
-			throw new Error(
-				`Max approval NOT set for USDC! Try again or check provider or ETH balance...`
-			)
-		}
-	}
-}
 before(async () => {
-	console.log(`Setting Collateral Approvals to Max`)
-	await setMaxApproval()
-	await deployPools()
-	console.log(`Approvals successful`)
+	console.log(`Setting Collateral Approvals to Max and Deploying Pool(s)`)
+	await setMaxApproval(collateralTypes, signer)
+	await deployPools([quote1, quote2])
+	console.log(`Initialization Complete`)
 })
 
 describe('Orderbook API authorization', () => {
@@ -459,21 +405,23 @@ describe('GET orderbook/orders', () => {
 		expect(returnedQuote).not.be.empty
 	})
 
-	it ('should not return quotes with filter param', async () => {
+	it('should not return quotes with filter param', async () => {
 		const ordersUrl = `${baseUrl}/orderbook/orders`
 		// NOTE: quote1 is a bid so if we filter by ask we should only have asks (if any)
 		const askGetOrdersResponse = await axios.get(ordersUrl, {
 			headers: {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
-			params:{
-				side: 'ask'
-			}
+			params: {
+				side: 'ask',
+			},
 		})
 
 		const askOrders: ReturnedOrderbookQuote[] = askGetOrdersResponse.data
 
-		const noQuoteResponse = askOrders.filter((order) => order.quoteId == quoteId_1)
+		const noQuoteResponse = askOrders.filter(
+			(order) => order.quoteId == quoteId_1
+		)
 
 		expect(noQuoteResponse).to.be.empty
 	})

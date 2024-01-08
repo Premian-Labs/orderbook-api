@@ -1,4 +1,5 @@
 import { BigNumberish } from 'ethers'
+
 import { RSV } from './signature'
 import { FillQuoteRequest, Option } from './validate'
 
@@ -153,4 +154,10 @@ export interface CancelQuotesResponse {
 export interface Pool extends Option {}
 export interface PoolWithAddress extends Pool {
 	poolAddress: string
+}
+
+export interface PostPoolsResponse {
+	created: PoolWithAddress[]
+	existed: PoolWithAddress[]
+	failed: Pool[]
 }

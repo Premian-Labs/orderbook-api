@@ -1,23 +1,33 @@
 import axios from 'axios'
-import { checkEnv } from '../src/config/checkConfig'
-import { PublishQuoteRequest, TokenApproval } from '../src/types/validate'
+import { expect } from 'chai'
+import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
+import { ethers, formatUnits, MaxUint256 } from 'ethers'
+
+import { checkEnv } from '../config/checkConfig'
+import {
+	CollateralApprovalResponse,
+	PublishQuoteRequest,
+	TokenApproval,
+} from '../types/validate'
 import {
 	PostQuotesResponseParsed,
 	ReturnedOrderbookQuote,
-} from '../src/types/quote'
+} from '../types/quote'
 import {
 	availableTokens,
 	privateKey,
 	routerAddress,
 	rpcUrl,
-} from '../src/config/constants'
-import { expect } from 'chai'
-import { RejectedTokenBalance, TokenBalance } from '../src/types/balances'
-import arb from '../src/config/arbitrum.json'
-import arbGoerli from '../src/config/arbitrumGoerli.json'
-import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
-import { ethers, formatUnits, MaxUint256 } from 'ethers'
-import { baseUrl, deployPools, getMaturity, setMaxApproval } from './helpers/utils';
+} from '../config/constants'
+import { RejectedTokenBalance, TokenBalance } from '../types/balances'
+import arb from '../config/arbitrum.json'
+import arbGoerli from '../config/arbitrumGoerli.json'
+import {
+	baseUrl,
+	deployPools,
+	getMaturity,
+	setMaxApproval,
+} from './helpers/utils'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
@@ -29,7 +39,7 @@ const quote: PublishQuoteRequest = {
 	base: 'WETH',
 	quote: 'USDC',
 	expiration: getMaturity(),
-	strike: 1800,
+	strike: 2200,
 	type: `P`,
 	side: 'ask',
 	size: 1,
@@ -101,11 +111,6 @@ describe('Balances, Approvals & Open Orders', () => {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
 		})
-
-		interface CollateralApprovalResponse {
-			success: TokenApproval[]
-			failed: any[]
-		}
 
 		const responseData = postApprovalsRequest.data as CollateralApprovalResponse
 

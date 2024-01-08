@@ -1,8 +1,9 @@
 import { expect } from 'chai'
 import { RawData, WebSocket } from 'ws'
-import { checkEnv } from '../src/config/checkConfig'
 import { ethers, Wallet, ZeroAddress } from 'ethers'
-import { chainId, privateKey, rpcUrl } from '../src/config/constants'
+
+import { checkEnv } from '../config/checkConfig'
+import { chainId, privateKey, rpcUrl } from '../config/constants'
 import {
 	AuthMessage,
 	ErrorMessage,
@@ -11,11 +12,11 @@ import {
 	RFQMessage,
 	RFQMessageParsed,
 	UnsubscribeMessage,
-} from '../src/types/ws'
-import {createExpiration, createPoolKey, mapRFQMessage} from '../src/helpers/create'
-import { Option } from '../src/types/validate'
-import { Pool, PoolKeySerialized, PoolWithAddress } from '../src/types/quote'
-import axios from 'axios'
+} from '../types/ws'
+import { createPoolKey, mapRFQMessage } from '../helpers/create'
+import { PublishQuoteRequest } from '../types/validate'
+import { PoolKeySerialized } from '../types/quote'
+import { delay, deployPools, getMaturity } from './helpers/utils'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
@@ -25,22 +26,20 @@ const url = `ws://localhost:${process.env.HTTP_PORT}`
 const wsConnection = new WebSocket(url)
 const deployer = new Wallet(privateKey, provider)
 
-function delay(ms: number) {
-	return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-const option: Option = {
-	base: 'testWETH',
+const quote: PublishQuoteRequest = {
+	base: 'WETH',
 	quote: 'USDC',
-	expiration: `12JAN24`,
+	expiration: getMaturity(),
 	strike: 2200,
 	type: `C`,
+	side: 'ask',
+	size: 1,
+	price: 0.1,
+	deadline: 120,
 }
 
-const expiration = createExpiration(option.expiration)
-
 // NOTE: createPoolKey key converts strike to bigint (web3 representation)
-const poolKey = createPoolKey(option, expiration)
+const poolKey = createPoolKey(quote)
 const poolKeySerialised: PoolKeySerialized = {
 	...poolKey,
 	strike: poolKey.strike.toString(),
@@ -48,39 +47,9 @@ const poolKeySerialised: PoolKeySerialized = {
 }
 
 let poolAddress: string
-async function deployPool() {
-	const url = `http://localhost:${process.env.HTTP_PORT}/pools`
-	const pool = option as Pool
-	console.log('Deploying pool...', pool)
-
-	const response = await axios.post(url, [pool], {
-		headers: {
-			'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-		},
-	})
-
-	interface createPoolsResponse {
-		created: PoolWithAddress[]
-		existed: PoolWithAddress[]
-		failed: Pool[]
-	}
-
-	const createPoolsResponse = response.data as createPoolsResponse
-
-	if (createPoolsResponse.created.length > 0) {
-		poolAddress = createPoolsResponse.created[0].poolAddress
-		console.log('Pool deployed!')
-	} else {
-		if (createPoolsResponse.existed.length > 0) {
-			poolAddress = createPoolsResponse.existed[0].poolAddress
-			console.log('Pool exists!')
-		} else throw `Failed to deploy pool ${pool}`
-	}
-	poolAddress = poolAddress.toLowerCase()
-}
 
 before(async () => {
-	await deployPool()
+	await deployPools([quote])
 })
 
 describe('test WS connectivity', () => {
@@ -99,7 +68,9 @@ describe('test WS connectivity', () => {
 		}
 
 		let wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'ERROR': {
 					errorMessage = message.message
@@ -127,7 +98,9 @@ describe('test WS connectivity', () => {
 		}
 
 		wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'ERROR': {
 					subscriptionMessage = message.message
@@ -155,7 +128,9 @@ describe('test WS connectivity', () => {
 		}
 
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'INFO': {
 					infoMessage = message.message
@@ -189,7 +164,9 @@ describe('WS streaming', () => {
 			},
 		}
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'INFO': {
 					infoMessages.push(message.message)
@@ -238,7 +215,9 @@ describe('WS streaming', () => {
 			body: null,
 		}
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessage = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'INFO': {
 					infoMessage = message.message
@@ -283,7 +262,9 @@ describe('RFQ WS flow', () => {
 		}
 
 		const wsCallback = (data: RawData) => {
-			const message: InfoMessage | ErrorMessage | RFQMessageParsed = JSON.parse(data.toString())
+			const message: InfoMessage | ErrorMessage | RFQMessageParsed = JSON.parse(
+				data.toString()
+			)
 			switch (message.type) {
 				case 'RFQ': {
 					// expect to receive broadcast rfq request

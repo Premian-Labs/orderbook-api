@@ -52,6 +52,11 @@ export interface TokenApproval {
 	amt: number | 'max'
 }
 
+export interface CollateralApprovalResponse {
+	success: TokenApproval[]
+	failed: any[]
+}
+
 export interface TokenApprovalError {
 	message: string
 	token: TokenApproval
