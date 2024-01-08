@@ -20,7 +20,7 @@ export const apiKey =
 		? process.env.MAINNET_ORDERBOOK_API_KEY
 		: process.env.TESTNET_ORDERBOOK_API_KEY
 
-export const referralAddress = process.env.REFERRAL_ADDRESS ??  ZeroAddress
+export const referralAddress = process.env.REFERRAL_ADDRESS ?? ZeroAddress
 
 export const rpcUrl =
 	process.env.ENV == 'production'
