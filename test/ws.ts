@@ -29,11 +29,10 @@ function delay(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// TODO: automate the expiration date
 const option: Option = {
 	base: 'testWETH',
 	quote: 'USDC',
-	expiration: `19JAN24`,
+	expiration: `12JAN24`,
 	strike: 2200,
 	type: `C`,
 }
