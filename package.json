@@ -1,6 +1,6 @@
 {
   "name": "@premia/v3-api",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "Containerize API for Premia V3 Orderbook",
   "author": "research@premia.finance",
   "license": "BSD-3-Clause",
@@ -20,10 +20,10 @@
     "build": "tsc --build",
     "start": "node ./dist/index.js",
     "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**",
-    "e2e:account": "mocha --require ts-node/register test/account.ts --timeout 30000",
-    "e2e:pool": "mocha --require ts-node/register test/pool.ts --timeout 30000",
-    "e2e:quoting": "mocha --require ts-node/register test/quoting.ts --timeout 30000",
-    "e2e:ws": "mocha --require ts-node/register test/ws.ts --timeout 30000"
+    "e2e:account": "mocha --require ts-node/register src/test/account.ts --timeout 60000",
+    "e2e:pool": "mocha --require ts-node/register src/test/pool.ts --timeout 60000",
+    "e2e:quoting": "mocha --require ts-node/register src/test/quoting.ts --timeout 60000",
+    "e2e:ws": "mocha --require ts-node/register src/test/ws.ts --timeout 60000"
   },
   "dependencies": {
     "@premia/v3-abi": "^1.1.2",
@@ -33,7 +33,7 @@
     "@types/ws": "^8.5.4",
     "@unkey/api": "^0.13.1",
     "ajv": "^8.12.0",
-    "axios": "^1.5.0",
+    "axios": "^1.6.0",
     "dotenv": "^16.0.3",
     "ethers": "^6.8.1",
     "express": "^4.18.2",

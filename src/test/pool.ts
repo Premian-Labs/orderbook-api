@@ -1,12 +1,13 @@
 import axios from 'axios'
-import { checkEnv } from '../src/config/checkConfig'
-import { Pool, PoolWithAddress } from '../src/types/quote'
 import { expect } from 'chai'
-import { createExpiration } from '../src/helpers/create'
 import moment from 'moment'
 
+import { checkEnv } from '../config/checkConfig'
+import { Pool, PoolWithAddress, PostPoolsResponse } from '../types/quote'
+import { createExpiration } from '../helpers/create'
+import { baseUrl, getMaturity } from './helpers/utils'
+
 checkEnv(true)
-const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
 
 describe('Pool API', () => {
 	it('should deploy pools', async () => {
@@ -15,15 +16,15 @@ describe('Pool API', () => {
 			{
 				base: 'testWETH',
 				quote: 'USDC',
-				expiration: '12JAN24',
-				strike: 2100,
+				expiration: getMaturity(),
+				strike: 2300,
 				type: 'C',
 			},
 			{
 				base: 'testWETH',
 				quote: 'USDC',
-				expiration: '12JAN24',
-				strike: 1900,
+				expiration: getMaturity(),
+				strike: 2300,
 				type: 'P',
 			},
 		]
@@ -33,12 +34,6 @@ describe('Pool API', () => {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
 		})
-
-		interface PostPoolsResponse {
-			created: PoolWithAddress[]
-			existed: PoolWithAddress[]
-			failed: Pool[]
-		}
 
 		const deployedPools = postDeployPools.data as PostPoolsResponse
 		const validPools = [...deployedPools.created, ...deployedPools.existed]
@@ -55,13 +50,13 @@ describe('Pool API', () => {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
 			params: {
-				base: 'testWETH'
-			}
+				base: 'testWETH',
+			},
 		})
 
 		const deployedPools = getDeployedPools.data as PoolWithAddress[]
 		expect(deployedPools).not.be.empty
-		expect(deployedPools.every(pool => pool.base === 'testWETH')).to.be.true
+		expect(deployedPools.every((pool) => pool.base === 'testWETH')).to.be.true
 		expect(() =>
 			deployedPools.forEach((pool) => createExpiration(pool.expiration))
 		).not.throws

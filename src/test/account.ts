@@ -1,33 +1,45 @@
 import axios from 'axios'
-import { checkEnv } from '../src/config/checkConfig'
-import { PublishQuoteRequest, TokenApproval } from '../src/types/validate'
+import { expect } from 'chai'
+import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
+import { ethers, formatUnits, MaxUint256 } from 'ethers'
+
+import { checkEnv } from '../config/checkConfig'
 import {
-	Pool,
+	CollateralApprovalResponse,
+	PublishQuoteRequest,
+	TokenApproval,
+} from '../types/validate'
+import {
 	PostQuotesResponseParsed,
 	ReturnedOrderbookQuote,
-} from '../src/types/quote'
+} from '../types/quote'
 import {
 	availableTokens,
 	privateKey,
 	routerAddress,
 	rpcUrl,
-} from '../src/config/constants'
-import { expect } from 'chai'
-import { RejectedTokenBalance, TokenBalance } from '../src/types/balances'
-import arb from '../src/config/arbitrum.json'
-import arbGoerli from '../src/config/arbitrumGoerli.json'
-import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
-import { ethers, formatUnits, MaxUint256 } from 'ethers'
-import {omit} from "lodash";
+} from '../config/constants'
+import { RejectedTokenBalance, TokenBalance } from '../types/balances'
+import arb from '../config/arbitrum.json'
+import arbGoerli from '../config/arbitrumGoerli.json'
+import {
+	baseUrl,
+	deployPools,
+	getMaturity,
+	setMaxApproval,
+} from './helpers/utils'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
 
+const provider = new ethers.JsonRpcProvider(rpcUrl)
+const signer = new ethers.Wallet(privateKey, provider)
+const collateralTypes = ['USDC']
 const quote: PublishQuoteRequest = {
 	base: 'WETH',
 	quote: 'USDC',
-	expiration: `12JAN24`,
-	strike: 1800,
+	expiration: getMaturity(),
+	strike: 2200,
 	type: `P`,
 	side: 'ask',
 	size: 1,
@@ -35,26 +47,13 @@ const quote: PublishQuoteRequest = {
 	deadline: 120,
 }
 
-async function deployPools() {
-	const url = `${baseUrl}/pools`
-	const pool: Pool = omit(quote, ['side', 'size', 'price', 'deadline'])
-
-	console.log('Deploying pools...', pool)
-
-	await axios.post(url, [pool], {
-		headers: {
-			'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-		},
-	})
-
-	console.log('Pools deployed!')
-}
-
 before(async () => {
-	await deployPools()
+	console.log(`Setting Collateral Approvals to Max and Deploying Pool(s)`)
+	await setMaxApproval(collateralTypes, signer)
+	await deployPools([quote])
+	console.log(`Initialization Complete`)
 })
 
-const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
 describe('Balances, Approvals & Open Orders', () => {
 	it('should get option balances returned as float values', async () => {
 		// TODO: implement once Moralis introduces ARB testnet support
@@ -112,11 +111,6 @@ describe('Balances, Approvals & Open Orders', () => {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
 		})
-
-		interface CollateralApprovalResponse {
-			success: TokenApproval[]
-			failed: any[]
-		}
 
 		const responseData = postApprovalsRequest.data as CollateralApprovalResponse
 
