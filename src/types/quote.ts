@@ -135,10 +135,6 @@ export interface PostQuotesResponse {
 	exists: OrderbookQuote[]
 }
 
-// export interface PostPoolResponse {
-// 	created:
-// }
-
 export interface PostQuotesResponseParsed {
 	created: ReturnedOrderbookQuote[]
 	failed: {
