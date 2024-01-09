@@ -3,6 +3,7 @@ import { ethers, formatUnits, formatEther } from 'ethers'
 import Logger from '../lib/logger'
 import {
 	availableTokens,
+	chainId,
 	rpcUrl,
 	tokenAddresses,
 	walletAddr,
@@ -15,7 +16,9 @@ import {
 } from '@premia/v3-abi/typechain'
 import { RejectedTokenBalance, TokenBalance } from '../types/balances'
 
-const provider = new ethers.JsonRpcProvider(rpcUrl)
+const provider = new ethers.JsonRpcProvider(rpcUrl, Number(chainId), {
+	staticNetwork: true,
+})
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'

@@ -7,13 +7,15 @@ import { TokenBalance } from '../types/balances'
 import { Option } from '../types/validate'
 import { IPool, IPool__factory } from '@premia/v3-abi/typechain'
 import { createExpiration, createPoolKey } from './create'
-import { privateKey, rpcUrl, walletAddr } from '../config/constants'
+import { chainId, privateKey, rpcUrl, walletAddr } from '../config/constants'
 import { ethers, formatEther, parseEther } from 'ethers'
 import Logger from '../lib/logger'
 import { getPoolAddress } from './get'
 import moment from 'moment'
 
-const provider = new ethers.JsonRpcProvider(rpcUrl)
+const provider = new ethers.JsonRpcProvider(rpcUrl, Number(chainId), {
+	staticNetwork: true,
+})
 const signer = new ethers.Wallet(privateKey, provider)
 
 export async function preProcessAnnhilate(

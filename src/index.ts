@@ -108,7 +108,9 @@ import { getSurroundingStrikes } from './helpers/strikes'
 dotenv.config()
 checkEnv()
 
-const provider = new ethers.JsonRpcProvider(rpcUrl)
+const provider = new ethers.JsonRpcProvider(rpcUrl, Number(chainId), {
+	staticNetwork: true,
+})
 const signer = new ethers.Wallet(privateKey, provider)
 
 const poolFactoryAddr =

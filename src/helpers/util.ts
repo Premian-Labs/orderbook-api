@@ -1,10 +1,11 @@
 import { Option } from '../types/validate'
 import { difference, zipWith } from 'lodash'
 import axios from 'axios'
-import { blockByTsEndpoint, rpcUrl } from '../config/constants'
-import Logger from '../lib/logger'
+import { blockByTsEndpoint, chainId, rpcUrl } from '../config/constants'
 import { ethers } from 'ethers'
-const provider = new ethers.JsonRpcProvider(rpcUrl)
+const provider = new ethers.JsonRpcProvider(rpcUrl, Number(chainId), {
+	staticNetwork: true,
+})
 
 export function requestDetailed(
 	promiseAll: PromiseSettledResult<Option>[],
