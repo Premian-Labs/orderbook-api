@@ -58,10 +58,8 @@ before(async () => {
 	// get pool address (used for redis key)
 	if (deployment.created.length > 0) {
 		poolAddress = deployment.created[0].poolAddress
-		console.log('Pool deployed!')
 	} else if (deployment.existed.length > 0) {
 		poolAddress = deployment.existed[0].poolAddress
-		console.log('Pool exists!')
 	} else {
 		console.log(`Failed to deploy pool!`)
 	}
