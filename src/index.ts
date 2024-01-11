@@ -23,6 +23,7 @@ import {
 	TransactionReceipt,
 	EthersError,
 	NonceManager,
+	BigNumberish,
 } from 'ethers'
 import {
 	FillableQuote,
@@ -452,12 +453,22 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				return Promise.reject('tradeSize > fillableSize')
 			}
 
-			const fillQuoteOBGasEst = await pool.fillQuoteOB.estimateGas(
-				quoteOB,
-				parseEther(fillableQuoteDeserialized.tradeSize.toString()),
-				signedQuoteObject,
-				referralAddress
-			)
+			let fillQuoteOBGasEst: BigNumberish
+			try {
+				fillQuoteOBGasEst =
+					(await pool.fillQuoteOB.estimateGas(
+						quoteOB,
+						parseEther(fillableQuoteDeserialized.tradeSize.toString()),
+						signedQuoteObject,
+						referralAddress
+					)) + 100_000n
+			} catch (e) {
+				Logger.warn({
+					message: 'failed to estimate gas for fillingQuoteOB',
+					reason: e,
+				})
+				fillQuoteOBGasEst = 5_000_000n
+			}
 
 			return pool.fillQuoteOB(
 				quoteOB,
@@ -821,8 +832,19 @@ app.post('/pool/annihilate', async (req, res) => {
 		options.map(async (option) => {
 			const [pool, size] = await preProcessAnnhilate(option)
 
+			let annhilateGasEst: BigNumberish
+			try {
+				annhilateGasEst = (await pool.annihilate.estimateGas(size)) + 100_000n
+			} catch (e) {
+				Logger.warn({
+					message: 'failed to estimate gas for annihilate',
+					reason: e,
+				})
+				annhilateGasEst = 5_000_000n
+			}
+
 			const annihilateTx = await pool.annihilate(size, {
-				gasLimit: await pool.annihilate.estimateGas(size),
+				gasLimit: annhilateGasEst,
 			})
 			await annihilateTx.wait(1)
 			return option
@@ -1095,8 +1117,20 @@ app.post('/pools', async (req, res) => {
 		} else {
 			// Deploy pool process
 			try {
+				let deployPoolGasEst: BigNumberish
+				try {
+					deployPoolGasEst =
+						(await poolFactory.deployPool.estimateGas(poolKey)) + 100_000n
+				} catch (e) {
+					Logger.warn({
+						message: 'failed to estimate gas for annihilate',
+						reason: e,
+					})
+					deployPoolGasEst = 5_000_000n
+				}
+
 				const deploymentTx = await poolFactory.deployPool(poolKey, {
-					gasLimit: await poolFactory.deployPool.estimateGas(poolKey),
+					gasLimit: deployPoolGasEst,
 				})
 
 				await deploymentTx.wait(1)

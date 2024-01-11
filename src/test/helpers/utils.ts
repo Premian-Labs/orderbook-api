@@ -24,7 +24,7 @@ export async function deployPools(quotes: PublishQuoteRequest[]) {
 		createPools.push(omit(pool, ['side', 'size', 'price', 'deadline']))
 	})
 
-	console.log('Deploying pool(s)...')
+	console.log('Attempting to Deploy pool(s)...')
 
 	const poolDeployment = await axios.post(url, createPools, {
 		headers: {
