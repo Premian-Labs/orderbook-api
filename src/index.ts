@@ -1263,6 +1263,7 @@ wsServer.on('connection', (wsLocalConnection) => {
 					})
 				)
 				break
+			// TODO: rename size to tradeSize
 			case 'FILL_QUOTE':
 				wsLocalConnection.send(
 					JSON.stringify({

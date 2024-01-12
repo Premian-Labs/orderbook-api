@@ -77,6 +77,7 @@ export function createExpiration(exp: string): number {
 	return expirationMoment.add(8, 'hours').unix()
 }
 
+// TODO: rename size to availableSize
 export function parseInvalidQuotes(
 	orderbookQuote: InvalidPostQuoteResponse
 ): InvalidOrderbookQuote {
@@ -98,6 +99,7 @@ export function parseInvalidQuotes(
 	}
 }
 
+// TODO: rename size to availableSize
 export function createReturnedQuotes(
 	orderbookQuote: OrderbookQuote
 ): ReturnedOrderbookQuote {
