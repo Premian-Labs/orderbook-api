@@ -426,3 +426,29 @@ describe('GET orderbook/orders', () => {
 		expect(noQuoteResponse).to.be.empty
 	})
 })
+
+describe ('Quote Validation & Quote Expiration Lifecycle', () => {
+	// uses quote A
+	it('should invalidate a quote if maker token allowance is removed', async () => {
+		// TODO: create allowance, post quote A (POST Quote) with 600 sec deadline, check quote A is valid (GET orders),
+		//  remove allowance, (Timeout 120 seconds), check quote is invalid (GET Orders)
+	})
+
+	// uses quote A
+	it ('should validate an invalid order if the maker token allowance is re instated', async () => {
+		// TODO: reinstate allowance (Timeout 120 second), check quote A is valid (GET orders)
+	})
+
+	// uses quote B witn 90 sec deadline
+	it ('should remove an expired order from valid quotes if expired', async () => {
+		// TODO: post quote B (POST Quote) with short deadline, wait until dealine, check quote is not returned from (GET
+		// orders)
+	})
+
+	// uses quote C
+	it ('should remove expired order from invalid quotes once expired', async () => {
+		// TODO: create allowance, post quote C (POST Quote) with 600 sec deadline, check quote A is valid (GET orders),
+		//  remove allowance, (Timeout 120 seconds), check quote is invalid (GET Orders), wait for expiration, check quote is not returned from (GET
+		//  orders)
+	})
+})
