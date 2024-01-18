@@ -429,6 +429,9 @@ describe('GET orderbook/orders', () => {
 	})
 })
 
+// TODO: validation life cycle is suspiciously high
+// TODO: gcp alert trying to fill non existent quote
+// TODO: adjust statemanager maintenance window to be 5 seconds (and adjust in tests)
 describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 	it('should invalidate a quote if maker token allowance is removed', async () => {
 		const quoteA = {...quote1, deadline: 600}
