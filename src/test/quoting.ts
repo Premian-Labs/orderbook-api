@@ -428,7 +428,6 @@ describe('GET orderbook/orders', () => {
 })
 
 describe ('Quote Validation & Quote Expiration Lifecycle', () => {
-	// uses quote A
 	it('should invalidate a quote if maker token allowance is removed', async () => {
 		// TODO: create allowance, post quote A (POST Quote) with 600 sec deadline, check quote A is valid (GET orders),
 		//  remove allowance, (Timeout 120 seconds), check quote is invalid (GET Orders)
@@ -439,13 +438,29 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 		// TODO: reinstate allowance (Timeout 120 second), check quote A is valid (GET orders)
 	})
 
-	// uses quote B witn 90 sec deadline
 	it ('should remove an expired order from valid quotes if expired', async () => {
-		// TODO: post quote B (POST Quote) with short deadline, wait until dealine, check quote is not returned from (GET
-		// orders)
+		const quoteB = {...quote1, deadline: 80}
+		const url = `${baseUrl}/orderbook/quotes`
+		const validQuoteResponse = await axios.post(url, [quoteB], {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+		})
+
+		const quoteId_B = validQuoteResponse.data.created[0].quoteId
+		await delay(80 * 1000)
+
+		const ordersUrl = `${baseUrl}/orderbook/orders`
+		const validGetOrdersResponse = await axios.get(ordersUrl, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+		})
+		const orders: ReturnedOrderbookQuote[] = validGetOrdersResponse.data
+		const validQuote = orders.find((order) => order.quoteId == quoteId_B)
+		expect(validQuote).is.undefined
 	})
 
-	// uses quote C
 	it ('should remove expired order from invalid quotes once expired', async () => {
 		// TODO: create allowance, post quote C (POST Quote) with 600 sec deadline, check quote A is valid (GET orders),
 		//  remove allowance, (Timeout 120 seconds), check quote is invalid (GET Orders), wait for expiration, check quote is not returned from (GET
