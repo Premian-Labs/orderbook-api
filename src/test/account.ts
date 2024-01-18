@@ -26,7 +26,7 @@ import {
 	baseUrl,
 	deployPools,
 	getMaturity,
-	setMaxApproval,
+	setApproval,
 } from './helpers/utils'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
@@ -49,7 +49,7 @@ const quote: PublishQuoteRequest = {
 
 before(async () => {
 	console.log(`Setting Collateral Approvals to Max and Deploying Pool(s)`)
-	await setMaxApproval(collateralTypes, signer)
+	await setApproval(collateralTypes, signer, MaxUint256)
 	await deployPools([quote])
 	console.log(`Initialization Complete`)
 })

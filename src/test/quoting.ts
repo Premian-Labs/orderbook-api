@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { expect } from 'chai'
-import { ethers } from 'ethers'
+import { ethers, MaxUint256 } from 'ethers';
 import { omit } from 'lodash'
 
 import { checkEnv } from '../config/checkConfig'
@@ -19,7 +19,8 @@ import {
 	baseUrl,
 	deployPools,
 	getMaturity,
-	setMaxApproval,
+	setApproval,
+	delay
 } from './helpers/utils'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
@@ -31,6 +32,7 @@ const collateralTypes = ['testWETH', 'USDC']
 
 let quoteId_1: string
 let quoteId_2: string
+let quoteId_A: string
 
 const quote1: PublishQuoteRequest = {
 	base: 'testWETH',
@@ -58,7 +60,7 @@ const quote2: PublishQuoteRequest = {
 
 before(async () => {
 	console.log(`Setting Collateral Approvals to Max and Deploying Pool(s)`)
-	await setMaxApproval(collateralTypes, signer)
+	await setApproval(collateralTypes, signer, MaxUint256)
 	await deployPools([quote1, quote2])
 	console.log(`Initialization Complete`)
 })
@@ -429,13 +431,63 @@ describe('GET orderbook/orders', () => {
 
 describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 	it('should invalidate a quote if maker token allowance is removed', async () => {
-		// TODO: create allowance, post quote A (POST Quote) with 600 sec deadline, check quote A is valid (GET orders),
-		//  remove allowance, (Timeout 120 seconds), check quote is invalid (GET Orders)
+		const quoteA = {...quote1, deadline: 600}
+		const url = `${baseUrl}/orderbook/quotes`
+		const validQuoteResponse = await axios.post(url, [quoteA], {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+		})
+
+		quoteId_A = validQuoteResponse.data.created[0].quoteId
+
+		const ordersUrl = `${baseUrl}/orderbook/orders`
+		const validGetOrdersResponse = await axios.get(ordersUrl, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+		})
+
+		const orders: ReturnedOrderbookQuote[] = validGetOrdersResponse.data
+
+		const returnedQuote = orders.find((order) => order.quoteId == quoteId_A)
+		expect(returnedQuote).is.not.undefined
+
+		await setApproval(collateralTypes, signer, 0)
+		console.log(`Waiting for statemanager update cycle...`)
+		await delay(120 * 1000)
+
+		const invalidGetOrdersResponse = await axios.get(ordersUrl, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			params: {
+				type: 'invalid'
+			}
+		})
+
+		const invalidOrders: ReturnedOrderbookQuote[] = invalidGetOrdersResponse.data
+		const invalidReturnedQuotes = invalidOrders.find((invalidOrder) => invalidOrder.quoteId == quoteId_A)
+
+		expect(invalidReturnedQuotes).is.not.undefined
 	})
 
-	// uses quote A
+	// FIXME: invalid quote does not move back to valid state
 	it ('should validate an invalid order if the maker token allowance is re instated', async () => {
-		// TODO: reinstate allowance (Timeout 120 second), check quote A is valid (GET orders)
+		await setApproval(collateralTypes, signer, MaxUint256)
+		console.log(`Waiting for statemanager update cycle...`)
+		await delay(120 * 1000)
+
+		const ordersUrl = `${baseUrl}/orderbook/orders`
+		const validGetOrdersResponse = await axios.get(ordersUrl, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+		})
+
+		const orders: ReturnedOrderbookQuote[] = validGetOrdersResponse.data
+		const validQuote = orders.find((order) => order.quoteId == quoteId_A)
+		expect(validQuote).is.not.undefined
 	})
 
 	it ('should remove an expired order from valid quotes if expired', async () => {
@@ -462,8 +514,68 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 	})
 
 	it ('should remove expired order from invalid quotes once expired', async () => {
-		// TODO: create allowance, post quote C (POST Quote) with 600 sec deadline, check quote A is valid (GET orders),
-		//  remove allowance, (Timeout 120 seconds), check quote is invalid (GET Orders), wait for expiration, check quote is not returned from (GET
-		//  orders)
+		const quoteC = {...quote1, deadline: 200}
+
+		const url = `${baseUrl}/orderbook/quotes`
+		const validQuoteResponse = await axios.post(url, [quoteC], {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+		})
+
+		const quoteId_C = validQuoteResponse.data.created[0].quoteId
+
+		const ordersUrl = `${baseUrl}/orderbook/orders`
+		const validGetOrdersResponse = await axios.get(ordersUrl, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+		})
+
+		const orders: ReturnedOrderbookQuote[] = validGetOrdersResponse.data
+
+		const validQuote = orders.find((order) => order.quoteId == quoteId_C)
+		expect(validQuote).is.not.undefined
+
+		await setApproval(collateralTypes, signer, 0)
+		console.log(`Waiting for statemanager update cycle...`)
+		await delay(120 * 1000)
+
+		const invalidGetOrdersResponse = await axios.get(ordersUrl, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			params: {
+				type: 'invalid'
+			}
+		})
+
+		const invalidOrders: ReturnedOrderbookQuote[] = invalidGetOrdersResponse.data
+		const invalidReturnedQuotes = invalidOrders.find((invalidOrder) => invalidOrder.quoteId == quoteId_A)
+
+		expect(invalidReturnedQuotes).is.not.undefined
+		await delay(80 * 1000)
+
+		const validGetOrdersResponse2 = await axios.get(ordersUrl, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+		})
+		const validOrdersExpired: ReturnedOrderbookQuote[] = validGetOrdersResponse2.data
+		const validQuoteExpired = validOrdersExpired.find((order) => order.quoteId == quoteId_C)
+		expect(validQuoteExpired).is.undefined
+
+		const invalidGetOrdersResponse2 = await axios.get(ordersUrl, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			params: {
+				type: 'invalid'
+			}
+		})
+
+		const invalidOrdersExpired: ReturnedOrderbookQuote[] = invalidGetOrdersResponse2.data
+		const invalidQuoteExpired = invalidOrdersExpired.find((invalidOrderExpired) => invalidOrderExpired.quoteId == quoteId_C)
+		expect(invalidQuoteExpired).is.undefined
 	})
 })
