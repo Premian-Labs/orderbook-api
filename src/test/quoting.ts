@@ -1,6 +1,6 @@
 import axios from 'axios'
 import { expect } from 'chai'
-import { ethers, MaxUint256 } from 'ethers';
+import { ethers, MaxUint256 } from 'ethers'
 import { omit } from 'lodash'
 
 import { checkEnv } from '../config/checkConfig'
@@ -20,7 +20,7 @@ import {
 	deployPools,
 	getMaturity,
 	setApproval,
-	delay
+	delay,
 } from './helpers/utils'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
@@ -203,6 +203,16 @@ describe('PATCH orderbook/quotes', () => {
 
 	it('should fill valid quotes from the orderbook', async () => {
 		const url = `${baseUrl}/orderbook/quotes`
+		const validQuoteResponse = await axios.post(url, [quote1, quote2], {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+		})
+
+		const quotes: PostQuotesResponse = validQuoteResponse.data
+		quoteId_1 = quotes.created[0].quoteId
+		quoteId_2 = quotes.created[1].quoteId
+
 		const fillQuote: FillQuoteRequest[] = [
 			{
 				tradeSize: quote1.size,
@@ -213,6 +223,9 @@ describe('PATCH orderbook/quotes', () => {
 				quoteId: quoteId_2,
 			},
 		]
+
+		console.log('valid fill (full) quotes', quoteId_1, quoteId_2)
+
 		const response = await axios.patch(url, fillQuote, {
 			headers: {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
@@ -429,12 +442,9 @@ describe('GET orderbook/orders', () => {
 	})
 })
 
-// TODO: validation life cycle is suspiciously high
-// TODO: gcp alert trying to fill non existent quote
-// TODO: adjust statemanager maintenance window to be 5 seconds (and adjust in tests)
-describe ('Quote Validation & Quote Expiration Lifecycle', () => {
+describe('Quote Validation & Quote Expiration Lifecycle', () => {
 	it('should invalidate a quote if maker token allowance is removed', async () => {
-		const quoteA = {...quote1, deadline: 600}
+		const quoteA = { ...quote1 }
 		const url = `${baseUrl}/orderbook/quotes`
 		const validQuoteResponse = await axios.post(url, [quoteA], {
 			headers: {
@@ -465,17 +475,20 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
 			params: {
-				type: 'invalid'
-			}
+				type: 'invalid',
+			},
 		})
 
-		const invalidOrders: ReturnedOrderbookQuote[] = invalidGetOrdersResponse.data
-		const invalidReturnedQuotes = invalidOrders.find((invalidOrder) => invalidOrder.quoteId == quoteId_A)
+		const invalidOrders: ReturnedOrderbookQuote[] =
+			invalidGetOrdersResponse.data
+		const invalidReturnedQuotes = invalidOrders.find(
+			(invalidOrder) => invalidOrder.quoteId == quoteId_A
+		)
 
 		expect(invalidReturnedQuotes).is.not.undefined
 	})
 
-	it ('should validate an invalid order if the maker token allowance is re instated', async () => {
+	it('should validate an invalid order if the maker token allowance is re instated', async () => {
 		await setApproval(collateralTypes, signer, MaxUint256)
 		console.log(`Waiting for statemanager update cycle...`)
 		await delay(20 * 1000)
@@ -492,8 +505,8 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 		expect(validQuote).is.not.undefined
 	})
 
-	it ('should remove an expired order from valid quotes if expired', async () => {
-		const quoteB = {...quote1, deadline: 80}
+	it('should remove an expired order from valid quotes if expired', async () => {
+		const quoteB = { ...quote1, deadline: 80 }
 		const url = `${baseUrl}/orderbook/quotes`
 		const validQuoteResponse = await axios.post(url, [quoteB], {
 			headers: {
@@ -515,8 +528,8 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 		expect(validQuote).is.undefined
 	})
 
-	it ('should remove expired order from invalid quotes once expired', async () => {
-		const quoteC = {...quote1, deadline: 100}
+	it('should remove expired order from invalid quotes once expired', async () => {
+		const quoteC = { ...quote1, deadline: 100 }
 
 		const url = `${baseUrl}/orderbook/quotes`
 		const validQuoteResponse = await axios.post(url, [quoteC], {
@@ -548,12 +561,15 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
 			params: {
-				type: 'invalid'
-			}
+				type: 'invalid',
+			},
 		})
 
-		const invalidOrders: ReturnedOrderbookQuote[] = invalidGetOrdersResponse.data
-		const invalidReturnedQuotes = invalidOrders.find((invalidOrder) => invalidOrder.quoteId == quoteId_A)
+		const invalidOrders: ReturnedOrderbookQuote[] =
+			invalidGetOrdersResponse.data
+		const invalidReturnedQuotes = invalidOrders.find(
+			(invalidOrder) => invalidOrder.quoteId == quoteId_C
+		)
 
 		expect(invalidReturnedQuotes).is.not.undefined
 		await delay(80 * 1000)
@@ -563,8 +579,11 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
 		})
-		const validOrdersExpired: ReturnedOrderbookQuote[] = validGetOrdersResponse2.data
-		const validQuoteExpired = validOrdersExpired.find((order) => order.quoteId == quoteId_C)
+		const validOrdersExpired: ReturnedOrderbookQuote[] =
+			validGetOrdersResponse2.data
+		const validQuoteExpired = validOrdersExpired.find(
+			(order) => order.quoteId == quoteId_C
+		)
 		expect(validQuoteExpired).is.undefined
 
 		const invalidGetOrdersResponse2 = await axios.get(ordersUrl, {
@@ -572,12 +591,15 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
 			params: {
-				type: 'invalid'
-			}
+				type: 'invalid',
+			},
 		})
 
-		const invalidOrdersExpired: ReturnedOrderbookQuote[] = invalidGetOrdersResponse2.data
-		const invalidQuoteExpired = invalidOrdersExpired.find((invalidOrderExpired) => invalidOrderExpired.quoteId == quoteId_C)
+		const invalidOrdersExpired: ReturnedOrderbookQuote[] =
+			invalidGetOrdersResponse2.data
+		const invalidQuoteExpired = invalidOrdersExpired.find(
+			(invalidOrderExpired) => invalidOrderExpired.quoteId == quoteId_C
+		)
 		expect(invalidQuoteExpired).is.undefined
 	})
 })

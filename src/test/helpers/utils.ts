@@ -3,10 +3,9 @@ import axios from 'axios'
 import {
 	BigNumberish,
 	ContractTransactionResponse,
-	MaxUint256,
 	Signer,
-	TransactionReceipt
-} from 'ethers';
+	TransactionReceipt,
+} from 'ethers'
 import moment from 'moment'
 import { IERC20__factory } from '@premia/v3-abi/typechain'
 
@@ -81,7 +80,6 @@ export async function setApproval(
 		}
 	}
 }
-
 
 export function getMaturity(add: number = 7) {
 	const maturity = moment()

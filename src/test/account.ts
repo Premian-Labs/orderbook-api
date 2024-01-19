@@ -22,12 +22,7 @@ import {
 import { RejectedTokenBalance, TokenBalance } from '../types/balances'
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
-import {
-	baseUrl,
-	deployPools,
-	getMaturity,
-	setApproval,
-} from './helpers/utils'
+import { baseUrl, deployPools, getMaturity, setApproval } from './helpers/utils'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)

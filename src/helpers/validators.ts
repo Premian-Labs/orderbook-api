@@ -211,7 +211,7 @@ export const validateGetAllQuotes = ajv.compile({
 		type: {
 			type: 'string',
 			pattern: '^invalid$',
-		}
+		},
 	},
 	required: [],
 	additionalProperties: false,
