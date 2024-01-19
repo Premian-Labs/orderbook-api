@@ -458,7 +458,7 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 
 		await setApproval(collateralTypes, signer, 0)
 		console.log(`Waiting for statemanager update cycle...`)
-		await delay(120 * 1000)
+		await delay(20 * 1000)
 
 		const invalidGetOrdersResponse = await axios.get(ordersUrl, {
 			headers: {
@@ -475,11 +475,10 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 		expect(invalidReturnedQuotes).is.not.undefined
 	})
 
-	// FIXME: invalid quote does not move back to valid state
 	it ('should validate an invalid order if the maker token allowance is re instated', async () => {
 		await setApproval(collateralTypes, signer, MaxUint256)
 		console.log(`Waiting for statemanager update cycle...`)
-		await delay(120 * 1000)
+		await delay(20 * 1000)
 
 		const ordersUrl = `${baseUrl}/orderbook/orders`
 		const validGetOrdersResponse = await axios.get(ordersUrl, {
@@ -517,7 +516,7 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 	})
 
 	it ('should remove expired order from invalid quotes once expired', async () => {
-		const quoteC = {...quote1, deadline: 200}
+		const quoteC = {...quote1, deadline: 100}
 
 		const url = `${baseUrl}/orderbook/quotes`
 		const validQuoteResponse = await axios.post(url, [quoteC], {
@@ -542,7 +541,7 @@ describe ('Quote Validation & Quote Expiration Lifecycle', () => {
 
 		await setApproval(collateralTypes, signer, 0)
 		console.log(`Waiting for statemanager update cycle...`)
-		await delay(120 * 1000)
+		await delay(20 * 1000)
 
 		const invalidGetOrdersResponse = await axios.get(ordersUrl, {
 			headers: {
