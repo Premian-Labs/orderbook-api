@@ -28,6 +28,8 @@ import {
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
+	InvalidOrderbookQuote,
+	InvalidQuote,
 	OrderbookQuote,
 	OrderbookQuoteTradeDeserialized,
 	Pool,
@@ -102,7 +104,7 @@ import {
 	pick,
 } from 'lodash'
 import { getBlockByTimestamp, requestDetailed } from './helpers/util'
-import moment from 'moment'
+import moment, { invalid } from 'moment'
 import {
 	DeleteQuoteMessage,
 	ErrorMessage,
@@ -756,7 +758,9 @@ app.get('/orderbook/orders', async (req, res) => {
 
 	let orderbookQuotes: OrderbookQuote[]
 	if (quotesQuery.type === 'invalid') {
-		orderbookQuotes = proxyResponse.data['invalidQuotes'] as OrderbookQuote[]
+		orderbookQuotes = (
+			proxyResponse.data['invalidQuotes'] as InvalidQuote[]
+		).map((invalidQuote) => invalidQuote.quote)
 	} else {
 		orderbookQuotes = proxyResponse.data['validQuotes'] as OrderbookQuote[]
 	}
