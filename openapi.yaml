@@ -898,7 +898,7 @@ components:
         - strike
         - type
         - side
-        - size
+        - remainingSize
         - price
         - provider
         - taker
@@ -931,7 +931,7 @@ components:
             - bid
           type: string
           example: bid
-        size:
+        remainingSize:
           type: number
           example: 3
         provider:

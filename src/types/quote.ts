@@ -104,7 +104,7 @@ export interface OrderbookQuoteTradeDeserialized
 
 export interface ReturnedOrderbookQuote extends Option {
 	side: 'bid' | 'ask'
-	size: number
+	remainingSize: number
 	price: number
 	provider: string
 	taker: string

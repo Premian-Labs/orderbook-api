@@ -1284,13 +1284,12 @@ wsServer.on('connection', (wsLocalConnection) => {
 					})
 				)
 				break
-			// TODO: rename size to tradeSize
 			case 'FILL_QUOTE':
 				wsLocalConnection.send(
 					JSON.stringify({
 						type: message.type,
 						body: createReturnedQuotes(message.body),
-						size: formatEther(message.size),
+						tradeSize: formatEther(message.size),
 					})
 				)
 				break
