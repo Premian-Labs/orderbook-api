@@ -161,3 +161,8 @@ export interface PostPoolsResponse {
 	existed: PoolWithAddress[]
 	failed: Pool[]
 }
+
+export interface InvalidQuote {
+	quote: OrderbookQuote
+	reason: string
+}

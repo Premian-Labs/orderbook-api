@@ -24,6 +24,7 @@ export interface GetOrdersRequest {
 	side?: 'bid' | 'ask'
 	provider?: string
 	chainId?: string
+	type?: 'invalid'
 }
 
 // validateFillQuotes

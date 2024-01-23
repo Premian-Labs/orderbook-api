@@ -28,6 +28,7 @@ import {
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
+	InvalidQuote,
 	OrderbookQuote,
 	OrderbookQuoteTradeDeserialized,
 	Pool,
@@ -92,7 +93,15 @@ import {
 	IPoolFactory__factory,
 	ISolidStateERC20__factory,
 } from '@premia/v3-abi/typechain'
-import { difference, find, flatten, groupBy, partition, pick } from 'lodash'
+import {
+	difference,
+	find,
+	flatten,
+	groupBy,
+	omit,
+	partition,
+	pick,
+} from 'lodash'
 import { getBlockByTimestamp, requestDetailed } from './helpers/util'
 import moment from 'moment'
 import {
@@ -727,7 +736,12 @@ app.get('/orderbook/orders', async (req, res) => {
 
 	let proxyResponse
 	try {
-		proxyResponse = await proxyHTTPRequest('orders', 'GET', quotesQuery, null)
+		proxyResponse = await proxyHTTPRequest(
+			'orders',
+			'GET',
+			omit(quotesQuery, 'type'),
+			null
+		)
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
@@ -741,7 +755,14 @@ app.get('/orderbook/orders', async (req, res) => {
 		})
 	}
 
-	const orderbookQuotes = proxyResponse.data['validQuotes'] as OrderbookQuote[]
+	let orderbookQuotes: OrderbookQuote[]
+	if (quotesQuery.type === 'invalid') {
+		orderbookQuotes = (
+			proxyResponse.data['invalidQuotes'] as InvalidQuote[]
+		).map((invalidQuote) => invalidQuote.quote)
+	} else {
+		orderbookQuotes = proxyResponse.data['validQuotes'] as OrderbookQuote[]
+	}
 
 	Logger.debug({
 		message: `orderbook quotes`,

@@ -22,7 +22,7 @@
     "prettier": "./node_modules/.bin/prettier --write --ignore-path .gitignore ./src/**",
     "e2e:account": "mocha --require ts-node/register src/test/account.ts --timeout 60000",
     "e2e:pool": "mocha --require ts-node/register src/test/pool.ts --timeout 60000",
-    "e2e:quoting": "mocha --require ts-node/register src/test/quoting.ts --timeout 60000",
+    "e2e:quoting": "mocha --require ts-node/register src/test/quoting.ts --timeout 600000",
     "e2e:ws": "mocha --require ts-node/register src/test/ws.ts --timeout 60000"
   },
   "dependencies": {

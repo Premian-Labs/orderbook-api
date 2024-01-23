@@ -208,6 +208,10 @@ export const validateGetAllQuotes = ajv.compile({
 			type: 'string',
 			pattern: '^0x[a-fA-F0-9]{40}$',
 		},
+		type: {
+			type: 'string',
+			pattern: '^invalid$',
+		},
 	},
 	required: [],
 	additionalProperties: false,

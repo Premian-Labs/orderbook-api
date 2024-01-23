@@ -1,8 +1,8 @@
 import { omit } from 'lodash'
 import axios from 'axios'
 import {
+	BigNumberish,
 	ContractTransactionResponse,
-	MaxUint256,
 	Signer,
 	TransactionReceipt,
 } from 'ethers'
@@ -43,9 +43,10 @@ export async function deployPools(quotes: PublishQuoteRequest[]) {
 	return deployment
 }
 
-export async function setMaxApproval(
+export async function setApproval(
 	collateralTypes: string[],
-	signer: Signer
+	signer: Signer,
+	approvalAmt: BigNumberish
 ) {
 	for (const token in collateralTypes) {
 		const erc20 = IERC20__factory.connect(
@@ -56,13 +57,13 @@ export async function setMaxApproval(
 		let approveTX: ContractTransactionResponse
 		let confirm: TransactionReceipt | null
 		try {
-			approveTX = await erc20.approve(routerAddress, MaxUint256.toString())
+			approveTX = await erc20.approve(routerAddress, approvalAmt.toString())
 			confirm = await approveTX.wait(1)
 			console.log(`Max approval set for ${collateralTypes[token]}`)
 		} catch (e) {
 			await delay(2000)
 			try {
-				approveTX = await erc20.approve(routerAddress, MaxUint256.toString())
+				approveTX = await erc20.approve(routerAddress, approvalAmt.toString())
 				confirm = await approveTX.wait(1)
 				console.log(`Max approval set for ${collateralTypes[token]}`)
 			} catch (e) {
