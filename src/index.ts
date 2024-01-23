@@ -28,7 +28,6 @@ import {
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
-	InvalidOrderbookQuote,
 	InvalidQuote,
 	OrderbookQuote,
 	OrderbookQuoteTradeDeserialized,
@@ -104,7 +103,7 @@ import {
 	pick,
 } from 'lodash'
 import { getBlockByTimestamp, requestDetailed } from './helpers/util'
-import moment, { invalid } from 'moment'
+import moment from 'moment'
 import {
 	DeleteQuoteMessage,
 	ErrorMessage,
