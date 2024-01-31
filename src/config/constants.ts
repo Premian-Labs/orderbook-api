@@ -23,11 +23,9 @@ export const chainId = process.env.ENV == 'production' ? '42161' : '421613'
 export const provider = new JsonRpcProvider(rpcUrl, Number(chainId), {
 	staticNetwork: true,
 })
-const multiCallProvider = MulticallWrapper.wrap(provider)
 
 export const signer = new Wallet(privateKey, provider)
 
-// NOTE: orderbook_url is only used for posting/getting quotes from orderbook API
 export const orderbook_url =
 	process.env.ENV == 'production'
 		? 'https://orderbook.premia.finance'
@@ -48,16 +46,13 @@ export const tokenAddr =
 	process.env.ENV === 'production' ? arb.tokens : arbGoerli.tokens
 export const supportedTokens = Object.keys(tokenAddr)
 export const productionTokenAddr: Record<string, string> = arb.tokens
+const prodProvider = new JsonRpcProvider(process.env.MAINNET_RPC_URL!)
+const prodMultiCallProvider = MulticallWrapper.wrap(prodProvider)
 
 export const routerAddr =
 	process.env.ENV == 'production'
 		? arb.core.ERC20Router.address
 		: arbGoerli.core.ERC20Router.address
-
-const chainlinkAdapterAddr =
-	process.env.ENV == 'production'
-		? arb.core.ChainlinkAdapterProxy.address
-		: arbGoerli.core.ChainlinkAdapterProxy.address
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
@@ -69,12 +64,10 @@ export const poolFactory = IPoolFactory__factory.connect(
 	signer
 )
 
-// NOTE: iv oracle only uses production rpc
-const ivProvider = new JsonRpcProvider(process.env.MAINNET_RPC_URL!)
-const ivMultiCallProvider = MulticallWrapper.wrap(ivProvider)
+// NOTE: we use production instance
 export const ivOracle = IVolatilityOracle__factory.connect(
 	arb.core.VolatilityOracleProxy.address,
-	ivMultiCallProvider
+	prodMultiCallProvider
 )
 
 export const productionTokensWithIVOracles = [
@@ -89,9 +82,10 @@ export const productionTokensWithIVOracles = [
 	'FXS',
 ]
 
+// NOTE: we use production
 export const chainlink = IChainlinkAdapter__factory.connect(
-	chainlinkAdapterAddr,
-	multiCallProvider
+	arb.core.ChainlinkAdapterProxy.address,
+	prodMultiCallProvider
 )
 
 export const availableTokens =

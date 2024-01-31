@@ -1254,6 +1254,8 @@ app.get('/oracles/iv', async (req, res) => {
 	}
 	const ttm = getTTM(expiration)
 
+	// TODO: add strike validation
+
 	// get spot price from spot oracle (required for iv oracle)
 	const spotPrice = await getSpotPrice(request.market)
 	if (spotPrice == undefined) {
@@ -1263,7 +1265,6 @@ app.get('/oracles/iv', async (req, res) => {
 		})
 	}
 
-	// FIXME: strike can not be a decimal in get request
 	let iv: number | undefined
 	try {
 		iv = parseFloat(
