@@ -803,6 +803,62 @@ paths:
       security:
         - api_key:
             - api
+  /oracles/iv:
+    get:
+      summary: Gets the IV value for an option via an IV oracle.
+      parameters:
+        - name: market
+          in: query
+          required: true
+          description: base token symbol (ie WETH)
+          schema:
+            type: string
+            pattern: ^WETH$|^WBTC$|^ARB$|^LINK$|^WSTETH$|^GMX$|^MAGIC$|^SOL$|^FXS$
+            example: WETH
+        - name: strike
+          in: query
+          required: true
+          description: strike price of option
+          schema:
+            type: string
+            pattern: ^[0-9]{1,}([.][0-9]*)?$
+            example: '2200'
+        - name: expiration
+          in: query
+          required: true
+          description: option expiration (ie 03NOV23)
+          schema:
+            type: string
+            pattern: ^\d\d\w\w\w\d\d$
+            example: 03NOV23
+        - name: spotPrice
+          in: query
+          required: false
+          description: spot price of underlying
+          schema:
+            type: string
+            pattern: ^[0-9]{1,}([.][0-9]*)?$
+            example: '2221.45'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: number
+                example: 0.46
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
 components:
   schemas:
     Option:

@@ -38,7 +38,7 @@ describe('Oracles', () => {
 				expiration: getMaturity(),
 			},
 			validateStatus: function (status) {
-				return status < 500
+				return status <= 500
 			},
 		})
 
@@ -59,7 +59,7 @@ describe('Oracles', () => {
 				expiration: '26JAN24',
 			},
 			validateStatus: function (status) {
-				return status < 500
+				return status <= 500
 			},
 		})
 

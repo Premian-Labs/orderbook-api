@@ -1261,7 +1261,7 @@ app.get('/oracles/iv', async (req, res) => {
 		// get spot price from spot oracle (required for iv oracle)
 		spotPrice = await getSpotPrice(request.market)
 		if (spotPrice == undefined) {
-			return res.status(400).json({
+			return res.status(500).json({
 				message: `Failed to get spot price from oracle, try again or provide spot price`,
 			})
 		}
@@ -1282,14 +1282,13 @@ app.get('/oracles/iv', async (req, res) => {
 			)
 		)
 		if (iv == undefined) {
-			return res.status(400).json({
+			return res.status(500).json({
 				message: `Failed to get iv from oracle`,
 			})
 		}
 	} catch (e) {
-		return res.status(400).json({
-			message: `Failed to get iv from oracle`,
-			error: (e as EthersError).message,
+		return res.status(500).json({
+			message: e,
 		})
 	}
 
