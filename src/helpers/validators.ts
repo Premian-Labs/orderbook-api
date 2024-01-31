@@ -143,7 +143,7 @@ export const validateGetFillableQuotes = ajv.compile({
 		},
 		strike: {
 			type: 'string',
-			pattern: '^[0-9]*$',
+			pattern: '^[0-9]{1,}([.][0-9]*)?$',
 		},
 		type: {
 			type: 'string',
@@ -151,7 +151,7 @@ export const validateGetFillableQuotes = ajv.compile({
 		},
 		size: {
 			type: 'string',
-			pattern: '^[0-9]*$',
+			pattern: '^[0-9]{1,}([.][0-9]*)?$',
 		},
 		side: {
 			type: 'string',
@@ -199,7 +199,7 @@ export const validateGetAllQuotes = ajv.compile({
 		},
 		size: {
 			type: 'string',
-			pattern: '^[0-9]*$',
+			pattern: '^[0-9]{1,}([.][0-9]*)?$',
 		},
 		side: {
 			type: 'string',
@@ -279,7 +279,7 @@ export const validateGetIV = ajv.compile({
 		},
 		strike: {
 			type: 'string',
-			pattern: '^\\d+$',
+			pattern: '^[0-9]{1,}([.][0-9]*)?$',
 		},
 		expiration: {
 			type: 'string',
