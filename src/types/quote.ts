@@ -118,7 +118,7 @@ export type InvalidOrderbookQuote = Omit<
 	'quoteId' | 'ts'
 >
 
-export interface TokenAddresses {
+export interface TokenAddr {
 	[key: string]: string
 }
 

@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
+// TODO: IV oracle requires prodution url regardless of env setting
 export function checkEnv(integrationTest: boolean = false) {
 	if (
 		!process.env.ENV ||

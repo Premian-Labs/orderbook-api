@@ -11,7 +11,7 @@ import { IERC20__factory } from '@premia/v3-abi/typechain'
 
 import { Pool, PostPoolsResponse } from '../../types/quote'
 import { PublishQuoteRequest } from '../../types/validate'
-import { routerAddress, tokenAddresses } from '../../config/constants'
+import { routerAddr, tokenAddr } from '../../config/constants'
 
 export const baseUrl = `http://localhost:${process.env.HTTP_PORT}`
 
@@ -50,20 +50,20 @@ export async function setApproval(
 ) {
 	for (const token in collateralTypes) {
 		const erc20 = IERC20__factory.connect(
-			tokenAddresses[collateralTypes[token]],
+			tokenAddr[collateralTypes[token]],
 			signer
 		)
 
 		let approveTX: ContractTransactionResponse
 		let confirm: TransactionReceipt | null
 		try {
-			approveTX = await erc20.approve(routerAddress, approvalAmt.toString())
+			approveTX = await erc20.approve(routerAddr, approvalAmt.toString())
 			confirm = await approveTX.wait(1)
 			console.log(`Max approval set for ${collateralTypes[token]}`)
 		} catch (e) {
 			await delay(2000)
 			try {
-				approveTX = await erc20.approve(routerAddress, approvalAmt.toString())
+				approveTX = await erc20.approve(routerAddr, approvalAmt.toString())
 				confirm = await approveTX.wait(1)
 				console.log(`Max approval set for ${collateralTypes[token]}`)
 			} catch (e) {

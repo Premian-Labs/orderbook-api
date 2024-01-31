@@ -1,31 +1,16 @@
-import { PoolKey, TokenAddresses } from '../types/quote'
-import { ethers, formatUnits, formatEther } from 'ethers'
+import { formatUnits, formatEther } from 'ethers'
+import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
+
+import { PoolKey, TokenAddr } from '../types/quote'
+import { RejectedTokenBalance, TokenBalance } from '../types/balances'
 import Logger from '../lib/logger'
 import {
 	availableTokens,
-	chainId,
-	rpcUrl,
-	tokenAddresses,
+	poolFactory,
+	provider,
+	tokenAddr,
 	walletAddr,
 } from '../config/constants'
-import arb from '../config/arbitrum.json'
-import arbGoerli from '../config/arbitrumGoerli.json'
-import {
-	IPoolFactory__factory,
-	ISolidStateERC20__factory,
-} from '@premia/v3-abi/typechain'
-import { RejectedTokenBalance, TokenBalance } from '../types/balances'
-
-const provider = new ethers.JsonRpcProvider(rpcUrl, Number(chainId), {
-	staticNetwork: true,
-})
-
-const poolFactoryAddr =
-	process.env.ENV == 'production'
-		? arb.core.PoolFactoryProxy.address
-		: arbGoerli.core.PoolFactoryProxy.address
-
-const poolFactory = IPoolFactory__factory.connect(poolFactoryAddr, provider)
 
 const poolMap: Map<PoolKey, string> = new Map()
 
@@ -66,10 +51,7 @@ export async function getPoolAddress(poolKey: PoolKey) {
 	return poolAddress
 }
 
-export function getTokenByAddress(
-	tokenObject: TokenAddresses,
-	address: string
-) {
+export function getTokenByAddress(tokenObject: TokenAddr, address: string) {
 	const tokenName = Object.keys(tokenObject).find(
 		(key) => tokenObject[key] === address
 	)
@@ -85,7 +67,7 @@ export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
 		availableTokens.map(async (token) => {
 			const erc20 = ISolidStateERC20__factory.connect(
-				tokenAddresses[token],
+				tokenAddr[token],
 				provider
 			)
 			const decimals = await erc20.decimals()
@@ -94,7 +76,7 @@ export async function getBalances() {
 			)
 
 			const tokenBalance: TokenBalance = {
-				token_address: tokenAddresses[token],
+				token_address: tokenAddr[token],
 				symbol: token,
 				balance: balance,
 			}

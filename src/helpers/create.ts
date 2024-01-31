@@ -1,4 +1,6 @@
 import moment from 'moment'
+import { formatEther, parseEther, toBigInt } from 'ethers'
+
 import {
 	FillableQuote,
 	InvalidOrderbookQuote,
@@ -10,8 +12,7 @@ import {
 } from '../types/quote'
 import { Option } from '../types/validate'
 import { PublishQuoteRequest } from '../types/validate'
-import { tokenAddresses } from '../config/constants'
-import { formatEther, parseEther, toBigInt } from 'ethers'
+import { tokenAddr } from '../config/constants'
 import { getTokenByAddress } from './get'
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
@@ -82,8 +83,8 @@ export function parseInvalidQuotes(
 	orderbookQuote: InvalidPostQuoteResponse
 ): InvalidOrderbookQuote {
 	return {
-		base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
-		quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
+		base: getTokenByAddress(tokenAddr, orderbookQuote.poolKey.base),
+		quote: getTokenByAddress(tokenAddr, orderbookQuote.poolKey.quote),
 		expiration: moment
 			.unix(orderbookQuote.poolKey.maturity)
 			.format('DDMMMYY')
@@ -104,8 +105,8 @@ export function createReturnedQuotes(
 	orderbookQuote: OrderbookQuote
 ): ReturnedOrderbookQuote {
 	return {
-		base: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.base),
-		quote: getTokenByAddress(tokenAddresses, orderbookQuote.poolKey.quote),
+		base: getTokenByAddress(tokenAddr, orderbookQuote.poolKey.base),
+		quote: getTokenByAddress(tokenAddr, orderbookQuote.poolKey.quote),
 		expiration: moment
 			.unix(orderbookQuote.poolKey.maturity)
 			.format('DDMMMYY')
@@ -180,8 +181,8 @@ export function mapRFQMessage(
 	rfqMessage: RFQMessage['body']
 ): RFQMessageParsed['body'] {
 	return {
-		base: getTokenByAddress(tokenAddresses, rfqMessage.poolKey.base),
-		quote: getTokenByAddress(tokenAddresses, rfqMessage.poolKey.quote),
+		base: getTokenByAddress(tokenAddr, rfqMessage.poolKey.base),
+		quote: getTokenByAddress(tokenAddr, rfqMessage.poolKey.quote),
 		expiration: moment
 			.unix(rfqMessage.poolKey.maturity)
 			.format('DDMMMYY')

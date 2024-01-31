@@ -1,30 +1,45 @@
 import express from 'express'
 import dotenv from 'dotenv'
-import Logger from './lib/logger'
 import WebSocket from 'ws'
-import { checkEnv } from './config/checkConfig'
+import moment from 'moment'
 import {
-	referralAddress,
-	chainId,
-	walletAddr,
-	routerAddress,
-	ws_url,
-	rpcUrl,
-	privateKey,
-	tokenAddresses,
-} from './config/constants'
+	IPool__factory,
+	ISolidStateERC20__factory,
+} from '@premia/v3-abi/typechain'
+import {
+	difference,
+	find,
+	flatten,
+	groupBy,
+	omit,
+	partition,
+	pick,
+} from 'lodash'
 import {
 	parseEther,
 	MaxUint256,
 	parseUnits,
 	formatEther,
-	ethers,
 	ContractTransactionResponse,
 	TransactionReceipt,
 	EthersError,
 	NonceManager,
 	BigNumberish,
 } from 'ethers'
+
+import Logger from './lib/logger'
+import { checkEnv } from './config/checkConfig'
+import {
+	referralAddress,
+	chainId,
+	ws_url,
+	signer,
+	provider,
+	poolFactory,
+	walletAddr,
+	routerAddr,
+	tokenAddr,
+} from './config/constants'
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
@@ -88,22 +103,7 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/sign'
-import {
-	IPool__factory,
-	IPoolFactory__factory,
-	ISolidStateERC20__factory,
-} from '@premia/v3-abi/typechain'
-import {
-	difference,
-	find,
-	flatten,
-	groupBy,
-	omit,
-	partition,
-	pick,
-} from 'lodash'
 import { getBlockByTimestamp, requestDetailed } from './helpers/util'
-import moment from 'moment'
 import {
 	DeleteQuoteMessage,
 	ErrorMessage,
@@ -117,18 +117,6 @@ import { getSurroundingStrikes } from './helpers/strikes'
 
 dotenv.config()
 checkEnv()
-
-const provider = new ethers.JsonRpcProvider(rpcUrl, Number(chainId), {
-	staticNetwork: true,
-})
-const signer = new ethers.Wallet(privateKey, provider)
-
-const poolFactoryAddr =
-	process.env.ENV == 'production'
-		? arb.core.PoolFactoryProxy.address
-		: arbGoerli.core.PoolFactoryProxy.address
-
-const poolFactory = IPoolFactory__factory.connect(poolFactoryAddr, signer)
 
 const app = express()
 // body parser for POST requests
@@ -981,7 +969,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 		let confirm: TransactionReceipt | null
 		try {
 			if (approval.amt === 'max') {
-				approveTX = await erc20.approve(routerAddress, MaxUint256.toString())
+				approveTX = await erc20.approve(routerAddr, MaxUint256.toString())
 				confirm = await approveTX.wait(1)
 
 				if (confirm?.status == 1) {
@@ -998,7 +986,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 				const decimals = await erc20.decimals()
 				const qty = parseUnits(approval.amt.toString(), Number(decimals))
 
-				approveTX = await erc20.approve(routerAddress, qty)
+				approveTX = await erc20.approve(routerAddr, qty)
 				confirm = await approveTX.wait(1)
 
 				if (confirm?.status == 1) {
@@ -1052,16 +1040,12 @@ app.get('/pools', async (req, res) => {
 
 	let deployedPools: PoolWithAddress[] = events
 		.filter((event) => Number(event.args.maturity) > moment.utc().unix() + 60)
-		.filter(
-			(event) => getTokenByAddress(tokenAddresses, event.args.base) !== ''
-		)
-		.filter(
-			(event) => getTokenByAddress(tokenAddresses, event.args.quote) !== ''
-		)
+		.filter((event) => getTokenByAddress(tokenAddr, event.args.base) !== '')
+		.filter((event) => getTokenByAddress(tokenAddr, event.args.quote) !== '')
 		.map((event) => {
 			return {
-				base: getTokenByAddress(tokenAddresses, event.args.base),
-				quote: getTokenByAddress(tokenAddresses, event.args.quote),
+				base: getTokenByAddress(tokenAddr, event.args.base),
+				quote: getTokenByAddress(tokenAddr, event.args.quote),
 				expiration: moment
 					.unix(Number(event.args.maturity))
 					.format('DDMMMYY')
@@ -1234,6 +1218,8 @@ app.get('/pools/maturities', (req, res) => {
 	)
 	return res.status(200).json(maturitiesSerialised)
 })
+
+app.get('/oracles/iv', (req, res) => {})
 
 const server = app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`)

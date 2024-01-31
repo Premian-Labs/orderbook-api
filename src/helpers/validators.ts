@@ -1,4 +1,5 @@
 import Ajv from 'ajv'
+
 import arb from '../config/arbitrum.json'
 import arbGoerli from '../config/arbitrumGoerli.json'
 
