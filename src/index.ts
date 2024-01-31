@@ -39,6 +39,8 @@ import {
 	walletAddr,
 	routerAddr,
 	tokenAddr,
+	ivOracle,
+	productionTokenAddr,
 } from './config/constants'
 import {
 	FillableQuote,
@@ -65,6 +67,7 @@ import {
 	GetOrdersRequest,
 	StrikesRequestSpot,
 	StrikesRequestSymbols,
+	IVRequest,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -81,7 +84,13 @@ import {
 	validateGetStrikes,
 	validateGetIV,
 } from './helpers/validators'
-import { getBalances, getPoolAddress, getTokenByAddress } from './helpers/get'
+import {
+	getBalances,
+	getPoolAddress,
+	getSpotPrice,
+	getTokenByAddress,
+	getTTM,
+} from './helpers/get'
 import {
 	createExpiration,
 	createReturnedQuotes,
@@ -104,7 +113,7 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/sign'
-import { getBlockByTimestamp, requestDetailed } from './helpers/util'
+import { delay, getBlockByTimestamp, requestDetailed } from './helpers/util'
 import {
 	DeleteQuoteMessage,
 	ErrorMessage,
@@ -1221,7 +1230,7 @@ app.get('/pools/maturities', (req, res) => {
 })
 
 // NOTE: uses arbitrum mainnet regardless of env
-app.get('/oracles/iv', (req, res) => {
+app.get('/oracles/iv', async (req, res) => {
 	const valid = validateGetIV(req.query)
 	if (!valid) {
 		res.status(400)
@@ -1231,26 +1240,68 @@ app.get('/oracles/iv', (req, res) => {
 		})
 		return res.send(validateGetStrikes.errors)
 	}
+	const request = req.query as unknown as IVRequest
 
-	// TODO: Inputs => market (string: production keys only), strike, dte
-	// TODO: AJV schema
-	// TODO: get spot price (try/catch)
-	// TODO: get iv (try/catch
-	// TODO: return iv
+	// validate expiration
+	let expiration: number
+	try {
+		expiration = createExpiration(request.expiration)
+	} catch (e) {
+		return res.status(400).json({
+			message: (e as Error).message,
+			expiration: request.expiration,
+		})
+	}
+	const ttm = getTTM(expiration)
 
-	let iv: number
-	// iv = parseFloat(
-	// 	formatEther(
-	// 		await ivOracle['getVolatility(address,uint256,uint256,uint256)'](
-	// 			productionTokenAddr[market], // NOTE: we use production addresses only
-	// 			parseEther(spotPrice.toString()),
-	// 			parseEther(strike.toString()),
-	// 			parseEther(
-	// 				ttm.toLocaleString(undefined, { maximumFractionDigits: 18 }),
-	// 			),
-	// 		),
-	// 	),
-	// )
+	// get spot price from spot oracle
+	const spotPrice = await getSpotPrice(request.market)
+	if (spotPrice == undefined) {
+		return res.status(400).json({
+			message: `Failed to get spot price, cannot get iv`,
+			spotPrice: spotPrice,
+		})
+	}
+
+	// FIXME: strike can not be a decimal in get request
+	let iv: number | undefined
+	try {
+		iv = parseFloat(
+			formatEther(
+				await ivOracle['getVolatility(address,uint256,uint256,uint256)'](
+					productionTokenAddr[request.market],
+					parseEther(spotPrice.toString()),
+					parseEther(request.strike),
+					parseEther(
+						ttm.toLocaleString(undefined, { maximumFractionDigits: 18 })
+					)
+				)
+			)
+		)
+	} catch (e) {
+		await delay(2000)
+		try {
+			iv = parseFloat(
+				formatEther(
+					await ivOracle['getVolatility(address,uint256,uint256,uint256)'](
+						productionTokenAddr[request.market],
+						parseEther(spotPrice.toString()),
+						parseEther(request.strike),
+						parseEther(
+							ttm.toLocaleString(undefined, { maximumFractionDigits: 18 })
+						)
+					)
+				)
+			)
+		} catch (e) {
+			return res.status(400).json({
+				message: `Failed to get iv from oracle`,
+				error: (e as Error).message,
+			})
+		}
+	}
+
+	return res.status(200).json(iv)
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {

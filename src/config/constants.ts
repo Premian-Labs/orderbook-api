@@ -103,3 +103,5 @@ export const blockByTsEndpoint =
 	process.env.ENV == 'production'
 		? 'https://api.arbiscan.io/api'
 		: 'https://api-goerli.arbiscan.io/api'
+
+export const SECONDS_IN_YEAR = 365 * 24 * 60 * 60

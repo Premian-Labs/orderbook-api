@@ -1,16 +1,21 @@
 import { formatUnits, formatEther } from 'ethers'
 import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
+import moment from 'moment'
 
 import { PoolKey, TokenAddr } from '../types/quote'
 import { RejectedTokenBalance, TokenBalance } from '../types/balances'
 import Logger from '../lib/logger'
 import {
 	availableTokens,
+	chainlink,
 	poolFactory,
+	productionTokenAddr,
 	provider,
+	SECONDS_IN_YEAR,
 	tokenAddr,
 	walletAddr,
 } from '../config/constants'
+import { delay } from './util'
 
 const poolMap: Map<PoolKey, string> = new Map()
 
@@ -100,4 +105,35 @@ export async function getBalances() {
 		TokenBalance[],
 		RejectedTokenBalance[]
 	]
+}
+
+export async function getSpotPrice(market: string, retry: boolean = true) {
+	try {
+		return parseFloat(
+			formatEther(
+				await chainlink.getPrice(
+					productionTokenAddr[market],
+					productionTokenAddr.USDC
+				)
+			)
+		)
+	} catch (err) {
+		await delay(2000)
+
+		if (retry) {
+			return getSpotPrice(market, false)
+		} else {
+			Logger.warn(
+				`Failed to get current price for ${market}. \n
+                If issue persists, please check node provider`
+			)
+		}
+	}
+
+	return undefined
+}
+
+export function getTTM(maturityTimestamp: number): number {
+	const ts = moment.utc().unix()
+	return (maturityTimestamp - ts) / SECONDS_IN_YEAR
 }
