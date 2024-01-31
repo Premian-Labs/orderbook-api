@@ -109,12 +109,10 @@ export async function getBalances() {
 
 export async function getSpotPrice(market: string, retry: boolean = true) {
 	try {
-		return parseFloat(
-			formatEther(
-				await chainlink.getPrice(
-					productionTokenAddr[market],
-					productionTokenAddr.USDC
-				)
+		return formatEther(
+			await chainlink.getPrice(
+				productionTokenAddr[market],
+				productionTokenAddr.USDC
 			)
 		)
 	} catch (err) {

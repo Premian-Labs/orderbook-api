@@ -83,4 +83,5 @@ export interface IVRequest {
 	market: string
 	strike: string
 	expiration: string
+	spotPrice?: string
 }

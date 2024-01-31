@@ -285,6 +285,10 @@ export const validateGetIV = ajv.compile({
 			type: 'string',
 			pattern: '^\\d\\d\\w\\w\\w\\d\\d$',
 		},
+		spotPrice: {
+			type: 'string',
+			pattern: '^[0-9]{1,}([.][0-9]*)?$',
+		},
 	},
 	required: ['market', 'strike', 'expiration'],
 	additionalProperties: false,
