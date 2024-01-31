@@ -1,9 +1,8 @@
-import { checkEnv } from '../config/checkConfig'
-import { baseUrl, getMaturity } from './helpers/utils'
 import axios from 'axios'
 import { expect } from 'chai'
-import { ReturnedOrderbookQuote } from '../types/quote'
-import { IVRequest } from '../types/validate'
+
+import { checkEnv } from '../config/checkConfig'
+import { baseUrl, getMaturity } from './helpers/utils'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
