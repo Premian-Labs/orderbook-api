@@ -113,7 +113,7 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/sign'
-import { delay, getBlockByTimestamp, requestDetailed } from './helpers/util'
+import { getBlockByTimestamp, requestDetailed } from './helpers/util'
 import {
 	DeleteQuoteMessage,
 	ErrorMessage,
