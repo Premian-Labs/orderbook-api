@@ -1238,7 +1238,7 @@ app.get('/oracles/iv', async (req, res) => {
 			message: 'AJV get IV req params validation error',
 			error: validateGetIV.errors,
 		})
-		return res.send(validateGetStrikes.errors)
+		return res.send(validateGetIV.errors)
 	}
 	const request = req.query as unknown as IVRequest
 
@@ -1254,7 +1254,7 @@ app.get('/oracles/iv', async (req, res) => {
 	}
 	const ttm = getTTM(expiration)
 
-	// get spot price from spot oracle
+	// get spot price from spot oracle (required for iv oracle)
 	const spotPrice = await getSpotPrice(request.market)
 	if (spotPrice == undefined) {
 		return res.status(400).json({
@@ -1279,26 +1279,10 @@ app.get('/oracles/iv', async (req, res) => {
 			)
 		)
 	} catch (e) {
-		await delay(2000)
-		try {
-			iv = parseFloat(
-				formatEther(
-					await ivOracle['getVolatility(address,uint256,uint256,uint256)'](
-						productionTokenAddr[request.market],
-						parseEther(spotPrice.toString()),
-						parseEther(request.strike),
-						parseEther(
-							ttm.toLocaleString(undefined, { maximumFractionDigits: 18 })
-						)
-					)
-				)
-			)
-		} catch (e) {
-			return res.status(400).json({
-				message: `Failed to get iv from oracle`,
-				error: (e as Error).message,
-			})
-		}
+		return res.status(400).json({
+			message: `Failed to get iv from oracle`,
+			error: (e as EthersError).message,
+		})
 	}
 
 	return res.status(200).json(iv)
