@@ -79,6 +79,7 @@ import {
 	validatePoolEntity,
 	validateGetPools,
 	validateGetStrikes,
+	validateGetIV,
 } from './helpers/validators'
 import { getBalances, getPoolAddress, getTokenByAddress } from './helpers/get'
 import {
@@ -1219,7 +1220,38 @@ app.get('/pools/maturities', (req, res) => {
 	return res.status(200).json(maturitiesSerialised)
 })
 
-app.get('/oracles/iv', (req, res) => {})
+// NOTE: uses arbitrum mainnet regardless of env
+app.get('/oracles/iv', (req, res) => {
+	const valid = validateGetIV(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'AJV get IV req params validation error',
+			error: validateGetIV.errors,
+		})
+		return res.send(validateGetStrikes.errors)
+	}
+
+	// TODO: Inputs => market (string: production keys only), strike, dte
+	// TODO: AJV schema
+	// TODO: get spot price (try/catch)
+	// TODO: get iv (try/catch
+	// TODO: return iv
+
+	let iv: number
+	// iv = parseFloat(
+	// 	formatEther(
+	// 		await ivOracle['getVolatility(address,uint256,uint256,uint256)'](
+	// 			productionTokenAddr[market], // NOTE: we use production addresses only
+	// 			parseEther(spotPrice.toString()),
+	// 			parseEther(strike.toString()),
+	// 			parseEther(
+	// 				ttm.toLocaleString(undefined, { maximumFractionDigits: 18 }),
+	// 			),
+	// 		),
+	// 	),
+	// )
+})
 
 const server = app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`)

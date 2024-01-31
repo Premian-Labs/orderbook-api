@@ -46,6 +46,8 @@ export const referralAddress = process.env.REFERRAL_ADDRESS ?? ZeroAddress
 
 export const tokenAddr =
 	process.env.ENV === 'production' ? arb.tokens : arbGoerli.tokens
+export const supportedTokens = Object.keys(tokenAddr)
+export const productionTokenAddr: Record<string, string> = arb.tokens
 
 export const routerAddr =
 	process.env.ENV == 'production'
@@ -74,6 +76,18 @@ export const ivOracle = IVolatilityOracle__factory.connect(
 	arb.core.VolatilityOracleProxy.address,
 	ivMultiCallProvider
 )
+
+export const productionTokensWithIVOracles = [
+	'WETH',
+	'WBTC',
+	'ARB',
+	'LINK',
+	'WSTETH',
+	'GMX',
+	'MAGIC',
+	'SOL',
+	'FXS',
+]
 
 export const chainlink = IChainlinkAdapter__factory.connect(
 	chainlinkAdapterAddr,

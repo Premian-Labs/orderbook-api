@@ -1,11 +1,11 @@
 import Ajv from 'ajv'
 
-import arb from '../config/arbitrum.json'
-import arbGoerli from '../config/arbitrumGoerli.json'
+import {
+	productionTokensWithIVOracles,
+	supportedTokens,
+} from '../config/constants'
 
 const ajv = new Ajv()
-const chainConfig = process.env.ENV == 'production' ? arb : arbGoerli
-const supportedTokens = Object.keys(chainConfig.tokens)
 
 const validateOptionEntity = {
 	base: {
@@ -266,4 +266,26 @@ export const validateGetStrikes = ajv.compile({
 			additionalProperties: false,
 		},
 	],
+})
+
+export const validateGetIV = ajv.compile({
+	type: 'object',
+	properties: {
+		market: {
+			type: 'string',
+			pattern: productionTokensWithIVOracles
+				.map((token) => `^${token}$`)
+				.join('|'),
+		},
+		strike: {
+			type: 'string',
+			pattern: '^\\d+$',
+		},
+		expiration: {
+			type: 'string',
+			pattern: '^\\d\\d\\w\\w\\w\\d\\d$',
+		},
+	},
+	required: ['market', 'strike', 'expiration'],
+	additionalProperties: false,
 })
