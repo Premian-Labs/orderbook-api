@@ -270,9 +270,9 @@ paths:
           description: number of contracts (ie 4)
           required: true
           schema:
-            type: integer
+            type: number
             minimum: 0
-            example: 3
+            example: 4
         - name: side
           in: query
           description: orderbook side (ie bid)
@@ -497,9 +497,9 @@ paths:
           description: number of contracts (ie 4)
           required: false
           schema:
-            type: integer
+            type: number
             minimum: 0
-            example: 3
+            example: 4
         - name: side
           in: query
           description: orderbook side ("ask" or "bid")
@@ -820,9 +820,9 @@ paths:
           required: true
           description: strike price of option
           schema:
-            type: string
-            pattern: ^[0-9]{1,}([.][0-9]*)?$
-            example: '2200'
+            type: number
+            minimum: 0
+            example: 1800
         - name: expiration
           in: query
           required: true
@@ -836,9 +836,9 @@ paths:
           required: false
           description: spot price of underlying
           schema:
-            type: string
-            pattern: ^[0-9]{1,}([.][0-9]*)?$
-            example: '2221.45'
+            type: number
+            minimum: 0
+            example: 2123.23
       responses:
         '200':
           description: Successful operation
