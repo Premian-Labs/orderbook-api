@@ -1275,9 +1275,7 @@ app.get('/oracles/iv', async (req, res) => {
 					productionTokenAddr[request.market],
 					parseEther(spotPrice),
 					parseEther(request.strike),
-					parseEther(
-						ttm.toLocaleString(undefined, { maximumFractionDigits: 18 })
-					)
+					parseEther(ttm.toFixed(12))
 				)
 			)
 		)
@@ -1292,7 +1290,7 @@ app.get('/oracles/iv', async (req, res) => {
 		})
 	}
 
-	return res.status(200).json(Math.floor(iv * 100) / 100)
+	return res.status(200).json(Number(iv.toFixed(2)))
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {
