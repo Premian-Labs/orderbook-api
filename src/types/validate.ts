@@ -78,3 +78,10 @@ export interface StrikesRequestSymbols {
 export interface StrikesRequestSpot {
 	spotPrice: string
 }
+
+export interface IVRequest {
+	market: string
+	strike: string
+	expiration: string
+	spotPrice?: string
+}

@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { expect } from 'chai'
-import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
 import { ethers, formatUnits, MaxUint256 } from 'ethers'
+import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
 
 import { checkEnv } from '../config/checkConfig'
 import {
@@ -16,7 +16,7 @@ import {
 import {
 	availableTokens,
 	privateKey,
-	routerAddress,
+	routerAddr,
 	rpcUrl,
 } from '../config/constants'
 import { RejectedTokenBalance, TokenBalance } from '../types/balances'
@@ -119,7 +119,7 @@ describe('Balances, Approvals & Open Orders', () => {
 					: arbGoerli.tokens[approval.token]
 			const erc20 = ISolidStateERC20__factory.connect(erc20Addr, signer)
 			const decimals = await erc20.decimals()
-			const allowance = await erc20.allowance(signer.address, routerAddress)
+			const allowance = await erc20.allowance(signer.address, routerAddr)
 
 			if (approval.amt === 'max') {
 				expect(allowance).to.eq(MaxUint256)

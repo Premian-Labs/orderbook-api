@@ -1,3 +1,6 @@
+import { Signer, ZeroAddress } from 'ethers'
+import moment from 'moment'
+
 import {
 	QuoteOB,
 	PoolKey,
@@ -11,9 +14,7 @@ import {
 	SignedQuote,
 	TypedSignQuoteRequest,
 } from '../types/signature'
-import { Signer, ZeroAddress } from 'ethers'
 import { chainId } from '../config/constants'
-import moment from 'moment'
 
 export function getQuote(
 	makerAddr: string,

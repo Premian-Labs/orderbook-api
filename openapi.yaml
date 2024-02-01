@@ -223,7 +223,7 @@ paths:
     get:
       summary: Get all quotes for a specific option up to a specified size/qty. All orders will be ranked from best
         to worst according to price. Please note that this will not show the full state of the orderbook if the total
-        market liquidity is greater than the size specified. Important! size can only be integer.
+        market liquidity is greater than the size specified.
       parameters:
         - name: base
           in: query
@@ -270,9 +270,9 @@ paths:
           description: number of contracts (ie 4)
           required: true
           schema:
-            type: integer
+            type: number
             minimum: 0
-            example: 3
+            example: 4
         - name: side
           in: query
           description: orderbook side (ie bid)
@@ -482,7 +482,7 @@ paths:
   /orderbook/orders:
     get:
       summary: Gets all valid quote(s) on the orderbook by using broad query params. If no parameters are supplied 
-        the entire orderbook is returned. Important! If size is used, it can only be integer.
+        the entire orderbook is returned.
       parameters:
         - name: poolAddress
           in: query
@@ -497,9 +497,9 @@ paths:
           description: number of contracts (ie 4)
           required: false
           schema:
-            type: integer
+            type: number
             minimum: 0
-            example: 3
+            example: 4
         - name: side
           in: query
           description: orderbook side ("ask" or "bid")
@@ -803,6 +803,62 @@ paths:
       security:
         - api_key:
             - api
+  /oracles/iv:
+    get:
+      summary: Gets the IV value for an option via an IV oracle.
+      parameters:
+        - name: market
+          in: query
+          required: true
+          description: base token symbol (ie WETH)
+          schema:
+            type: string
+            pattern: ^WETH$|^WBTC$|^ARB$|^LINK$|^WSTETH$|^GMX$|^MAGIC$|^SOL$|^FXS$
+            example: WETH
+        - name: strike
+          in: query
+          required: true
+          description: strike price of option
+          schema:
+            type: number
+            minimum: 0
+            example: 1800
+        - name: expiration
+          in: query
+          required: true
+          description: option expiration (ie 03NOV23)
+          schema:
+            type: string
+            pattern: ^\d\d\w\w\w\d\d$
+            example: 03NOV23
+        - name: spotPrice
+          in: query
+          required: false
+          description: spot price of underlying
+          schema:
+            type: number
+            minimum: 0
+            example: 2123.23
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: number
+                example: 0.46
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
 components:
   schemas:
     Option:
