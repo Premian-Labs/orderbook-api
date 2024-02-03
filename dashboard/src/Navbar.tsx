@@ -6,9 +6,10 @@ import axios from 'axios'
 import { COINCAP_API } from './config'
 
 async function getCoinsPrice() {
+	// TODO: use oracle price endpoint from orderbook-API
 	const btcData = await axios.get(`${COINCAP_API}/bitcoin`)
 	const ethData = await axios.get(`${COINCAP_API}/ethereum`)
-	const arbData = await axios.get(`${COINCAP_API}/arbitrum`)
+	// const arbData = await axios.get(`${COINCAP_API}/arbitrum`)
 
 	const prices: CoinPrice = {
 		BTC: Number(btcData.data['data']['rateUsd']),
