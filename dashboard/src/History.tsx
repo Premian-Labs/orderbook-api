@@ -1,14 +1,14 @@
 import React from 'react'
-import './App.css'
+import './Main.css'
 
 function History() {
 	return (
 		<div className="App">
-			<header className="App-header">
+			<div className="App-container">
 				<div className="Config">
 					<p>Trade History</p>
 				</div>
-			</header>
+			</div>
 		</div>
 	)
 }

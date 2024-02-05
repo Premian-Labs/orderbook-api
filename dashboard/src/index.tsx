@@ -1,7 +1,7 @@
 import React from 'react'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom'
 import { createRoot } from 'react-dom/client'
-import App from './App'
+import Main from './Main'
 import Settings from './Settings'
 import Error404 from './Error404'
 import { Navbar } from './Navbar'
@@ -29,7 +29,7 @@ const router = createBrowserRouter([
 			{
 				index: true,
 				path: 'home',
-				element: <App />,
+				element: <Main />,
 			},
 			{
 				path: 'account',

@@ -3,3 +3,5 @@ export interface CoinPrice {
 	ETH: number
 	ARB: number
 }
+
+export type Market = 'WETH' | 'WBTC' | 'ARB'

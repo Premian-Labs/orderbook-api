@@ -1,4 +1,5 @@
 import express from 'express'
+import cors from 'cors'
 import dotenv from 'dotenv'
 import Logger from './lib/logger'
 import WebSocket from 'ws'
@@ -131,6 +132,7 @@ const poolFactoryAddr =
 const poolFactory = IPoolFactory__factory.connect(poolFactoryAddr, signer)
 
 const app = express()
+app.use(cors())
 // body parser for POST requests
 app.use(express.json())
 // unkey Auth check

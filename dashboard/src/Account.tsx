@@ -1,14 +1,14 @@
 import React from 'react'
-import './App.css'
+import './Main.css'
 
 function Account() {
 	return (
 		<div className="App">
-			<header className="App-header">
+			<div className="App-container">
 				<div className="Config">
 					<p>User Account</p>
 				</div>
-			</header>
+			</div>
 		</div>
 	)
 }

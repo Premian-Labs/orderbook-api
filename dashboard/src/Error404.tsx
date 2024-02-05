@@ -1,12 +1,12 @@
 import React from 'react'
-import './App.css'
+import './Main.css'
 
 function Error404() {
 	return (
 		<div className="App">
-			<header className="App-header">
+			<div className="App-container">
 				<p>Page not found</p>
-			</header>
+			</div>
 		</div>
 	)
 }

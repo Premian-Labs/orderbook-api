@@ -88,7 +88,7 @@ export const Navbar = () => {
 			<div className="currencies">
 				<span>BTC: ${coinPrice.BTC.toFixed(0)}</span>
 				<span>ETH: ${coinPrice.ETH.toFixed(1)}</span>
-				<span>ARB: ${coinPrice.ARB.toFixed(2)}</span>
+				{/*<span>ARB: ${coinPrice.ARB.toFixed(2)}</span>*/}
 			</div>
 		</nav>
 	)

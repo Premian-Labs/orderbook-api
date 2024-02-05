@@ -12,7 +12,7 @@
 	background-color: rgb(31, 31, 45);
 	border-radius: 8px;
 	border-width: 0;
-	color: #a2a2a2;
+	color: #5294ff;
 	display: inline-block;
 	line-height: 20px;
 	list-style: none;
@@ -23,7 +23,7 @@
 }
 
 .Config button:hover {
-	background-color: #a2a2a2;
+	background-color: #5294ff;
 	border-radius: 8px;
 	border-width: 0;
 	color: rgb(31, 31, 45);
