@@ -128,16 +128,21 @@ function Main() {
 						.value()
 					// obRow.call_delta = 0
 					// obRow.call_iv = 0
-					if (callPostition.side === 'bid')
+					if (callPostition.side === 'bid') {
 						obRow.call_bid = _.chain(calls)
 							.map((quote) => quote.price)
 							.max()
 							.value()
-					if (callPostition.side === 'ask')
+						obRow.call_bid = obRow.call_bid.toFixed(4)
+					}
+
+					if (callPostition.side === 'ask') {
 						obRow.call_ask = _.chain(calls)
 							.map((quote) => quote.price)
 							.min()
 							.value()
+						obRow.call_ask = obRow.call_ask.toFixed(4)
+					}
 				}
 
 				for (const putPostition of puts) {
@@ -147,16 +152,21 @@ function Main() {
 						.value()
 					// obRow.put_delta = 0
 					// obRow.put_iv = 0
-					if (putPostition.side === 'bid')
+					if (putPostition.side === 'bid') {
 						obRow.put_bid = _.chain(puts)
 							.map((quote) => quote.price * quote.strike)
 							.max()
 							.value()
-					if (putPostition.side === 'ask')
+						obRow.put_bid = obRow.put_bid.toFixed(4)
+					}
+
+					if (putPostition.side === 'ask') {
 						obRow.put_ask = _.chain(puts)
 							.map((quote) => quote.price)
 							.min()
 							.value()
+						obRow.put_ask = obRow.put_ask.toFixed(4)
+					}
 				}
 
 				return obRow

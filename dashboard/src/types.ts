@@ -17,15 +17,15 @@ export interface OptionsTableData {
 }
 
 export interface OrderbookRows {
-	call_bid: number | '-'
-	call_ask: number | '-'
+	call_bid: number | '-' | string
+	call_ask: number | '-' | string
 	call_iv: number | '-'
 	call_delta: number | '-'
 	call_size: number | '-'
 	call_position: number | '-'
 	strike: number | '-'
-	put_bid: number | '-'
-	put_ask: number | '-'
+	put_bid: number | '-' | string
+	put_ask: number | '-' | string
 	put_iv: number | '-'
 	put_delta: number | '-'
 	put_size: number | '-'
