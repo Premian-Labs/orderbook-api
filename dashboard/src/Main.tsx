@@ -162,7 +162,7 @@ function Main() {
 
 					if (putPostition.side === 'ask') {
 						obRow.put_ask = _.chain(puts)
-							.map((quote) => quote.price)
+							.map((quote) => quote.price * quote.strike)
 							.min()
 							.value()
 						obRow.put_ask = obRow.put_ask.toFixed(4)
