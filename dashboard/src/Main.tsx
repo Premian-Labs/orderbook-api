@@ -7,59 +7,100 @@ import { CoinPrice, Market, OptionsTableData, OrderbookRows } from './types'
 import { getCoinsPrice } from './Navbar'
 import { ReturnedOrderbookQuote } from '../../src/types/quote'
 import _ from 'lodash'
+import { getDeltaAndIV } from './utils/blackScholes'
+
+// call_delta: number | '-'
+// call_bid_size: number | '-'
+// call_bid_iv: number | '-' | string
+// call_bid: number | '-' | string
+// call_mark: number | '-' | string
+// call_ask: number | '-' | string
+// call_ask_iv: number | '-' | string
+// call_ask_size: number | '-'
+// call_positions: number | '-'
+// strike: number
+// put_delta: number | '-'
+// put_bid_size: number | '-'
+// put_bid_iv: number | '-' | string
+// put_bid: number | '-' | string
+// put_mark: number | '-' | string
+// put_ask: number | '-' | string
+// put_ask_iv: number | '-' | string
+// put_ask_size: number | '-'
+// put_positions: number | '-'
 
 const COLUMNS = [
 	{
+		Header: 'Delta',
+		accessor: 'call_delta' as const,
+	},
+	{
+		Header: 'Bid Size',
+		accessor: 'call_bid_size' as const,
+	},
+	{
+		Header: 'Bid IV',
+		accessor: 'call_bid_iv' as const,
+	},
+	{
 		Header: 'Bid',
 		accessor: 'call_bid' as const,
+	},
+	{
+		Header: 'Mark',
+		accessor: 'call_mark' as const,
 	},
 	{
 		Header: 'Ask',
 		accessor: 'call_ask' as const,
 	},
 	{
-		Header: 'IV',
-		accessor: 'call_iv' as const,
+		Header: 'Ask IV',
+		accessor: 'call_ask_iv' as const,
 	},
 	{
-		Header: 'Delta',
-		accessor: 'call_delta' as const,
+		Header: 'Ask Size',
+		accessor: 'call_ask_size' as const,
 	},
 	{
-		Header: 'Size',
-		accessor: 'call_size' as const,
-	},
-	{
-		Header: 'Position',
-		accessor: 'call_position' as const,
+		Header: 'Positions',
+		accessor: 'call_positions' as const,
 	},
 	{
 		Header: 'Strike',
 		accessor: 'strike' as const,
 	},
 	{
+		Header: 'Bid Size',
+		accessor: 'put_bid_size' as const,
+	},
+	{
+		Header: 'Bid IV',
+		accessor: 'put_bid_iv' as const,
+	},
+	{
 		Header: 'Bid',
 		accessor: 'put_bid' as const,
+	},
+	{
+		Header: 'Mark',
+		accessor: 'put_mark' as const,
 	},
 	{
 		Header: 'Ask',
 		accessor: 'put_ask' as const,
 	},
 	{
-		Header: 'IV',
-		accessor: 'put_iv' as const,
+		Header: 'Ask IV',
+		accessor: 'put_ask_iv' as const,
 	},
 	{
-		Header: 'Delta',
-		accessor: 'put_delta' as const,
+		Header: 'Ask Size',
+		accessor: 'put_ask_size' as const,
 	},
 	{
-		Header: 'Size',
-		accessor: 'put_size' as const,
-	},
-	{
-		Header: 'Position',
-		accessor: 'put_position' as const,
+		Header: 'Positions',
+		accessor: 'put_positions' as const,
 	},
 ]
 
@@ -99,72 +140,101 @@ function Main() {
 	}, [marketSelector])
 
 	useEffect(() => {
+
+	}, [])
+
+	useEffect(() => {
 		const activeExpirationOrders = orders.find((order) => order.expiration === activeExpiration)
 		if (activeExpirationOrders) {
 			setActiveExpirationOrders(activeExpirationOrders.positions)
 			const quotesRow = activeExpirationOrders.positions.map(({ strike, quotes }) => {
 				const [calls, puts] = _.partition(quotes, (quote) => quote.type === 'C')
 				const obRow = {
-					call_bid: '-',
-					call_ask: '-',
-					call_iv: '-',
 					call_delta: '-',
-					call_size: '-',
-					call_position: '-',
+					call_bid_size: '-',
+					call_bid_iv: '-',
+					call_bid: '-',
+					call_mark: '-',
+					call_ask: '-',
+					call_ask_iv: '-',
+					call_ask_size: '-',
+					call_positions: '-',
 					strike: strike,
-					put_bid: '-',
-					put_ask: '-',
-					put_iv: '-',
 					put_delta: '-',
-					put_size: '-',
-					put_position: '-',
+					put_bid_size: '-',
+					put_bid_iv: '-',
+					put_bid: '-',
+					put_mark: '-',
+					put_ask: '-',
+					put_ask_iv: '-',
+					put_ask_size: '-',
+					put_positions: '-',
 				} as OrderbookRows
 
-				// TODO: positions
 				for (const callPostition of calls) {
-					obRow.call_size = _.chain(calls)
-						.map((quote) => quote.remainingSize)
-						.sum()
-						.value()
-					// obRow.call_delta = 0
-					// obRow.call_iv = 0
 					if (callPostition.side === 'bid') {
+						obRow.call_bid_size = _.chain(calls)
+							.map((quote) => quote.remainingSize)
+							.sum()
+							.value()
+
 						obRow.call_bid = _.chain(calls)
-							.map((quote) => quote.price)
+							.map((quote) => quote.price * coinPrice[marketSelector])
 							.max()
 							.value()
+
+						obRow.call_bid_iv = getDeltaAndIV(callPostition, obRow.call_bid, coinPrice[marketSelector])
+						if (obRow.call_bid_iv > 0) obRow.call_bid_iv = obRow.call_bid_iv.toFixed(1)
 						obRow.call_bid = obRow.call_bid.toFixed(4)
 					}
 
 					if (callPostition.side === 'ask') {
-						obRow.call_ask = _.chain(calls)
-							.map((quote) => quote.price)
-							.min()
+						obRow.call_ask_size = _.chain(calls)
+							.map((quote) => quote.remainingSize)
+							.sum()
 							.value()
+
+						obRow.call_ask = _.chain(calls)
+							.map((quote) => quote.price * coinPrice[marketSelector])
+							.max()
+							.value()
+
+						obRow.call_ask_iv = getDeltaAndIV(callPostition, obRow.call_ask, coinPrice[marketSelector])
+						if (obRow.call_ask_iv > 0) obRow.call_ask_iv = obRow.call_ask_iv.toFixed(1)
 						obRow.call_ask = obRow.call_ask.toFixed(4)
 					}
 				}
 
 				for (const putPostition of puts) {
-					obRow.put_size = _.chain(puts)
-						.map((quote) => quote.remainingSize)
-						.sum()
-						.value()
-					// obRow.put_delta = 0
-					// obRow.put_iv = 0
 					if (putPostition.side === 'bid') {
+						obRow.put_bid_size = _.chain(puts)
+							.map((quote) => quote.remainingSize)
+							.sum()
+							.value()
+
 						obRow.put_bid = _.chain(puts)
-							.map((quote) => quote.price * quote.strike)
+							.map((quote) => quote.price * strike)
 							.max()
 							.value()
+
+						obRow.put_bid_iv = getDeltaAndIV(putPostition, obRow.put_bid, coinPrice[marketSelector])
+						if (obRow.put_bid_iv > 0) obRow.put_bid_iv = obRow.put_bid_iv.toFixed(1)
 						obRow.put_bid = obRow.put_bid.toFixed(4)
 					}
 
 					if (putPostition.side === 'ask') {
-						obRow.put_ask = _.chain(puts)
-							.map((quote) => quote.price * quote.strike)
-							.min()
+						obRow.put_ask_size = _.chain(puts)
+							.map((quote) => quote.remainingSize)
+							.sum()
 							.value()
+
+						obRow.put_ask = _.chain(puts)
+							.map((quote) => quote.price * strike)
+							.max()
+							.value()
+
+						obRow.put_ask_iv = getDeltaAndIV(putPostition, obRow.put_ask, coinPrice[marketSelector])
+						if (obRow.put_ask_iv > 0) obRow.put_ask_iv = obRow.put_ask_iv.toFixed(1)
 						obRow.put_ask = obRow.put_ask.toFixed(4)
 					}
 				}
