@@ -1,31 +1,48 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import Logger from './lib/logger'
 import WebSocket from 'ws'
-import { checkEnv } from './config/checkConfig'
+import moment from 'moment'
 import {
-	referralAddress,
-	chainId,
-	walletAddr,
-	routerAddress,
-	ws_url,
-	rpcUrl,
-	privateKey,
-	tokenAddresses,
-} from './config/constants'
+	IPool__factory,
+	ISolidStateERC20__factory,
+} from '@premia/v3-abi/typechain'
+import {
+	difference,
+	find,
+	flatten,
+	groupBy,
+	omit,
+	partition,
+	pick,
+} from 'lodash'
 import {
 	parseEther,
 	MaxUint256,
 	parseUnits,
 	formatEther,
-	ethers,
 	ContractTransactionResponse,
 	TransactionReceipt,
 	EthersError,
 	NonceManager,
 	BigNumberish,
 } from 'ethers'
+
+import Logger from './lib/logger'
+import { checkEnv } from './config/checkConfig'
+import {
+	referralAddress,
+	chainId,
+	ws_url,
+	signer,
+	provider,
+	poolFactory,
+	walletAddr,
+	routerAddr,
+	tokenAddr,
+	ivOracle,
+	productionTokenAddr,
+} from './config/constants'
 import {
 	FillableQuote,
 	GroupedDeleteRequest,
@@ -51,6 +68,7 @@ import {
 	GetOrdersRequest,
 	StrikesRequestSpot,
 	StrikesRequestSymbols,
+	IVRequest,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -65,8 +83,15 @@ import {
 	validatePoolEntity,
 	validateGetPools,
 	validateGetStrikes,
+	validateGetIV,
 } from './helpers/validators'
-import { getBalances, getPoolAddress, getTokenByAddress } from './helpers/get'
+import {
+	getBalances,
+	getPoolAddress,
+	getSpotPrice,
+	getTokenByAddress,
+	getTTM,
+} from './helpers/get'
 import {
 	createExpiration,
 	createReturnedQuotes,
@@ -89,22 +114,7 @@ import {
 	createQuote,
 	serializeQuote,
 } from './helpers/sign'
-import {
-	IPool__factory,
-	IPoolFactory__factory,
-	ISolidStateERC20__factory,
-} from '@premia/v3-abi/typechain'
-import {
-	difference,
-	find,
-	flatten,
-	groupBy,
-	omit,
-	partition,
-	pick,
-} from 'lodash'
 import { getBlockByTimestamp, requestDetailed } from './helpers/util'
-import moment from 'moment'
 import {
 	DeleteQuoteMessage,
 	ErrorMessage,
@@ -118,18 +128,6 @@ import { getSurroundingStrikes } from './helpers/strikes'
 
 dotenv.config()
 checkEnv()
-
-const provider = new ethers.JsonRpcProvider(rpcUrl, Number(chainId), {
-	staticNetwork: true,
-})
-const signer = new ethers.Wallet(privateKey, provider)
-
-const poolFactoryAddr =
-	process.env.ENV == 'production'
-		? arb.core.PoolFactoryProxy.address
-		: arbGoerli.core.PoolFactoryProxy.address
-
-const poolFactory = IPoolFactory__factory.connect(poolFactoryAddr, signer)
 
 const app = express()
 app.use(cors())
@@ -983,7 +981,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 		let confirm: TransactionReceipt | null
 		try {
 			if (approval.amt === 'max') {
-				approveTX = await erc20.approve(routerAddress, MaxUint256.toString())
+				approveTX = await erc20.approve(routerAddr, MaxUint256.toString())
 				confirm = await approveTX.wait(1)
 
 				if (confirm?.status == 1) {
@@ -1000,7 +998,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 				const decimals = await erc20.decimals()
 				const qty = parseUnits(approval.amt.toString(), Number(decimals))
 
-				approveTX = await erc20.approve(routerAddress, qty)
+				approveTX = await erc20.approve(routerAddr, qty)
 				confirm = await approveTX.wait(1)
 
 				if (confirm?.status == 1) {
@@ -1054,16 +1052,12 @@ app.get('/pools', async (req, res) => {
 
 	let deployedPools: PoolWithAddress[] = events
 		.filter((event) => Number(event.args.maturity) > moment.utc().unix() + 60)
-		.filter(
-			(event) => getTokenByAddress(tokenAddresses, event.args.base) !== ''
-		)
-		.filter(
-			(event) => getTokenByAddress(tokenAddresses, event.args.quote) !== ''
-		)
+		.filter((event) => getTokenByAddress(tokenAddr, event.args.base) !== '')
+		.filter((event) => getTokenByAddress(tokenAddr, event.args.quote) !== '')
 		.map((event) => {
 			return {
-				base: getTokenByAddress(tokenAddresses, event.args.base),
-				quote: getTokenByAddress(tokenAddresses, event.args.quote),
+				base: getTokenByAddress(tokenAddr, event.args.base),
+				quote: getTokenByAddress(tokenAddr, event.args.quote),
 				expiration: moment
 					.unix(Number(event.args.maturity))
 					.format('DDMMMYY')
@@ -1235,6 +1229,70 @@ app.get('/pools/maturities', (req, res) => {
 		x.format('DDMMMYY').toUpperCase()
 	)
 	return res.status(200).json(maturitiesSerialised)
+})
+
+// NOTE: uses arbitrum mainnet regardless of env
+app.get('/oracles/iv', async (req, res) => {
+	const valid = validateGetIV(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'AJV get IV req params validation error',
+			error: validateGetIV.errors,
+		})
+		return res.send(validateGetIV.errors)
+	}
+	const request = req.query as unknown as IVRequest
+
+	// validate expiration
+	let expiration: number
+	try {
+		expiration = createExpiration(request.expiration)
+	} catch (e) {
+		return res.status(400).json({
+			message: (e as Error).message,
+			expiration: request.expiration,
+		})
+	}
+	const ttm = getTTM(expiration)
+
+	let spotPrice: string | undefined
+	if (request.spotPrice) {
+		spotPrice = request.spotPrice
+	} else {
+		// get spot price from spot oracle (required for iv oracle)
+		spotPrice = await getSpotPrice(request.market)
+		if (spotPrice == undefined) {
+			return res.status(500).json({
+				message: `Failed to get spot price from oracle, try again or provide spot price`,
+			})
+		}
+	}
+
+	let iv: number | undefined
+	try {
+		iv = parseFloat(
+			formatEther(
+				await ivOracle['getVolatility(address,uint256,uint256,uint256)'](
+					productionTokenAddr[request.market],
+					parseEther(spotPrice),
+					parseEther(request.strike),
+					parseEther(ttm.toFixed(12))
+				)
+			)
+		)
+		if (iv == undefined) {
+			return res.status(500).json({
+				message: `Failed to get iv from oracle`,
+			})
+		}
+	} catch (e) {
+		return res.status(500).json({
+			message: e,
+		})
+	}
+
+	return res.status(200).json(Number(iv.toFixed(2)))
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {

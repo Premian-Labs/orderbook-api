@@ -1,6 +1,6 @@
 {
   "name": "@premia/v3-api",
-  "version": "0.0.17",
+  "version": "0.1.0",
   "description": "Containerize API for Premia V3 Orderbook",
   "author": "research@premia.finance",
   "license": "BSD-3-Clause",
@@ -23,7 +23,8 @@
     "e2e:account": "mocha --require ts-node/register src/test/account.ts --timeout 60000",
     "e2e:pool": "mocha --require ts-node/register src/test/pool.ts --timeout 60000",
     "e2e:quoting": "mocha --require ts-node/register src/test/quoting.ts --timeout 600000",
-    "e2e:ws": "mocha --require ts-node/register src/test/ws.ts --timeout 60000"
+    "e2e:ws": "mocha --require ts-node/register src/test/ws.ts --timeout 60000",
+    "e2e:oracles": "mocha --require ts-node/register src/test/oracles.ts --timeout 60000"
   },
   "dependencies": {
     "@premia/v3-abi": "^1.1.2",
@@ -38,6 +39,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
     "ethers": "^6.8.1",
+    "ethers-multicall-provider": "^6.0.3",
     "express": "^4.18.2",
     "lodash": "^4.17.21",
     "moment": "^2.29.4",
