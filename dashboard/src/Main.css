@@ -1,35 +1,46 @@
-.App {
+.app {
 	text-align: center;
 }
 
-.App-logo {
+.app-logo {
+	margin-top: 10vmin;
 	height: 30vmin;
 	pointer-events: none;
 }
 
-.App-container {
+.app-container {
 	background-color: rgba(0, 0, 10, 0.92);
 	min-height: 95vh;
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
 	font-size: calc(10px + 1vmin);
 	color: white;
 }
 
-.PositionsContainer {
+.table-container {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.positions-container {
+	margin: 0 20px;
 	display: flex;
 	flex-direction: row;
 }
 
+.expirations-container {
+	text-align: left;
+}
+
+.selector {
+	margin: 10px;
+}
 .selector button {
-	margin: 0 8px;
+	margin: 0 10px;
+	border-radius: 8px;
 }
 
 .selector-btn {
 	background-color: rgb(31, 31, 45);
-	border-radius: 8px;
 	border-width: 0;
 	color: #5294ff;
 	display: inline-block;
@@ -49,7 +60,6 @@
 .selector-btn-active {
 	background-color: #5294ff;
 	color: rgb(31, 31, 45);
-	border-radius: 8px;
 	border-width: 0;
 	display: inline-block;
 	line-height: 20px;
@@ -58,4 +68,19 @@
 	padding: 10px 12px;
 	text-align: center;
 	cursor: pointer;
+}
+
+table {
+	border-collapse: collapse;
+	width: 100%;
+	table-layout: fixed;
+}
+td,
+th {
+	border: 1px solid #5294ff;
+	text-align: left;
+	padding: 8px;
+}
+tr:nth-child(even) {
+	background-color: #2b4d83;
 }

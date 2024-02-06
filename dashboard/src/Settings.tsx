@@ -7,9 +7,9 @@ function Settings() {
 	const onClick = () => setShowResults(!showResults)
 
 	return (
-		<div className="App">
-			<div className="App-container">
-				<div className="Config">
+		<div className="app">
+			<div className="app-container">
+				<div className="config">
 					<p>Settings page</p>
 					<code>{`WALLET_ADDRESS: ${process.env.REACT_APP_WALLET_ADDRESS}`}</code>
 					<code>{`TESTNET_API_KEY: ${process.env.REACT_APP_TESTNET_ORDERBOOK_API_KEY}`}</code>

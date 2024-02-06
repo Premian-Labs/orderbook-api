@@ -3,9 +3,9 @@ import './Main.css'
 
 function History() {
 	return (
-		<div className="App">
-			<div className="App-container">
-				<div className="Config">
+		<div className="app">
+			<div className="app-container">
+				<div className="config">
 					<p>Trade History</p>
 				</div>
 			</div>

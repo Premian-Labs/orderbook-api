@@ -1,14 +1,16 @@
-.Config {
+.config {
 	display: flex;
 	flex-direction: column;
+	align-items: center;
 }
 
-.Config code {
+.config code {
 	font-size: calc(10px + 1vmin);
 	margin: 8px;
 }
 
-.Config button {
+.config button {
+	width: 200px;
 	background-color: rgb(31, 31, 45);
 	border-radius: 8px;
 	border-width: 0;
@@ -22,7 +24,7 @@
 	cursor: pointer;
 }
 
-.Config button:hover {
+.config button:hover {
 	background-color: #5294ff;
 	border-radius: 8px;
 	border-width: 0;

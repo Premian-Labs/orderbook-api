@@ -5,15 +5,15 @@ import { CoinPrice } from './types'
 import axios from 'axios'
 import { COINCAP_API } from './config'
 
-async function getCoinsPrice() {
+export async function getCoinsPrice() {
 	// TODO: use oracle price endpoint from orderbook-API
 	const btcData = await axios.get(`${COINCAP_API}/bitcoin`)
 	const ethData = await axios.get(`${COINCAP_API}/ethereum`)
 	// const arbData = await axios.get(`${COINCAP_API}/arbitrum`)
 
 	const prices: CoinPrice = {
-		BTC: Number(btcData.data['data']['rateUsd']),
-		ETH: Number(ethData.data['data']['rateUsd']),
+		WBTC: Number(btcData.data['data']['rateUsd']),
+		WETH: Number(ethData.data['data']['rateUsd']),
 		ARB: 0,
 	}
 	return prices
@@ -21,9 +21,9 @@ async function getCoinsPrice() {
 
 export const Navbar = () => {
 	const [coinPrice, setCoinPrice] = React.useState({
-		BTC: 0.0,
+		WBTC: 0.0,
 		ARB: 0.0,
-		ETH: 0.0,
+		WETH: 0.0,
 	} as CoinPrice)
 
 	useEffect(() => {
@@ -86,8 +86,8 @@ export const Navbar = () => {
 				</NavLink>
 			</div>
 			<div className="currencies">
-				<span>BTC: ${coinPrice.BTC.toFixed(0)}</span>
-				<span>ETH: ${coinPrice.ETH.toFixed(1)}</span>
+				<span>BTC: ${coinPrice.WBTC.toFixed(0)}</span>
+				<span>ETH: ${coinPrice.WETH.toFixed(1)}</span>
 				{/*<span>ARB: ${coinPrice.ARB.toFixed(2)}</span>*/}
 			</div>
 		</nav>
