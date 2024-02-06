@@ -123,7 +123,7 @@ function Main() {
 				// TODO: positions
 				for (const callPostition of calls) {
 					obRow.call_size = _.chain(calls)
-						.map((call) => call.remainingSize)
+						.map((quote) => quote.remainingSize)
 						.sum()
 						.value()
 					// obRow.call_delta = 0
@@ -142,14 +142,14 @@ function Main() {
 
 				for (const putPostition of puts) {
 					obRow.put_size = _.chain(puts)
-						.map((call) => call.remainingSize)
+						.map((quote) => quote.remainingSize)
 						.sum()
 						.value()
 					// obRow.put_delta = 0
 					// obRow.put_iv = 0
 					if (putPostition.side === 'bid')
 						obRow.put_bid = _.chain(puts)
-							.map((quote) => quote.price)
+							.map((quote) => quote.price * quote.strike)
 							.max()
 							.value()
 					if (putPostition.side === 'ask')
