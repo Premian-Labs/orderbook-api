@@ -6,6 +6,7 @@ import { getOrderbookState, prepareOrders } from './utils/getOrderbookState'
 import { CoinPrice, Market, OptionsTableData, OrderbookRows } from './types'
 import { getCoinsPrice } from './Navbar'
 import { ReturnedOrderbookQuote } from '../../src/types/quote'
+import _ from 'lodash'
 
 const COLUMNS = [
 	{
@@ -72,7 +73,9 @@ function Main() {
 	const [expirations, setExpirations] = React.useState([] as string[])
 	const [marketSelector, setMarketSelector] = React.useState('WETH' as Market)
 	const [activeExpiration, setActiveExpiration] = React.useState('NONE')
-	const [activeExpirationOrders, setActiveExpirationOrders] = React.useState([] as ReturnedOrderbookQuote[])
+	const [activeExpirationOrders, setActiveExpirationOrders] = React.useState(
+		[] as { quotes: ReturnedOrderbookQuote[]; strike: number }[],
+	)
 	const [quotesRows, setQuotesRows] = React.useState([] as OrderbookRows[])
 
 	const columns = useMemo<Column<OrderbookRows>[]>(() => COLUMNS, [])
@@ -98,9 +101,9 @@ function Main() {
 	useEffect(() => {
 		const activeExpirationOrders = orders.find((order) => order.expiration === activeExpiration)
 		if (activeExpirationOrders) {
-			const rawQuotesRows = activeExpirationOrders.positions.flatMap((x) => x.quotes)
-			setActiveExpirationOrders(rawQuotesRows)
-			const quotesRow = rawQuotesRows.map((quote) => {
+			setActiveExpirationOrders(activeExpirationOrders.positions)
+			const quotesRow = activeExpirationOrders.positions.map(({ strike, quotes }) => {
+				const [calls, puts] = _.partition(quotes, (quote) => quote.type === 'C')
 				const obRow = {
 					call_bid: '-',
 					call_ask: '-',
@@ -108,7 +111,7 @@ function Main() {
 					call_delta: '-',
 					call_size: '-',
 					call_position: '-',
-					strike: quote.strike,
+					strike: strike,
 					put_bid: '-',
 					put_ask: '-',
 					put_iv: '-',
@@ -117,20 +120,43 @@ function Main() {
 					put_position: '-',
 				} as OrderbookRows
 
-				if (quote.type === 'C') {
-					obRow.call_size = quote.remainingSize
+				// TODO: positions
+				for (const callPostition of calls) {
+					obRow.call_size = _.chain(calls)
+						.map((call) => call.remainingSize)
+						.sum()
+						.value()
 					// obRow.call_delta = 0
 					// obRow.call_iv = 0
-					if (quote.side === 'bid') obRow.call_bid = quote.price
-					if (quote.side === 'ask') obRow.call_ask = quote.price
+					if (callPostition.side === 'bid')
+						obRow.call_bid = _.chain(calls)
+							.map((quote) => quote.price)
+							.max()
+							.value()
+					if (callPostition.side === 'ask')
+						obRow.call_ask = _.chain(calls)
+							.map((quote) => quote.price)
+							.min()
+							.value()
 				}
 
-				if (quote.type === 'P') {
-					obRow.put_size = quote.remainingSize
+				for (const putPostition of puts) {
+					obRow.put_size = _.chain(puts)
+						.map((call) => call.remainingSize)
+						.sum()
+						.value()
 					// obRow.put_delta = 0
 					// obRow.put_iv = 0
-					if (quote.side === 'bid') obRow.put_bid = quote.price
-					if (quote.side === 'ask') obRow.put_ask = quote.price
+					if (putPostition.side === 'bid')
+						obRow.put_bid = _.chain(puts)
+							.map((quote) => quote.price)
+							.max()
+							.value()
+					if (putPostition.side === 'ask')
+						obRow.put_ask = _.chain(puts)
+							.map((quote) => quote.price)
+							.min()
+							.value()
 				}
 
 				return obRow
