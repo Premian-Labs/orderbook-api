@@ -8,32 +8,16 @@ import { getCoinsPrice } from './Navbar'
 import { ReturnedOrderbookQuote } from '../../src/types/quote'
 import _ from 'lodash'
 import { getDeltaAndIV } from './utils/blackScholes'
+import {getIVOracle} from "./utils/apiGetters";
 
-// call_delta: number | '-'
-// call_bid_size: number | '-'
-// call_bid_iv: number | '-' | string
-// call_bid: number | '-' | string
-// call_mark: number | '-' | string
-// call_ask: number | '-' | string
-// call_ask_iv: number | '-' | string
-// call_ask_size: number | '-'
-// call_positions: number | '-'
-// strike: number
-// put_delta: number | '-'
-// put_bid_size: number | '-'
-// put_bid_iv: number | '-' | string
-// put_bid: number | '-' | string
-// put_mark: number | '-' | string
-// put_ask: number | '-' | string
-// put_ask_iv: number | '-' | string
-// put_ask_size: number | '-'
-// put_positions: number | '-'
+const providerAddress = process.env.REACT_APP_WALLET_ADDRESS!
+
 
 const COLUMNS = [
-	{
-		Header: 'Delta',
-		accessor: 'call_delta' as const,
-	},
+	// {
+	// 	Header: 'Delta',
+	// 	accessor: 'call_delta' as const,
+	// },
 	{
 		Header: 'Bid Size',
 		accessor: 'call_bid_size' as const,
@@ -104,6 +88,21 @@ const COLUMNS = [
 	},
 ]
 
+function getColumnClass(id: string) {
+	switch (id) {
+		case 'strike':
+			return 'strike-col'
+		case 'call_bid':
+		case 'put_bid':
+			return 'bid-col'
+		case 'call_ask':
+		case 'put_ask':
+			return 'ask-col'
+		default:
+			return ''
+	}
+}
+
 function Main() {
 	const [coinPrice, setCoinPrice] = React.useState({
 		WBTC: 43000,
@@ -118,6 +117,7 @@ function Main() {
 		[] as { quotes: ReturnedOrderbookQuote[]; strike: number }[],
 	)
 	const [quotesRows, setQuotesRows] = React.useState([] as OrderbookRows[])
+	const [ivData, setIvData] = React.useState([] as {   iv: number;  quoteIds: string[] }[][])
 
 	const columns = useMemo<Column<OrderbookRows>[]>(() => COLUMNS, [])
 	const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data: quotesRows })
@@ -139,9 +139,22 @@ function Main() {
 			.catch(console.error)
 	}, [marketSelector])
 
-	useEffect(() => {
-
-	}, [])
+	// TODO: use to retrieve mark price
+	// useEffect(() => {
+	// 	Promise.all(orders.map(async order => {
+	// 		const IVPerStrike = []
+	// 		for (const position of order.positions) {
+	// 			const iv: number = await getIVOracle(marketSelector, coinPrice[marketSelector], position.strike, order.expiration)
+	// 			IVPerStrike.push({
+	// 				iv: iv,
+	// 				quoteIds: position.quotes.map(quote => quote.quoteId)
+	// 			})
+	// 		}
+	// 		return IVPerStrike
+	// 	})).then(ivData => {
+	// 		setIvData(ivData)
+	// 	})
+	// }, [orders])
 
 	useEffect(() => {
 		const activeExpirationOrders = orders.find((order) => order.expiration === activeExpiration)
@@ -172,6 +185,12 @@ function Main() {
 				} as OrderbookRows
 
 				for (const callPostition of calls) {
+					obRow.call_positions = _.chain(calls)
+						.filter(quote => quote.provider === providerAddress)
+						.map((quote) => quote.remainingSize)
+						.sum()
+						.value()
+
 					if (callPostition.side === 'bid') {
 						obRow.call_bid_size = _.chain(calls)
 							.map((quote) => quote.remainingSize)
@@ -206,6 +225,12 @@ function Main() {
 				}
 
 				for (const putPostition of puts) {
+					obRow.put_positions = _.chain(puts)
+						.filter(quote => quote.provider === providerAddress)
+						.map((quote) => quote.remainingSize)
+						.sum()
+						.value()
+
 					if (putPostition.side === 'bid') {
 						obRow.put_bid_size = _.chain(puts)
 							.map((quote) => quote.remainingSize)
@@ -299,7 +324,7 @@ function Main() {
 									return (
 										<tr {...row.getRowProps()}>
 											{row.cells.map((cell) => {
-												return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+												return <td className={getColumnClass(cell.column.id)} {...cell.getCellProps()}>{cell.render('Cell')}</td>
 											})}
 										</tr>
 									)

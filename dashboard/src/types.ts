@@ -17,7 +17,7 @@ export interface OptionsTableData {
 }
 
 export interface OrderbookRows {
-	call_delta: number | '-'
+	// call_delta: number | '-'
 	call_bid_size: number | '-'
 	call_bid_iv: number | '-' | string
 	call_bid: number | '-' | string
@@ -27,7 +27,7 @@ export interface OrderbookRows {
 	call_ask_size: number | '-'
 	call_positions: number | '-'
 	strike: number
-	put_delta: number | '-'
+	// put_delta: number | '-'
 	put_bid_size: number | '-'
 	put_bid_iv: number | '-' | string
 	put_bid: number | '-' | string

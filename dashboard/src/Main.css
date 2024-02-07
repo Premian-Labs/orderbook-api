@@ -79,8 +79,9 @@ table {
 td,
 th {
 	border: 1px solid rgb(82, 148, 255);
-	text-align: left;
+	text-align: center;
 	padding: 8px;
+
 }
 tr:nth-child(even) {
 	background-color: rgb(13, 22, 38);
@@ -88,4 +89,20 @@ tr:nth-child(even) {
 
 tr:hover {
 	background-color: rgba(82, 148, 255, 0.4);
+}
+
+.strike-col {
+	background-color: rgba(82, 148, 255, 0.7);
+}
+
+.strike-col:hover {
+	background-color: rgba(82, 148, 255, 0.7);
+}
+
+.bid-col {
+	color: rgba(0, 185, 80, 0.8);
+}
+
+.ask-col {
+	color: rgba(185, 0, 0, 0.8);
 }
