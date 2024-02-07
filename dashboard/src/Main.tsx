@@ -204,7 +204,7 @@ function Main() {
 
 						obRow.call_bid_iv = getDeltaAndIV(callPostition, obRow.call_bid, coinPrice[marketSelector])
 						if (obRow.call_bid_iv > 0) obRow.call_bid_iv = obRow.call_bid_iv.toFixed(1)
-						obRow.call_bid = obRow.call_bid.toFixed(4)
+						obRow.call_bid = Math.round(obRow.call_bid * 100) / 100
 					}
 
 					if (callPostition.side === 'ask') {
@@ -220,7 +220,7 @@ function Main() {
 
 						obRow.call_ask_iv = getDeltaAndIV(callPostition, obRow.call_ask, coinPrice[marketSelector])
 						if (obRow.call_ask_iv > 0) obRow.call_ask_iv = obRow.call_ask_iv.toFixed(1)
-						obRow.call_ask = obRow.call_ask.toFixed(4)
+						obRow.call_ask = Math.round(obRow.call_ask * 100) / 100
 					}
 				}
 
@@ -244,7 +244,7 @@ function Main() {
 
 						obRow.put_bid_iv = getDeltaAndIV(putPostition, obRow.put_bid, coinPrice[marketSelector])
 						if (obRow.put_bid_iv > 0) obRow.put_bid_iv = obRow.put_bid_iv.toFixed(1)
-						obRow.put_bid = obRow.put_bid.toFixed(4)
+						obRow.put_bid = Math.round(obRow.put_bid * 100) / 100
 					}
 
 					if (putPostition.side === 'ask') {
@@ -260,7 +260,7 @@ function Main() {
 
 						obRow.put_ask_iv = getDeltaAndIV(putPostition, obRow.put_ask, coinPrice[marketSelector])
 						if (obRow.put_ask_iv > 0) obRow.put_ask_iv = obRow.put_ask_iv.toFixed(1)
-						obRow.put_ask = obRow.put_ask.toFixed(4)
+						obRow.put_ask = Math.round(obRow.put_ask * 100) / 100
 					}
 				}
 

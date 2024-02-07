@@ -10,6 +10,11 @@ const BSchInstance = new BlackScholes({
 const ONE_YEAR_SEC = 60 * 60 * 24 * 365
 
 export function getDeltaAndIV(option: ReturnedOrderbookQuote, price: number, spot: number) {
+
+	// ITM IV
+	if (option.type === 'C' && (spot - option.strike) > 0) return  0
+	if (option.type === 'P' && (option.strike - spot) > 0) return  0
+
 	const TTEAnnualised = (moment(option.expiration, 'DDMMMYY').unix() - moment.utc().unix()) / ONE_YEAR_SEC
 	const iv = BSchInstance.sigma({
 		price: parseFloat(price.toFixed(6)),
