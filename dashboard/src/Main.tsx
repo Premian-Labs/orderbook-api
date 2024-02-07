@@ -230,7 +230,7 @@ function Main() {
 							.value()
 
 						obRow.call_bid_iv = getDeltaAndIV(callPostition, obRow.call_bid, coinPrice[marketSelector])
-						if (obRow.call_bid_iv > 0) obRow.call_bid_iv = obRow.call_bid_iv.toFixed(1)
+						obRow.call_bid_iv = obRow.call_bid_iv.toFixed(1)
 						obRow.call_bid = Math.round(obRow.call_bid * 100) / 100
 					}
 
@@ -248,7 +248,7 @@ function Main() {
 							.value()
 
 						obRow.call_ask_iv = getDeltaAndIV(callPostition, obRow.call_ask, coinPrice[marketSelector])
-						if (obRow.call_ask_iv > 0) obRow.call_ask_iv = obRow.call_ask_iv.toFixed(1)
+						obRow.call_ask_iv = obRow.call_ask_iv.toFixed(1)
 						obRow.call_ask = Math.round(obRow.call_ask * 100) / 100
 					}
 				}
@@ -274,7 +274,7 @@ function Main() {
 							.value()
 
 						obRow.put_bid_iv = getDeltaAndIV(putPostition, obRow.put_bid, coinPrice[marketSelector])
-						if (obRow.put_bid_iv > 0) obRow.put_bid_iv = obRow.put_bid_iv.toFixed(1)
+						obRow.put_bid_iv = obRow.put_bid_iv.toFixed(1)
 						obRow.put_bid = Math.round(obRow.put_bid * 100) / 100
 					}
 
@@ -292,7 +292,7 @@ function Main() {
 							.value()
 
 						obRow.put_ask_iv = getDeltaAndIV(putPostition, obRow.put_ask, coinPrice[marketSelector])
-						if (obRow.put_ask_iv > 0) obRow.put_ask_iv = obRow.put_ask_iv.toFixed(1)
+						obRow.put_ask_iv = obRow.put_ask_iv.toFixed(1)
 						obRow.put_ask = Math.round(obRow.put_ask * 100) / 100
 					}
 				}
@@ -313,7 +313,7 @@ function Main() {
 			</Tooltip>
 			<Tooltip id="iv" place="bottom">
 				IV based on best bid / best ask. <br />
-				ITM option IV is default to 0%.
+				Deep ITM option IV is default to 0%.
 			</Tooltip>
 			<Tooltip id="positions" place="bottom">
 				Total sum for your contracts.
