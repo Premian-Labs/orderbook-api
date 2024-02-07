@@ -81,7 +81,6 @@ th {
 	border: 1px solid rgb(82, 148, 255);
 	text-align: center;
 	padding: 8px;
-
 }
 tr:nth-child(even) {
 	background-color: rgb(13, 22, 38);

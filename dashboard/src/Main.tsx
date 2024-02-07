@@ -8,11 +8,10 @@ import { getCoinsPrice } from './Navbar'
 import { ReturnedOrderbookQuote } from '../../src/types/quote'
 import _ from 'lodash'
 import { getDeltaAndIV } from './utils/blackScholes'
-import {getIVOracle} from "./utils/apiGetters";
-import {Tooltip} from "react-tooltip";
+import { getIVOracle } from './utils/apiGetters'
+import { Tooltip } from 'react-tooltip'
 
 const providerAddress = process.env.REACT_APP_WALLET_ADDRESS!
-
 
 const COLUMNS = [
 	// {
@@ -143,7 +142,7 @@ function Main() {
 		[] as { quotes: ReturnedOrderbookQuote[]; strike: number }[],
 	)
 	const [quotesRows, setQuotesRows] = React.useState([] as OrderbookRows[])
-	const [ivData, setIvData] = React.useState([] as {   iv: number;  quoteIds: string[] }[][])
+	const [ivData, setIvData] = React.useState([] as { iv: number; quoteIds: string[] }[][])
 
 	const columns = useMemo<Column<OrderbookRows>[]>(() => COLUMNS, [])
 	const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data: quotesRows })
@@ -212,20 +211,20 @@ function Main() {
 
 				for (const callPostition of calls) {
 					obRow.call_positions = _.chain(calls)
-						.filter(quote => quote.provider === providerAddress)
+						.filter((quote) => quote.provider === providerAddress)
 						.map((quote) => quote.remainingSize)
 						.sum()
 						.value()
 
 					if (callPostition.side === 'bid') {
 						obRow.call_bid_size = _.chain(calls)
-							.filter(quote => quote.side === 'bid')
+							.filter((quote) => quote.side === 'bid')
 							.map((quote) => quote.remainingSize)
 							.sum()
 							.value()
 
 						obRow.call_bid = _.chain(calls)
-							.filter(quote => quote.side === 'bid')
+							.filter((quote) => quote.side === 'bid')
 							.map((quote) => quote.price * coinPrice[marketSelector])
 							.max()
 							.value()
@@ -237,13 +236,13 @@ function Main() {
 
 					if (callPostition.side === 'ask') {
 						obRow.call_ask_size = _.chain(calls)
-							.filter(quote => quote.side === 'ask')
+							.filter((quote) => quote.side === 'ask')
 							.map((quote) => quote.remainingSize)
 							.sum()
 							.value()
 
 						obRow.call_ask = _.chain(calls)
-							.filter(quote => quote.side === 'ask')
+							.filter((quote) => quote.side === 'ask')
 							.map((quote) => quote.price * coinPrice[marketSelector])
 							.min()
 							.value()
@@ -256,20 +255,20 @@ function Main() {
 
 				for (const putPostition of puts) {
 					obRow.put_positions = _.chain(puts)
-						.filter(quote => quote.provider === providerAddress)
+						.filter((quote) => quote.provider === providerAddress)
 						.map((quote) => quote.remainingSize)
 						.sum()
 						.value()
 
 					if (putPostition.side === 'bid') {
 						obRow.put_bid_size = _.chain(puts)
-							.filter(quote => quote.side === 'bid')
+							.filter((quote) => quote.side === 'bid')
 							.map((quote) => quote.remainingSize)
 							.sum()
 							.value()
 
 						obRow.put_bid = _.chain(puts)
-							.filter(quote => quote.side === 'bid')
+							.filter((quote) => quote.side === 'bid')
 							.map((quote) => quote.price * strike)
 							.max()
 							.value()
@@ -281,13 +280,13 @@ function Main() {
 
 					if (putPostition.side === 'ask') {
 						obRow.put_ask_size = _.chain(puts)
-							.filter(quote => quote.side === 'ask')
+							.filter((quote) => quote.side === 'ask')
 							.map((quote) => quote.remainingSize)
 							.sum()
 							.value()
 
 						obRow.put_ask = _.chain(puts)
-							.filter(quote => quote.side === 'ask')
+							.filter((quote) => quote.side === 'ask')
 							.map((quote) => quote.price * strike)
 							.min()
 							.value()
@@ -306,20 +305,20 @@ function Main() {
 
 	return (
 		<div className="app">
-			<Tooltip id='bid' place='bottom'>
+			<Tooltip id="bid" place="bottom">
 				Best bid price
 			</Tooltip>
-			<Tooltip id='ask' place='bottom'>
+			<Tooltip id="ask" place="bottom">
 				Best ask price
 			</Tooltip>
-			<Tooltip id='iv' place='bottom'>
+			<Tooltip id="iv" place="bottom">
 				IV based on best bid / best ask. <br />
 				ITM option IV is default to 0%.
 			</Tooltip>
-			<Tooltip id='positions' place='bottom'>
+			<Tooltip id="positions" place="bottom">
 				Total sum for your contracts.
 			</Tooltip>
-			<Tooltip id='mark' place='bottom'>
+			<Tooltip id="mark" place="bottom">
 				Approx. theoretical price based on IV Oracle index.
 			</Tooltip>
 			<div className="app-container">
@@ -364,7 +363,9 @@ function Main() {
 								{headerGroups.map((headerGroup) => (
 									<tr {...headerGroup.getHeaderGroupProps()}>
 										{headerGroup.headers.map((column) => (
-											<th data-tooltip-id={getTooltipId(column.id)} {...column.getHeaderProps()}>{column.render('Header')}</th>
+											<th data-tooltip-id={getTooltipId(column.id)} {...column.getHeaderProps()}>
+												{column.render('Header')}
+											</th>
 										))}
 									</tr>
 								))}
@@ -375,7 +376,11 @@ function Main() {
 									return (
 										<tr {...row.getRowProps()}>
 											{row.cells.map((cell) => {
-												return <td className={getColumnClass(cell.column.id)} {...cell.getCellProps()}>{cell.render('Cell')}</td>
+												return (
+													<td className={getColumnClass(cell.column.id)} {...cell.getCellProps()}>
+														{cell.render('Cell')}
+													</td>
+												)
 											})}
 										</tr>
 									)

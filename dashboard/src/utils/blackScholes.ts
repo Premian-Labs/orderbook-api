@@ -10,10 +10,9 @@ const BSchInstance = new BlackScholes({
 const ONE_YEAR_SEC = 60 * 60 * 24 * 365
 
 export function getDeltaAndIV(option: ReturnedOrderbookQuote, price: number, spot: number) {
-
 	// ITM IV
-	if (option.type === 'C' && (spot - option.strike) > 0) return  0
-	if (option.type === 'P' && (option.strike - spot) > 0) return  0
+	if (option.type === 'C' && spot - option.strike > 0) return 0
+	if (option.type === 'P' && option.strike - spot > 0) return 0
 
 	const TTEAnnualised = (moment(option.expiration, 'DDMMMYY').unix() - moment.utc().unix()) / ONE_YEAR_SEC
 	const iv = BSchInstance.sigma({
@@ -28,7 +27,14 @@ export function getDeltaAndIV(option: ReturnedOrderbookQuote, price: number, spo
 	return Math.max(iv, 0) * 100
 }
 
-export function blackScholes(iv: number, price: number, spot: number, expiration: string, strike: number, type: "C" | "P") {
+export function blackScholes(
+	iv: number,
+	price: number,
+	spot: number,
+	expiration: string,
+	strike: number,
+	type: 'C' | 'P',
+) {
 	const TTEAnnualised = (moment(expiration, 'DDMMMYY').unix() - moment.utc().unix()) / ONE_YEAR_SEC
 	const option = BSchInstance.option({
 		sigma: iv / 100,
