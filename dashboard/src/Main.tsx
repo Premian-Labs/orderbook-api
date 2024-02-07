@@ -9,6 +9,7 @@ import { ReturnedOrderbookQuote } from '../../src/types/quote'
 import _ from 'lodash'
 import { getDeltaAndIV } from './utils/blackScholes'
 import {getIVOracle} from "./utils/apiGetters";
+import {Tooltip} from "react-tooltip";
 
 const providerAddress = process.env.REACT_APP_WALLET_ADDRESS!
 
@@ -31,7 +32,7 @@ const COLUMNS = [
 		accessor: 'call_bid' as const,
 	},
 	{
-		Header: 'Mark',
+		Header: 'Oracle',
 		accessor: 'call_mark' as const,
 	},
 	{
@@ -67,7 +68,7 @@ const COLUMNS = [
 		accessor: 'put_bid' as const,
 	},
 	{
-		Header: 'Mark',
+		Header: 'Oracle',
 		accessor: 'put_mark' as const,
 	},
 	{
@@ -98,6 +99,31 @@ function getColumnClass(id: string) {
 		case 'call_ask':
 		case 'put_ask':
 			return 'ask-col'
+		default:
+			return ''
+	}
+}
+
+function getTooltipId(columnId: string) {
+	console.log(columnId)
+	switch (columnId) {
+		case 'call_bid':
+		case 'put_bid':
+			return 'bid'
+		case 'call_ask':
+		case 'put_ask':
+			return 'ask'
+		case 'call_bid_iv':
+		case 'call_ask_iv':
+		case 'put_bid_iv':
+		case 'put_ask_iv':
+			return 'iv'
+		case 'call_positions':
+		case 'put_positions':
+			return 'positions'
+		case 'call_mark':
+		case 'put_mark':
+			return 'mark'
 		default:
 			return ''
 	}
@@ -193,11 +219,13 @@ function Main() {
 
 					if (callPostition.side === 'bid') {
 						obRow.call_bid_size = _.chain(calls)
+							.filter(quote => quote.side === 'bid')
 							.map((quote) => quote.remainingSize)
 							.sum()
 							.value()
 
 						obRow.call_bid = _.chain(calls)
+							.filter(quote => quote.side === 'bid')
 							.map((quote) => quote.price * coinPrice[marketSelector])
 							.max()
 							.value()
@@ -209,13 +237,15 @@ function Main() {
 
 					if (callPostition.side === 'ask') {
 						obRow.call_ask_size = _.chain(calls)
+							.filter(quote => quote.side === 'ask')
 							.map((quote) => quote.remainingSize)
 							.sum()
 							.value()
 
 						obRow.call_ask = _.chain(calls)
+							.filter(quote => quote.side === 'ask')
 							.map((quote) => quote.price * coinPrice[marketSelector])
-							.max()
+							.min()
 							.value()
 
 						obRow.call_ask_iv = getDeltaAndIV(callPostition, obRow.call_ask, coinPrice[marketSelector])
@@ -233,11 +263,13 @@ function Main() {
 
 					if (putPostition.side === 'bid') {
 						obRow.put_bid_size = _.chain(puts)
+							.filter(quote => quote.side === 'bid')
 							.map((quote) => quote.remainingSize)
 							.sum()
 							.value()
 
 						obRow.put_bid = _.chain(puts)
+							.filter(quote => quote.side === 'bid')
 							.map((quote) => quote.price * strike)
 							.max()
 							.value()
@@ -249,13 +281,15 @@ function Main() {
 
 					if (putPostition.side === 'ask') {
 						obRow.put_ask_size = _.chain(puts)
+							.filter(quote => quote.side === 'ask')
 							.map((quote) => quote.remainingSize)
 							.sum()
 							.value()
 
 						obRow.put_ask = _.chain(puts)
+							.filter(quote => quote.side === 'ask')
 							.map((quote) => quote.price * strike)
-							.max()
+							.min()
 							.value()
 
 						obRow.put_ask_iv = getDeltaAndIV(putPostition, obRow.put_ask, coinPrice[marketSelector])
@@ -272,10 +306,26 @@ function Main() {
 
 	return (
 		<div className="app">
+			<Tooltip id='bid' place='bottom'>
+				Best bid price
+			</Tooltip>
+			<Tooltip id='ask' place='bottom'>
+				Best ask price
+			</Tooltip>
+			<Tooltip id='iv' place='bottom'>
+				IV based on best bid / best ask. <br />
+				ITM option IV is default to 0%.
+			</Tooltip>
+			<Tooltip id='positions' place='bottom'>
+				Total sum for your contracts.
+			</Tooltip>
+			<Tooltip id='mark' place='bottom'>
+				Approx. theoretical price based on IV Oracle index.
+			</Tooltip>
 			<div className="app-container">
 				<img hidden={orders.length > 0} src={logo} className="app-logo" alt="logo" />
 				<p hidden={orders.length > 0}>Loading orderbook state...</p>
-				<div hidden={orders.length === 0} className="selector">
+				<div className="selector">
 					<button
 						className={marketSelector === 'WETH' ? 'selector-btn-active' : 'selector-btn'}
 						onClick={() => setMarketSelector('WETH')}
@@ -306,14 +356,15 @@ function Main() {
 					<div className="table-container">
 						<table style={{ display: activeExpirationOrders.length > 0 ? 'table' : 'none' }} {...getTableProps()}>
 							<thead>
-								{/*<tr>*/}
-								{/*	<th>CALLS</th>*/}
-								{/*	<th>PUTS</th>*/}
-								{/*</tr>*/}
+								<tr>
+									<th colSpan={8}>CALLS</th>
+									<th />
+									<th colSpan={8}>PUTS</th>
+								</tr>
 								{headerGroups.map((headerGroup) => (
 									<tr {...headerGroup.getHeaderGroupProps()}>
 										{headerGroup.headers.map((column) => (
-											<th {...column.getHeaderProps()}>{column.render('Header')}</th>
+											<th data-tooltip-id={getTooltipId(column.id)} {...column.getHeaderProps()}>{column.render('Header')}</th>
 										))}
 									</tr>
 								))}
