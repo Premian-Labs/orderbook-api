@@ -71,8 +71,8 @@ import {
 	IVResponse,
 	SpotRequest,
 	SpotResponse,
-	StrikesRequestSymbol
-} from './types/validate';
+	StrikesRequestSymbol,
+} from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
 import {
