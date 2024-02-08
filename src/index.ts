@@ -1181,7 +1181,7 @@ app.post('/pools', async (req, res) => {
 	})
 })
 
-app.get('/pools/strikes', (req, res) => {
+app.get('/pools/strikes', async (req, res) => {
 	const valid = validateGetStrikes(req.query)
 	if (!valid) {
 		res.status(400)
@@ -1197,27 +1197,37 @@ app.get('/pools/strikes', (req, res) => {
 		| StrikesRequestSymbols
 
 	if (request.hasOwnProperty('spotPrice')) {
-		const strikeEstimate = request as StrikesRequestSpot
-		const spotPrice = parseFloat(strikeEstimate.spotPrice)
+		const market = request as StrikesRequestSpot
+		const spotPrice = parseFloat(market.spotPrice)
 
 		if (Number.isNaN(spotPrice)) {
 			return res.status(400).json({
 				message: 'spotPrice must be a number',
-				spotPrice: strikeEstimate.spotPrice,
+				spotPrice: market.spotPrice,
 			})
 		}
 
 		if (spotPrice <= 0) {
 			return res.status(400).json({
 				message: 'spotPrice must be > 0',
-				spotPrice: strikeEstimate.spotPrice,
+				spotPrice: market.spotPrice,
 			})
 		}
 
 		const suggestedStrikes = getSurroundingStrikes(spotPrice)
 		return res.status(200).json(suggestedStrikes)
 	} else {
-		return res.status(200).json('not implemented')
+		const market = request as StrikesRequestSymbols
+		const spotPrice = await getSpotPrice(market.base)
+
+		if (spotPrice == undefined) {
+			return res.status(500).json({
+				message: `Failed to get spot price from oracle, try again or provide spot price`,
+			})
+		}
+
+		const suggestedStrikes = getSurroundingStrikes(parseFloat(spotPrice))
+		return res.status(200).json(suggestedStrikes)
 	}
 })
 
