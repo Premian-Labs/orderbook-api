@@ -417,15 +417,15 @@ paths:
             - api
   /pools/strikes:
     get:
-      summary: Returns all valid strike for a given market.
+      summary: Returns all valid strikes for a given market.
       parameters:
         - name: spotPrice
           in: query
-          description: unique address of the pool
+          description: spot price to use as reference for valid strikes
           required: false
           schema:
             type: number
-            example: 10000
+            example: 9846
       responses:
         '200':
           description: Successful operation
