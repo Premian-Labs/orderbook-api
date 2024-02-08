@@ -70,9 +70,8 @@ export interface GetPoolsParams {
 	expiration?: string
 }
 
-export interface StrikesRequestSymbols {
-	base: string
-	quote: string
+export interface StrikesRequestSymbol {
+	market: string
 }
 
 export interface StrikesRequestSpot {

@@ -243,16 +243,12 @@ export const validateGetStrikes = ajv.compile({
 		{
 			type: 'object',
 			properties: {
-				base: {
+				market: {
 					type: 'string',
 					pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
-				},
-				quote: {
-					type: 'string',
-					pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
-				},
+				}
 			},
-			required: ['base', 'quote'],
+			required: ['market'],
 			additionalProperties: false,
 		},
 		{

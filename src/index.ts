@@ -67,12 +67,12 @@ import {
 	GetPoolsParams,
 	GetOrdersRequest,
 	StrikesRequestSpot,
-	StrikesRequestSymbols,
 	IVRequest,
 	IVResponse,
 	SpotRequest,
 	SpotResponse,
-} from './types/validate'
+	StrikesRequestSymbol
+} from './types/validate';
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
 import {
@@ -1199,31 +1199,31 @@ app.get('/pools/strikes', async (req, res) => {
 
 	const request = req.query as unknown as
 		| StrikesRequestSpot
-		| StrikesRequestSymbols
+		| StrikesRequestSymbol
 
 	if (request.hasOwnProperty('spotPrice')) {
-		const market = request as StrikesRequestSpot
-		const spotPrice = parseFloat(market.spotPrice)
+		const getStrikes = request as StrikesRequestSpot
+		const spotPrice = parseFloat(getStrikes.spotPrice)
 
 		if (Number.isNaN(spotPrice)) {
 			return res.status(400).json({
 				message: 'spotPrice must be a number',
-				spotPrice: market.spotPrice,
+				spotPrice: getStrikes.spotPrice,
 			})
 		}
 
 		if (spotPrice <= 0) {
 			return res.status(400).json({
 				message: 'spotPrice must be > 0',
-				spotPrice: market.spotPrice,
+				spotPrice: getStrikes.spotPrice,
 			})
 		}
 
 		const suggestedStrikes = getSurroundingStrikes(spotPrice)
 		return res.status(200).json(suggestedStrikes)
 	} else {
-		const market = request as StrikesRequestSymbols
-		const spotPrice = await getSpotPrice(market.base)
+		const getStrikes = request as StrikesRequestSymbol
+		const spotPrice = await getSpotPrice(getStrikes.market)
 
 		if (spotPrice == undefined) {
 			return res.status(500).json({
