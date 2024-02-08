@@ -81,7 +81,11 @@ export interface StrikesRequestSpot {
 
 export interface IVRequest {
 	market: string
-	strike: string
 	expiration: string
 	spotPrice?: string
+}
+
+export interface IVResponse {
+	strike: number
+	iv: number
 }

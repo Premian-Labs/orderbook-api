@@ -805,7 +805,7 @@ paths:
             - api
   /oracles/iv:
     get:
-      summary: Gets the IV value for an option via an IV oracle.
+      summary: Gets the IV values for a given option expiration via an IV oracle.
       parameters:
         - name: market
           in: query
@@ -815,14 +815,6 @@ paths:
             type: string
             pattern: ^WETH$|^WBTC$|^ARB$|^LINK$|^WSTETH$|^GMX$|^MAGIC$|^SOL$|^FXS$
             example: WETH
-        - name: strike
-          in: query
-          required: true
-          description: strike price of option
-          schema:
-            type: number
-            minimum: 0
-            example: 1800
         - name: expiration
           in: query
           required: true
@@ -845,8 +837,19 @@ paths:
           content:
             application/json:
               schema:
-                type: number
-                example: 0.46
+                type: array
+                items:
+                  type: object
+                  properties:
+                    strike:
+                      type: number
+                      example: 1700
+                    iv:
+                      type: number
+                      example: 0.47
+                  required:
+                    - strike
+                    - iv
         '400':
           description: Invalid parameters supplied
           content:

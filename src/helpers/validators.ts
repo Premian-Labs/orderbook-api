@@ -277,10 +277,6 @@ export const validateGetIV = ajv.compile({
 				.map((token) => `^${token}$`)
 				.join('|'),
 		},
-		strike: {
-			type: 'string',
-			pattern: '^[0-9]{1,}([.][0-9]*)?$',
-		},
 		expiration: {
 			type: 'string',
 			pattern: '^\\d\\d\\w\\w\\w\\d\\d$',
@@ -290,6 +286,6 @@ export const validateGetIV = ajv.compile({
 			pattern: '^[0-9]{1,}([.][0-9]*)?$',
 		},
 	},
-	required: ['market', 'strike', 'expiration'],
+	required: ['market', 'expiration'],
 	additionalProperties: false,
 })

@@ -68,6 +68,7 @@ import {
 	StrikesRequestSpot,
 	StrikesRequestSymbols,
 	IVRequest,
+	IVResponse,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -1277,30 +1278,43 @@ app.get('/oracles/iv', async (req, res) => {
 		}
 	}
 
-	let iv: number | undefined
-	try {
-		iv = parseFloat(
-			formatEther(
-				await ivOracle['getVolatility(address,uint256,uint256,uint256)'](
-					productionTokenAddr[request.market],
-					parseEther(spotPrice),
-					parseEther(request.strike),
-					parseEther(ttm.toFixed(12))
-				)
-			)
+	// get suggested strikes (same as Get strikes endpoint)
+	const suggestedStrikes = getSurroundingStrikes(parseFloat(spotPrice))
+
+	// multi call to ivOracle
+	const ivPromises = suggestedStrikes.map((strike) => {
+		return ivOracle['getVolatility(address,uint256,uint256,uint256)'](
+			productionTokenAddr[request.market],
+			parseEther(spotPrice!),
+			parseEther(strike.toString()),
+			parseEther(ttm.toFixed(12))
 		)
-		if (iv == undefined) {
-			return res.status(500).json({
-				message: `Failed to get iv from oracle`,
+	})
+
+	let ivRequestsBigInt
+	try {
+		ivRequestsBigInt = await Promise.all(ivPromises)
+		const ivRequests = ivRequestsBigInt.map((iv) => {
+			return Number(parseFloat(formatEther(iv)).toFixed(2))
+		})
+		let ivStrikes: IVResponse[] = []
+		for (let i = 0; i < suggestedStrikes.length; i++) {
+			ivStrikes.push({
+				strike: suggestedStrikes[i],
+				iv: ivRequests[i],
 			})
 		}
+		return res.status(200).json(ivStrikes)
 	} catch (e) {
+		Logger.error({
+			message: 'ivOracle multicall failed',
+			error: e,
+		})
+
 		return res.status(500).json({
-			message: e,
+			message: `Failed to get IV's from oracle`,
 		})
 	}
-
-	return res.status(200).json(Number(iv.toFixed(2)))
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {
