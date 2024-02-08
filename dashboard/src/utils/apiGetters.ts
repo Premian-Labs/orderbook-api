@@ -2,7 +2,7 @@ import axios from 'axios'
 import { CollateralBalances, Market } from '../types'
 import { PREMIA_API_URL } from '../config'
 
-const APIKey = process.env.REACT_APP_TESTNET_ORDERBOOK_API_KEY!
+const APIKey = process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY!
 
 export async function getIVOracle(market: Market, spotPrice: number, strike: number, expiration: string) {
 	const getIVResponse = await axios.get(PREMIA_API_URL + '/oracles/iv', {

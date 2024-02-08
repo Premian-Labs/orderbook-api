@@ -1,24 +1,19 @@
 import axios from 'axios'
-import { PREMIA_API_URL } from '../config'
+import {PREMIA_API_URL, WALLET_ADDRESS} from '../config'
 import { ReturnedOrderbookQuote } from '../../../src/types/quote'
 import _ from 'lodash'
 import { Market } from '../types'
 import { getSurroundingStrikes } from './strikes'
 import moment from 'moment'
 
-const providerAddress = process.env.REACT_APP_WALLET_ADDRESS!
-const APIKey = process.env.REACT_APP_TESTNET_ORDERBOOK_API_KEY!
-
-if (!providerAddress || !APIKey) {
-	throw Error('.env: secrets not set!')
-}
+const APIKey = process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY!
 
 export async function getOrderbookState(show: 'ALL' | 'OWN') {
 	const ordersResponse = await axios.get(PREMIA_API_URL + '/orderbook/orders', {
 		withCredentials: false,
 		params: {
 			...(show === 'OWN' && {
-				provider: providerAddress.toLowerCase(),
+				provider: WALLET_ADDRESS.toLowerCase(),
 			}),
 		},
 		headers: {
