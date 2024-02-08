@@ -16,15 +16,17 @@ describe('Oracles', () => {
 			},
 			params: {
 				market: 'WETH',
-				strike: 2200,
 				expiration: getMaturity(),
 			},
 		})
 
 		const iv = validGetIVResponse.data
 
-		expect(typeof iv).to.eq('number')
-		expect(iv).to.be.gt(0)
+		// returns an array but javascript calls them objects
+		expect(typeof iv).to.eq('object')
+		expect(iv.length).to.be.gt(0)
+		expect(iv[0]['strike']).to.be.gt(0)
+		expect(iv[0]['iv']).to.be.gt(0)
 	})
 
 	it('should reject invalid market', async () => {
@@ -34,7 +36,6 @@ describe('Oracles', () => {
 			},
 			params: {
 				market: 'ABCD',
-				strike: 2200,
 				expiration: getMaturity(),
 			},
 			validateStatus: function (status) {
@@ -55,7 +56,6 @@ describe('Oracles', () => {
 			},
 			params: {
 				market: 'WETH',
-				strike: 2200,
 				expiration: '26JAN24',
 			},
 			validateStatus: function (status) {
@@ -76,15 +76,17 @@ describe('Oracles', () => {
 			},
 			params: {
 				market: 'WETH',
-				strike: 2200,
 				expiration: getMaturity(),
 				spotPrice: 2200,
 			},
 		})
 
-		const iv = validGetIVResponse.data
+		const ivManualSpot = validGetIVResponse.data
 
-		expect(typeof iv).to.eq('number')
-		expect(iv).to.be.gt(0)
+		// returns an array but javascript calls them objects
+		expect(typeof ivManualSpot).to.eq('object')
+		expect(ivManualSpot.length).to.be.gt(0)
+		expect(ivManualSpot[0]['strike']).to.be.gt(0)
+		expect(ivManualSpot[0]['iv']).to.be.gt(0)
 	})
 })
