@@ -289,3 +289,19 @@ export const validateGetIV = ajv.compile({
 	required: ['market', 'expiration'],
 	additionalProperties: false,
 })
+
+export const validateGetSpot = ajv.compile({
+	type: 'object',
+	properties: {
+		markets: {
+			type: 'array',
+			items: {
+				type: 'string',
+				pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+			},
+			minItems: 1,
+		},
+	},
+	required: ['markets'],
+	additionalProperties: false,
+})

@@ -805,7 +805,7 @@ paths:
             - api
   /oracles/iv:
     get:
-      summary: Gets the IV values for a given option expiration via an IV oracle.
+      summary: Gets multiple IV values for all valid strikes for a given option expiration of an underlying market via IV oracles.
       parameters:
         - name: market
           in: query
@@ -850,6 +850,50 @@ paths:
                   required:
                     - strike
                     - iv
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+  /oracles/spot:
+    get:
+      summary: Gets multiple spot prices from chainlink oracles by providing an array of one or more token symbols.
+      parameters:
+        - name: market
+          in: query
+          required: true
+          description: one or more base token symbols ie [WETH, WBTC, ARB]
+          schema:
+            type: array
+            items:
+              type: string
+            minItems: 1
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    market:
+                      type: string
+                      example: WETH
+                    price:
+                      type: number
+                      example: 2500.25
+                  required:
+                    - market
+                    - price
         '400':
           description: Invalid parameters supplied
           content:

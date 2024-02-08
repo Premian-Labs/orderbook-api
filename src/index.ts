@@ -41,6 +41,7 @@ import {
 	tokenAddr,
 	ivOracle,
 	productionTokenAddr,
+	chainlink,
 } from './config/constants'
 import {
 	FillableQuote,
@@ -69,6 +70,8 @@ import {
 	StrikesRequestSymbols,
 	IVRequest,
 	IVResponse,
+	SpotRequest,
+	SpotResponse,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -84,6 +87,7 @@ import {
 	validateGetPools,
 	validateGetStrikes,
 	validateGetIV,
+	validateGetSpot,
 } from './helpers/validators'
 import {
 	getBalances,
@@ -1307,12 +1311,58 @@ app.get('/oracles/iv', async (req, res) => {
 		return res.status(200).json(ivStrikes)
 	} catch (e) {
 		Logger.error({
-			message: 'ivOracle multicall failed',
+			message: 'IV Oracle multicall failed',
 			error: e,
 		})
 
 		return res.status(500).json({
 			message: `Failed to get IV's from oracle`,
+		})
+	}
+})
+
+app.get('/oracles/spot', async (req, res) => {
+	const valid = validateGetSpot(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'AJV get IV req params validation error',
+			error: validateGetSpot.errors,
+		})
+		return res.send(validateGetSpot.errors)
+	}
+	const spotRequest = req.query as unknown as SpotRequest
+
+	// multi call to spot Oracle
+	const spotPromises = spotRequest.markets.map((market) => {
+		return chainlink.getPrice(
+			productionTokenAddr[market],
+			productionTokenAddr.USDC
+		)
+	})
+
+	let spotRequestsBigInt
+	try {
+		spotRequestsBigInt = await Promise.all(spotPromises)
+		const spotRequests = spotRequestsBigInt.map((price) => {
+			return Number(parseFloat(formatEther(price)).toFixed(6))
+		})
+		let spotMarkets: SpotResponse[] = []
+		for (let i = 0; i < spotRequest.markets.length; i++) {
+			spotMarkets.push({
+				market: spotRequest.markets[i],
+				price: spotRequests[i],
+			})
+		}
+		return res.status(200).json(spotMarkets)
+	} catch (e) {
+		Logger.error({
+			message: 'spot Oracle multicall failed',
+			error: e,
+		})
+
+		return res.status(500).json({
+			message: `Failed to get spot prices from oracle`,
 		})
 	}
 })

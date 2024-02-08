@@ -89,3 +89,12 @@ export interface IVResponse {
 	strike: number
 	iv: number
 }
+
+export interface SpotRequest {
+	markets: string[]
+}
+
+export interface SpotResponse {
+	market: string
+	price: number
+}
