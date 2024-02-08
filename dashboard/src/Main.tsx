@@ -10,8 +10,7 @@ import _ from 'lodash'
 import { getDeltaAndIV } from './utils/blackScholes'
 import { getIVOracle } from './utils/apiGetters'
 import { Tooltip } from 'react-tooltip'
-
-const providerAddress = process.env.REACT_APP_WALLET_ADDRESS!
+import { WALLET_ADDRESS } from './config'
 
 const COLUMNS = [
 	// {
@@ -211,9 +210,10 @@ function Main() {
 
 				for (const callPostition of calls) {
 					obRow.call_positions = _.chain(calls)
-						.filter((quote) => quote.provider === providerAddress)
+						.filter((quote) => quote.provider === WALLET_ADDRESS)
 						.map((quote) => quote.remainingSize)
 						.sum()
+						.round(4)
 						.value()
 
 					if (callPostition.side === 'bid') {
@@ -221,6 +221,7 @@ function Main() {
 							.filter((quote) => quote.side === 'bid')
 							.map((quote) => quote.remainingSize)
 							.sum()
+							.round(4)
 							.value()
 
 						obRow.call_bid = _.chain(calls)
@@ -239,6 +240,7 @@ function Main() {
 							.filter((quote) => quote.side === 'ask')
 							.map((quote) => quote.remainingSize)
 							.sum()
+							.round(4)
 							.value()
 
 						obRow.call_ask = _.chain(calls)
@@ -255,9 +257,10 @@ function Main() {
 
 				for (const putPostition of puts) {
 					obRow.put_positions = _.chain(puts)
-						.filter((quote) => quote.provider === providerAddress)
+						.filter((quote) => quote.provider === WALLET_ADDRESS)
 						.map((quote) => quote.remainingSize)
 						.sum()
+						.round(4)
 						.value()
 
 					if (putPostition.side === 'bid') {
@@ -265,6 +268,7 @@ function Main() {
 							.filter((quote) => quote.side === 'bid')
 							.map((quote) => quote.remainingSize)
 							.sum()
+							.round(4)
 							.value()
 
 						obRow.put_bid = _.chain(puts)
@@ -283,6 +287,7 @@ function Main() {
 							.filter((quote) => quote.side === 'ask')
 							.map((quote) => quote.remainingSize)
 							.sum()
+							.round(4)
 							.value()
 
 						obRow.put_ask = _.chain(puts)

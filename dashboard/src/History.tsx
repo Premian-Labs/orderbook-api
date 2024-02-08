@@ -1,13 +1,13 @@
 import React from 'react'
 import './Main.css'
+import logo from './logo.svg'
 
 function History() {
 	return (
 		<div className="app">
 			<div className="app-container">
-				<div className="config">
-					<p>Trade History</p>
-				</div>
+				<img src={logo} className="app-logo" alt="logo" />
+				<p>Under construction</p>
 			</div>
 		</div>
 	)

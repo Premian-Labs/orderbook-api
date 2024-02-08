@@ -2,10 +2,9 @@ import React from 'react'
 import { createBrowserRouter, Navigate, Outlet, RouterProvider } from 'react-router-dom'
 import { createRoot } from 'react-dom/client'
 import Main from './Main'
-import Settings from './Settings'
+import Account from './Account'
 import Error404 from './Error404'
 import { Navbar } from './Navbar'
-import Account from './Account'
 import History from './History'
 
 const HeaderLayout = () => (
@@ -38,10 +37,6 @@ const router = createBrowserRouter([
 			{
 				path: 'history',
 				element: <History />,
-			},
-			{
-				path: 'settings',
-				element: <Settings />,
 			},
 		],
 	},

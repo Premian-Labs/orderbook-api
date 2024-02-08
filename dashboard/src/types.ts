@@ -1,4 +1,5 @@
 import { ReturnedOrderbookQuote } from '../../src/types/quote'
+import { RejectedTokenBalance, TokenBalance } from '../../src/types/balances'
 
 export interface CoinPrice {
 	WBTC: number
@@ -36,4 +37,9 @@ export interface OrderbookRows {
 	put_ask_iv: number | '-' | string
 	put_ask_size: number | '-'
 	put_positions: number | '-'
+}
+
+export interface CollateralBalances {
+	success: TokenBalance[]
+	failed: RejectedTokenBalance[]
 }

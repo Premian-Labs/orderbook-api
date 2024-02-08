@@ -6,7 +6,7 @@ import axios from 'axios'
 import { COINCAP_API } from './config'
 
 export async function getCoinsPrice() {
-	// TODO: use oracle price endpoint from orderbook-API
+	// TODO: add spot price endpoint to orderbook-API
 	const btcData = await axios.get(`${COINCAP_API}/bitcoin`)
 	const ethData = await axios.get(`${COINCAP_API}/ethereum`)
 	// const arbData = await axios.get(`${COINCAP_API}/arbitrum`)
@@ -73,16 +73,6 @@ export const Navbar = () => {
 					}}
 				>
 					History
-				</NavLink>
-				<NavLink
-					to="/settings"
-					style={({ isActive, isPending, isTransitioning }) => {
-						return {
-							color: isActive ? 'white' : '#a2a2a2',
-						}
-					}}
-				>
-					Settings
 				</NavLink>
 			</div>
 			<div className="currencies">

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { Market } from '../types'
+import { CollateralBalances, Market } from '../types'
 import { PREMIA_API_URL } from '../config'
 
 const APIKey = process.env.REACT_APP_TESTNET_ORDERBOOK_API_KEY!
@@ -17,5 +17,28 @@ export async function getIVOracle(market: Market, spotPrice: number, strike: num
 		},
 	})
 
-	return getIVResponse.data
+	return getIVResponse.data as number
+}
+
+export async function getNativeBalance() {
+	const getNativeBalanceResponse = await axios.get(PREMIA_API_URL + '/account/native_balance', {
+		headers: {
+			'x-apikey': APIKey,
+		},
+	})
+
+	return getNativeBalanceResponse.data as number
+}
+
+export async function getCollateralBalance() {
+	const getCollateralBalanceResponse = await axios.get(PREMIA_API_URL + '/account/collateral_balances', {
+		headers: {
+			'x-apikey': APIKey,
+		},
+	})
+
+	const balance = getCollateralBalanceResponse.data as CollateralBalances
+	return balance.success.filter(
+		(tokenBalance) => tokenBalance.symbol === 'WBTC' || tokenBalance.symbol === 'WETH' || tokenBalance.symbol === 'ARB',
+	)
 }

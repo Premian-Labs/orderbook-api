@@ -1,7 +1,6 @@
 .config {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
+	text-align: left;
+	margin: 20vmin;
 }
 
 .config code {
