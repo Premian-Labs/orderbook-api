@@ -88,14 +88,17 @@ function Account() {
 				.filter((order) => order.base === marketSelector)
 				.map((order) => {
 					const priceUSD = order.type === 'C' ? order.price * coinPrice[marketSelector] : order.price * order.strike
+
 					const expiresInSec: number = order.ts + order.deadline - moment.utc().unix()
+					console.log(expiresInSec)
+
 					return {
 						// BTC-25MAR23-420-C
 						instrument: `${order.base}-${order.expiration}-${order.strike}-${order.type}`,
 						side: order.side,
 						price: priceUSD.toFixed(2),
 						amount: order.remainingSize,
-						expiration: moment({}).seconds(expiresInSec).format('mm [min] ss [sec]'),
+						expiration: moment.utc().startOf('day').seconds(expiresInSec).format('mm [min] ss [sec]'),
 					}
 				})
 
