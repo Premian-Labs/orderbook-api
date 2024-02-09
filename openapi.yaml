@@ -417,15 +417,15 @@ paths:
             - api
   /pools/strikes:
     get:
-      summary: Returns all valid strike for a given market.
+      summary: Returns all valid strikes for a given market.
       parameters:
         - name: spotPrice
           in: query
-          description: unique address of the pool
+          description: spot price to use as reference for valid strikes
           required: false
           schema:
             type: number
-            example: 10000
+            example: 9846
       responses:
         '200':
           description: Successful operation
@@ -805,7 +805,7 @@ paths:
             - api
   /oracles/iv:
     get:
-      summary: Gets the IV value for an option via an IV oracle.
+      summary: Gets multiple IV values for all valid strikes for a given option expiration of an underlying market via IV oracles.
       parameters:
         - name: market
           in: query
@@ -815,14 +815,6 @@ paths:
             type: string
             pattern: ^WETH$|^WBTC$|^ARB$|^LINK$|^WSTETH$|^GMX$|^MAGIC$|^SOL$|^FXS$
             example: WETH
-        - name: strike
-          in: query
-          required: true
-          description: strike price of option
-          schema:
-            type: number
-            minimum: 0
-            example: 1800
         - name: expiration
           in: query
           required: true
@@ -845,8 +837,63 @@ paths:
           content:
             application/json:
               schema:
-                type: number
-                example: 0.46
+                type: array
+                items:
+                  type: object
+                  properties:
+                    strike:
+                      type: number
+                      example: 1700
+                    iv:
+                      type: number
+                      example: 0.47
+                  required:
+                    - strike
+                    - iv
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+  /oracles/spot:
+    get:
+      summary: Gets multiple spot prices from chainlink oracles by providing an array of one or more token symbols.
+      parameters:
+        - name: market
+          in: query
+          required: true
+          description: one or more base token symbols ie [WETH, WBTC, ARB]
+          schema:
+            type: array
+            items:
+              type: string
+            minItems: 1
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    market:
+                      type: string
+                      example: WETH
+                    price:
+                      type: number
+                      example: 2500.25
+                  required:
+                    - market
+                    - price
         '400':
           description: Invalid parameters supplied
           content:

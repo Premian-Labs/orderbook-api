@@ -243,16 +243,12 @@ export const validateGetStrikes = ajv.compile({
 		{
 			type: 'object',
 			properties: {
-				base: {
-					type: 'string',
-					pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
-				},
-				quote: {
+				market: {
 					type: 'string',
 					pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
 				},
 			},
-			required: ['base', 'quote'],
+			required: ['market'],
 			additionalProperties: false,
 		},
 		{
@@ -277,10 +273,6 @@ export const validateGetIV = ajv.compile({
 				.map((token) => `^${token}$`)
 				.join('|'),
 		},
-		strike: {
-			type: 'string',
-			pattern: '^[0-9]{1,}([.][0-9]*)?$',
-		},
 		expiration: {
 			type: 'string',
 			pattern: '^\\d\\d\\w\\w\\w\\d\\d$',
@@ -290,6 +282,22 @@ export const validateGetIV = ajv.compile({
 			pattern: '^[0-9]{1,}([.][0-9]*)?$',
 		},
 	},
-	required: ['market', 'strike', 'expiration'],
+	required: ['market', 'expiration'],
+	additionalProperties: false,
+})
+
+export const validateGetSpot = ajv.compile({
+	type: 'object',
+	properties: {
+		markets: {
+			type: 'array',
+			items: {
+				type: 'string',
+				pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+			},
+			minItems: 1,
+		},
+	},
+	required: ['markets'],
 	additionalProperties: false,
 })

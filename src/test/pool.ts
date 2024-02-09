@@ -96,7 +96,7 @@ describe('Pools Helpers API', () => {
 		).to.be.true
 	})
 
-	it('should get valid strikes by spotPrice', async () => {
+	it('should get valid strikes with a spotPrice', async () => {
 		const url = `${baseUrl}/pools/strikes`
 		const spotPrice = 10000
 		const getSuggestedStrikes = await axios.get(url, {
@@ -144,5 +144,21 @@ describe('Pools Helpers API', () => {
 				return nextStrike - strike === 1000
 			})
 		).to.be.true
+	})
+
+	it('should get valid strikes without a spotPrice', async () => {
+		const url = `${baseUrl}/pools/strikes`
+		const getSuggestedStrikes = await axios.get(url, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			params: {
+				market: 'WETH',
+			},
+		})
+
+		const suggestedStrikes = getSuggestedStrikes.data as number[]
+
+		expect(suggestedStrikes).not.be.empty
 	})
 })

@@ -42,6 +42,7 @@ import {
 	tokenAddr,
 	ivOracle,
 	productionTokenAddr,
+	chainlink,
 } from './config/constants'
 import {
 	FillableQuote,
@@ -67,8 +68,11 @@ import {
 	GetPoolsParams,
 	GetOrdersRequest,
 	StrikesRequestSpot,
-	StrikesRequestSymbols,
 	IVRequest,
+	IVResponse,
+	SpotRequest,
+	SpotResponse,
+	StrikesRequestSymbol,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -84,6 +88,7 @@ import {
 	validateGetPools,
 	validateGetStrikes,
 	validateGetIV,
+	validateGetSpot,
 } from './helpers/validators'
 import {
 	getBalances,
@@ -1183,7 +1188,7 @@ app.post('/pools', async (req, res) => {
 	})
 })
 
-app.get('/pools/strikes', (req, res) => {
+app.get('/pools/strikes', async (req, res) => {
 	const valid = validateGetStrikes(req.query)
 	if (!valid) {
 		res.status(400)
@@ -1196,30 +1201,40 @@ app.get('/pools/strikes', (req, res) => {
 
 	const request = req.query as unknown as
 		| StrikesRequestSpot
-		| StrikesRequestSymbols
+		| StrikesRequestSymbol
 
 	if (request.hasOwnProperty('spotPrice')) {
-		const strikeEstimate = request as StrikesRequestSpot
-		const spotPrice = parseFloat(strikeEstimate.spotPrice)
+		const getStrikes = request as StrikesRequestSpot
+		const spotPrice = parseFloat(getStrikes.spotPrice)
 
 		if (Number.isNaN(spotPrice)) {
 			return res.status(400).json({
 				message: 'spotPrice must be a number',
-				spotPrice: strikeEstimate.spotPrice,
+				spotPrice: getStrikes.spotPrice,
 			})
 		}
 
 		if (spotPrice <= 0) {
 			return res.status(400).json({
 				message: 'spotPrice must be > 0',
-				spotPrice: strikeEstimate.spotPrice,
+				spotPrice: getStrikes.spotPrice,
 			})
 		}
 
 		const suggestedStrikes = getSurroundingStrikes(spotPrice)
 		return res.status(200).json(suggestedStrikes)
 	} else {
-		return res.status(200).json('not implemented')
+		const getStrikes = request as StrikesRequestSymbol
+		const spotPrice = await getSpotPrice(getStrikes.market)
+
+		if (spotPrice == undefined) {
+			return res.status(500).json({
+				message: `Failed to get spot price from oracle, try again or provide spot price`,
+			})
+		}
+
+		const suggestedStrikes = getSurroundingStrikes(parseFloat(spotPrice))
+		return res.status(200).json(suggestedStrikes)
 	}
 })
 
@@ -1269,30 +1284,89 @@ app.get('/oracles/iv', async (req, res) => {
 		}
 	}
 
-	let iv: number | undefined
-	try {
-		iv = parseFloat(
-			formatEther(
-				await ivOracle['getVolatility(address,uint256,uint256,uint256)'](
-					productionTokenAddr[request.market],
-					parseEther(spotPrice),
-					parseEther(request.strike),
-					parseEther(ttm.toFixed(12))
-				)
-			)
+	// get suggested strikes (same as Get strikes endpoint)
+	const suggestedStrikes = getSurroundingStrikes(parseFloat(spotPrice))
+
+	// multi call to ivOracle
+	const ivPromises = suggestedStrikes.map((strike) => {
+		return ivOracle['getVolatility(address,uint256,uint256,uint256)'](
+			productionTokenAddr[request.market],
+			parseEther(spotPrice!),
+			parseEther(strike.toString()),
+			parseEther(ttm.toFixed(12))
 		)
-		if (iv == undefined) {
-			return res.status(500).json({
-				message: `Failed to get iv from oracle`,
+	})
+
+	let ivRequestsBigInt
+	try {
+		ivRequestsBigInt = await Promise.all(ivPromises)
+		const ivRequests = ivRequestsBigInt.map((iv) => {
+			return Number(parseFloat(formatEther(iv)).toFixed(2))
+		})
+		let ivStrikes: IVResponse[] = []
+		for (let i = 0; i < suggestedStrikes.length; i++) {
+			ivStrikes.push({
+				strike: suggestedStrikes[i],
+				iv: ivRequests[i],
 			})
 		}
+		return res.status(200).json(ivStrikes)
 	} catch (e) {
+		Logger.error({
+			message: 'IV Oracle multicall failed',
+			error: e,
+		})
+
 		return res.status(500).json({
-			message: e,
+			message: `Failed to get IV's from oracle`,
 		})
 	}
+})
 
-	return res.status(200).json(Number(iv.toFixed(2)))
+app.get('/oracles/spot', async (req, res) => {
+	const valid = validateGetSpot(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'AJV get IV req params validation error',
+			error: validateGetSpot.errors,
+		})
+		return res.send(validateGetSpot.errors)
+	}
+	const spotRequest = req.query as unknown as SpotRequest
+
+	// multi call to spot Oracle
+	const spotPromises = spotRequest.markets.map((market) => {
+		return chainlink.getPrice(
+			productionTokenAddr[market],
+			productionTokenAddr.USDC
+		)
+	})
+
+	let spotRequestsBigInt
+	try {
+		spotRequestsBigInt = await Promise.all(spotPromises)
+		const spotRequests = spotRequestsBigInt.map((price) => {
+			return Number(parseFloat(formatEther(price)).toFixed(6))
+		})
+		let spotMarkets: SpotResponse[] = []
+		for (let i = 0; i < spotRequest.markets.length; i++) {
+			spotMarkets.push({
+				market: spotRequest.markets[i],
+				price: spotRequests[i],
+			})
+		}
+		return res.status(200).json(spotMarkets)
+	} catch (e) {
+		Logger.error({
+			message: 'spot Oracle multicall failed',
+			error: e,
+		})
+
+		return res.status(500).json({
+			message: `Failed to get spot prices from oracle`,
+		})
+	}
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {
