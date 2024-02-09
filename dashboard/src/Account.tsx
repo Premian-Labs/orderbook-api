@@ -9,7 +9,8 @@ import { ReturnedOrderbookQuote } from '../../src/types/quote'
 import { Column, useTable } from 'react-table'
 import { CoinPrice, Market, OptionsTableData, OrderbookRows, OwnOrdersRows } from './types'
 import { getCoinsPrice } from './Navbar'
-import logo from "./logo.svg";
+import logo from './logo.svg'
+import moment from 'moment'
 
 const COLUMNS = [
 	{
@@ -27,6 +28,10 @@ const COLUMNS = [
 	{
 		Header: 'Price',
 		accessor: 'price' as const,
+	},
+	{
+		Header: 'Expires',
+		accessor: 'expiration' as const,
 	},
 ]
 function Account() {
@@ -64,9 +69,7 @@ function Account() {
 			.then((coins) => setCoinPrice(coins))
 			.catch(console.error)
 
-		getOwnOrders()
-			.then(setRawOrders)
-			.catch(console.error)
+		getOwnOrders().then(setRawOrders).catch(console.error)
 	}, [])
 
 	useEffect(() => {
@@ -85,12 +88,14 @@ function Account() {
 				.filter((order) => order.base === marketSelector)
 				.map((order) => {
 					const priceUSD = order.type === 'C' ? order.price * coinPrice[marketSelector] : order.price * order.strike
+					const expiresInSec: number = order.ts + order.deadline - moment.utc().unix()
 					return {
 						// BTC-25MAR23-420-C
 						instrument: `${order.base}-${order.expiration}-${order.strike}-${order.type}`,
 						side: order.side,
 						price: priceUSD.toFixed(2),
 						amount: order.remainingSize,
+						expiration: moment({}).seconds(expiresInSec).format('mm [min] ss [sec]'),
 					}
 				})
 
@@ -101,7 +106,7 @@ function Account() {
 	return (
 		<div className="app">
 			<div className="app-container">
-				<img hidden={orders.length > 0} src={logo} className="app-logo" alt="logo"/>
+				<img hidden={orders.length > 0} src={logo} className="app-logo" alt="logo" />
 				<p hidden={orders.length > 0}>Loading your positions...</p>
 				<p hidden={orders.length === 0}>Open Positions</p>
 				<div className="selector">
@@ -118,7 +123,7 @@ function Account() {
 						BTC
 					</button>
 				</div>
-				<div style={{display: ordersRows.length > 0 ? 'block' : 'none'}} className="positions-container">
+				<div style={{ display: ordersRows.length > 0 ? 'block' : 'none' }} className="positions-container">
 					<div className="expirations-container">
 						{expirations.map((expiration) => {
 							return (
@@ -132,35 +137,41 @@ function Account() {
 							)
 						})}
 					</div>
-					<table style={{display: ordersRows.length > 0 ? 'table' : 'none'}} {...getTableProps()}>
-						<thead>
-						{headerGroups.map((headerGroup) => (
-							<tr {...headerGroup.getHeaderGroupProps()}>
-								{headerGroup.headers.map((column) => (
-									<th {...column.getHeaderProps()}>{column.render('Header')}</th>
+					<div className="table-container">
+						<table style={{ display: ordersRows.length > 0 ? 'table' : 'none' }} {...getTableProps()}>
+							<thead>
+								{headerGroups.map((headerGroup) => (
+									<tr {...headerGroup.getHeaderGroupProps()}>
+										{headerGroup.headers.map((column) => (
+											<th {...column.getHeaderProps()}>{column.render('Header')}</th>
+										))}
+									</tr>
 								))}
-							</tr>
-						))}
-						</thead>
-						<tbody {...getTableBodyProps()}>
-						{rows.map((row) => {
-							prepareRow(row)
-							return (
-								<tr {...row.getRowProps()}>
-									{row.cells.map((cell) => {
-										return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
-									})}
-								</tr>
-							)
-						})}
-						</tbody>
-					</table>
+							</thead>
+							<tbody {...getTableBodyProps()}>
+								{rows.map((row) => {
+									prepareRow(row)
+									return (
+										<tr {...row.getRowProps()}>
+											{row.cells.map((cell) => {
+												return <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
+											})}
+										</tr>
+									)
+								})}
+							</tbody>
+						</table>
+					</div>
 				</div>
 
 				<p hidden={orders.length === 0}>Account Balance and Settings</p>
-				<div style={{display: orders.length > 0 ? 'block' : 'none'}} className="config">
-					<p>Wallet Address: <code>{WALLET_ADDRESS}</code></p>
-					<p>Wallet Native Balance: <code>{ethBalance}</code> ETH</p>
+				<div style={{ display: orders.length > 0 ? 'block' : 'none' }} className="config">
+					<p>
+						Wallet Address: <code>{WALLET_ADDRESS}</code>
+					</p>
+					<p>
+						Wallet Native Balance: <code>{ethBalance}</code> ETH
+					</p>
 					<p>Wallet Collateral Balance:</p>
 					{collateralBalance.map((tokenBalance) => {
 						return (
@@ -169,7 +180,9 @@ function Account() {
 							</ul>
 						)
 					})}
-					<p hidden={showResults}>API Key: <code>{process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY}</code></p>
+					<p hidden={showResults}>
+						API Key: <code>{process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY}</code>
+					</p>
 					<button className="sensitive-button" onClick={() => setShowResults(!showResults)}>
 						{showResults ? 'Show' : 'Hide'} Sensetive Data
 					</button>

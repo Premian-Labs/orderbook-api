@@ -44,6 +44,7 @@ export interface OwnOrdersRows {
 	side: 'bid' | 'ask'
 	amount: number | string
 	price: number | string
+	expiration: string
 }
 
 export interface CollateralBalances {

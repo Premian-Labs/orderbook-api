@@ -151,9 +151,7 @@ function Main() {
 			.then((coins) => setCoinPrice(coins))
 			.catch(console.error)
 
-		getOrderbookState()
-			.then(setRawOrders)
-			.catch(console.error)
+		getOrderbookState().then(setRawOrders).catch(console.error)
 	}, [])
 
 	useEffect(() => {
