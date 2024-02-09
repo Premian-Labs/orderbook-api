@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { expect } from 'chai'
+import { isArray } from 'lodash'
 
 import { checkEnv } from '../config/checkConfig'
 import { baseUrl, getMaturity } from './helpers/utils'
@@ -23,8 +24,7 @@ describe('IV Oracles', () => {
 
 		const iv = validGetIVResponse.data
 
-		// returns an array but javascript calls them objects
-		expect(typeof iv).to.eq('object')
+		expect(isArray(iv)).to.be.true
 		expect(iv.length).to.be.gt(0)
 		expect(iv[0]['strike']).to.be.gt(0)
 		expect(iv[0]['iv']).to.be.gt(0)
@@ -84,8 +84,7 @@ describe('IV Oracles', () => {
 
 		const ivManualSpot = validGetIVResponse.data
 
-		// returns an array but javascript calls them objects
-		expect(typeof ivManualSpot).to.eq('object')
+		expect(isArray(ivManualSpot)).to.be.true
 		expect(ivManualSpot.length).to.be.gt(0)
 		expect(ivManualSpot[0]['strike']).to.be.gt(0)
 		expect(ivManualSpot[0]['iv']).to.be.gt(0)
@@ -105,8 +104,7 @@ describe('Spot Oracles', () => {
 
 		const spotPrices = validGetSpotResponse.data
 
-		// returns an array but javascript calls them objects
-		expect(typeof spotPrices).to.eq('object')
+		expect(isArray(spotPrices)).to.be.true
 		expect(spotPrices.length).to.eq(3)
 		expect(spotPrices[0]['market']).to.eq('WETH')
 		expect(spotPrices[1]['market']).to.eq('WBTC')
