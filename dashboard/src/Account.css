@@ -1,14 +1,9 @@
 .config {
 	text-align: left;
-	margin: 20vmin;
+	margin: 2vmin;
 }
 
-.config code {
-	font-size: calc(10px + 1vmin);
-	margin: 8px;
-}
-
-.config button {
+.sensitive-button {
 	width: 200px;
 	background-color: rgb(31, 31, 45);
 	border-radius: 8px;
@@ -23,7 +18,7 @@
 	cursor: pointer;
 }
 
-.config button:hover {
+.sensitive-button:hover {
 	background-color: rgb(82, 148, 255);
 	border-radius: 8px;
 	border-width: 0;

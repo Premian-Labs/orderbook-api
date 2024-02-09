@@ -39,6 +39,13 @@ export interface OrderbookRows {
 	put_positions: number | '-'
 }
 
+export interface OwnOrdersRows {
+	instrument: string
+	side: 'bid' | 'ask'
+	amount: number | string
+	price: number | string
+}
+
 export interface CollateralBalances {
 	success: TokenBalance[]
 	failed: RejectedTokenBalance[]

@@ -103,7 +103,6 @@ function getColumnClass(id: string) {
 }
 
 function getTooltipId(columnId: string) {
-	console.log(columnId)
 	switch (columnId) {
 		case 'call_bid':
 		case 'put_bid':
@@ -133,10 +132,11 @@ function Main() {
 		WETH: 2200,
 		ARB: 1.9,
 	} as CoinPrice)
+	const [rawOrders, setRawOrders] = React.useState([] as ReturnedOrderbookQuote[])
 	const [orders, setOrders] = React.useState([] as OptionsTableData[])
 	const [expirations, setExpirations] = React.useState([] as string[])
 	const [marketSelector, setMarketSelector] = React.useState('WETH' as Market)
-	const [activeExpiration, setActiveExpiration] = React.useState('NONE')
+	const [activeExpiration, setActiveExpiration] = React.useState('')
 	const [activeExpirationOrders, setActiveExpirationOrders] = React.useState(
 		[] as { quotes: ReturnedOrderbookQuote[]; strike: number }[],
 	)
@@ -151,31 +151,40 @@ function Main() {
 			.then((coins) => setCoinPrice(coins))
 			.catch(console.error)
 
-		getOrderbookState('ALL')
-			.then((orders) => {
-				const groupedOrders = prepareOrders(marketSelector, coinPrice[marketSelector], orders)
-				setOrders(groupedOrders)
-
-				const expirations = groupedOrders.map((order) => order.expiration)
-				setExpirations(expirations)
-				if (activeExpiration === 'NONE') setActiveExpiration(expirations[0])
-			})
+		getOrderbookState()
+			.then(setRawOrders)
 			.catch(console.error)
-	}, [marketSelector])
+	}, [])
 
-	// TODO: use to retrieve mark price
+	useEffect(() => {
+		const groupedOrders = prepareOrders(marketSelector, coinPrice[marketSelector], rawOrders)
+		setOrders(groupedOrders)
+
+		const expirations = groupedOrders.map((order) => order.expiration)
+		setExpirations(expirations)
+		if (!activeExpiration) setActiveExpiration(expirations[0])
+		console.log('hehe?', activeExpiration)
+	}, [rawOrders, marketSelector, coinPrice])
+
 	// useEffect(() => {
-	// 	Promise.all(orders.map(async order => {
-	// 		const IVPerStrike = []
-	// 		for (const position of order.positions) {
-	// 			const iv: number = await getIVOracle(marketSelector, coinPrice[marketSelector], position.strike, order.expiration)
-	// 			IVPerStrike.push({
-	// 				iv: iv,
-	// 				quoteIds: position.quotes.map(quote => quote.quoteId)
-	// 			})
-	// 		}
-	// 		return IVPerStrike
-	// 	})).then(ivData => {
+	// 	Promise.all(
+	// 		orders.map(async (order) => {
+	// 			const IVPerStrike = []
+	// 			for (const position of order.positions) {
+	// 				const iv: number = await getIVOracle(
+	// 					marketSelector,
+	// 					coinPrice[marketSelector],
+	// 					position.strike,
+	// 					order.expiration,
+	// 				)
+	// 				IVPerStrike.push({
+	// 					iv: iv,
+	// 					quoteIds: position.quotes.map((quote) => quote.quoteId),
+	// 				})
+	// 			}
+	// 			return IVPerStrike
+	// 		}),
+	// 	).then((ivData) => {
 	// 		setIvData(ivData)
 	// 	})
 	// }, [orders])
@@ -306,7 +315,7 @@ function Main() {
 			})
 			setQuotesRows(quotesRow)
 		}
-	}, [orders, activeExpiration])
+	}, [activeExpiration, coinPrice, marketSelector, orders])
 
 	return (
 		<div className="app">

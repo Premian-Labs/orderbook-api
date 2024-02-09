@@ -1,5 +1,5 @@
 import axios from 'axios'
-import {PREMIA_API_URL, WALLET_ADDRESS} from '../config'
+import { PREMIA_API_URL, WALLET_ADDRESS } from '../config'
 import { ReturnedOrderbookQuote } from '../../../src/types/quote'
 import _ from 'lodash'
 import { Market } from '../types'
@@ -8,14 +8,21 @@ import moment from 'moment'
 
 const APIKey = process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY!
 
-export async function getOrderbookState(show: 'ALL' | 'OWN') {
+export async function getOrderbookState() {
 	const ordersResponse = await axios.get(PREMIA_API_URL + '/orderbook/orders', {
 		withCredentials: false,
-		params: {
-			...(show === 'OWN' && {
-				provider: WALLET_ADDRESS.toLowerCase(),
-			}),
+		headers: {
+			'x-apikey': APIKey,
 		},
+	})
+
+	const orders: ReturnedOrderbookQuote[] = ordersResponse.data
+	return orders
+}
+
+export async function getOwnOrders() {
+	const ordersResponse = await axios.get(PREMIA_API_URL + '/account/orders', {
+		withCredentials: false,
 		headers: {
 			'x-apikey': APIKey,
 		},

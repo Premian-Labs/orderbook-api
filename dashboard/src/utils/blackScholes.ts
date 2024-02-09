@@ -27,14 +27,7 @@ export function getDeltaAndIV(option: ReturnedOrderbookQuote, price: number, spo
 	return Math.max(iv, 0) * 100
 }
 
-export function blackScholes(
-	iv: number,
-	price: number,
-	spot: number,
-	expiration: string,
-	strike: number,
-	type: 'C' | 'P',
-) {
+export function blackScholes(iv: number, spot: number, expiration: string, strike: number, type: 'C' | 'P') {
 	const TTEAnnualised = (moment(expiration, 'DDMMMYY').unix() - moment.utc().unix()) / ONE_YEAR_SEC
 	const option = BSchInstance.option({
 		sigma: iv / 100,
