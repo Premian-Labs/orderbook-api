@@ -3,14 +3,14 @@ import logo from './logo.svg'
 import './Main.css'
 import { Column, useTable } from 'react-table'
 import { getOrderbookState, prepareOrders } from './utils/getOrderbookState'
-import { CoinPrice, Market, OptionsTableData, OrderbookRows } from './types'
+import { CoinPrice, Market, OpenPosition, OptionsTableData, OrderbookRows } from './types'
 import { getCoinsPrice } from './Navbar'
 import { ReturnedOrderbookQuote } from '../../src/types/quote'
 import _ from 'lodash'
 import { getDeltaAndIV } from './utils/blackScholes'
-import { getIVOracle } from './utils/apiGetters'
+import { getIVOracle, getOptionBalance } from './utils/apiGetters'
 import { Tooltip } from 'react-tooltip'
-import { WALLET_ADDRESS } from './config'
+import moment from 'moment/moment'
 
 const COLUMNS = [
 	// {
@@ -141,16 +141,31 @@ function Main() {
 		[] as { quotes: ReturnedOrderbookQuote[]; strike: number }[],
 	)
 	const [quotesRows, setQuotesRows] = React.useState([] as OrderbookRows[])
+	const [openPositions, setOpenPositions] = React.useState([] as OpenPosition[])
 	const [ivData, setIvData] = React.useState([] as { iv: number; quoteIds: string[] }[][])
 
 	const columns = useMemo<Column<OrderbookRows>[]>(() => COLUMNS, [])
 	const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data: quotesRows })
 
 	useEffect(() => {
-		getCoinsPrice()
-			.then((coins) => setCoinPrice(coins))
+		getCoinsPrice().then(setCoinPrice).catch(console.error)
+		getOptionBalance()
+			.then((positions) => {
+				return positions.map((option) => {
+					// WBTC-USDC-09FEB2024-44000-P
+					const [base, quote, expiration, strike, type] = option.name.split('-')
+					return {
+						base,
+						quote,
+						expiration: moment(expiration).format('DDMMMYY').toUpperCase(),
+						type,
+						strike: Number(strike),
+						amount: option.amount,
+					}
+				})
+			})
+			.then(setOpenPositions)
 			.catch(console.error)
-
 		getOrderbookState().then(setRawOrders).catch(console.error)
 	}, [])
 
@@ -161,7 +176,6 @@ function Main() {
 		const expirations = groupedOrders.map((order) => order.expiration)
 		setExpirations(expirations)
 		if (!activeExpiration) setActiveExpiration(expirations[0])
-		console.log('hehe?', activeExpiration)
 	}, [rawOrders, marketSelector, coinPrice])
 
 	// useEffect(() => {
@@ -215,95 +229,127 @@ function Main() {
 					put_positions: '-',
 				} as OrderbookRows
 
-				for (const callPostition of calls) {
-					obRow.call_positions = _.chain(calls)
-						.filter((quote) => quote.provider === WALLET_ADDRESS)
-						.map((quote) => quote.remainingSize)
+				if (calls.length > 0) {
+					const openPositionsCalls = openPositions.filter((option) => {
+						return (
+							option.expiration === activeExpirationOrders.expiration &&
+							option.strike === strike &&
+							option.base === marketSelector &&
+							option.type === 'C'
+						)
+					})
+
+					obRow.call_positions = _.chain(openPositionsCalls)
+						.map((quote) => quote.amount)
 						.sum()
 						.round(4)
 						.value()
 
-					if (callPostition.side === 'bid') {
-						obRow.call_bid_size = _.chain(calls)
-							.filter((quote) => quote.side === 'bid')
-							.map((quote) => quote.remainingSize)
-							.sum()
-							.round(4)
-							.value()
+					const bestCallBid = _.chain(calls)
+						.filter((quote) => quote.side === 'bid')
+						.map((quote) => ({
+							...quote,
+							price: quote.price * coinPrice[marketSelector],
+						}))
+						.maxBy('price')
+						.value()
 
-						obRow.call_bid = _.chain(calls)
-							.filter((quote) => quote.side === 'bid')
-							.map((quote) => quote.price * coinPrice[marketSelector])
-							.max()
-							.value()
-
-						obRow.call_bid_iv = getDeltaAndIV(callPostition, obRow.call_bid, coinPrice[marketSelector])
+					if (bestCallBid) {
+						obRow.call_bid = bestCallBid.price
+						obRow.call_bid_iv = getDeltaAndIV(bestCallBid, obRow.call_bid, coinPrice[marketSelector])
 						obRow.call_bid_iv = obRow.call_bid_iv.toFixed(1)
 						obRow.call_bid = Math.round(obRow.call_bid * 100) / 100
 					}
 
-					if (callPostition.side === 'ask') {
-						obRow.call_ask_size = _.chain(calls)
-							.filter((quote) => quote.side === 'ask')
-							.map((quote) => quote.remainingSize)
-							.sum()
-							.round(4)
-							.value()
-
-						obRow.call_ask = _.chain(calls)
-							.filter((quote) => quote.side === 'ask')
-							.map((quote) => quote.price * coinPrice[marketSelector])
-							.min()
-							.value()
-
-						obRow.call_ask_iv = getDeltaAndIV(callPostition, obRow.call_ask, coinPrice[marketSelector])
-						obRow.call_ask_iv = obRow.call_ask_iv.toFixed(1)
-						obRow.call_ask = Math.round(obRow.call_ask * 100) / 100
-					}
-				}
-
-				for (const putPostition of puts) {
-					obRow.put_positions = _.chain(puts)
-						.filter((quote) => quote.provider === WALLET_ADDRESS)
+					obRow.call_bid_size = _.chain(calls)
+						.filter((quote) => quote.side === 'bid')
 						.map((quote) => quote.remainingSize)
 						.sum()
 						.round(4)
 						.value()
 
-					if (putPostition.side === 'bid') {
-						obRow.put_bid_size = _.chain(puts)
-							.filter((quote) => quote.side === 'bid')
-							.map((quote) => quote.remainingSize)
-							.sum()
-							.round(4)
-							.value()
+					const bestCallAsk = _.chain(calls)
+						.filter((quote) => quote.side === 'ask')
+						.map((quote) => ({
+							...quote,
+							price: quote.price * coinPrice[marketSelector],
+						}))
+						.minBy('price')
+						.value()
 
-						obRow.put_bid = _.chain(puts)
-							.filter((quote) => quote.side === 'bid')
-							.map((quote) => quote.price * strike)
-							.max()
-							.value()
+					if (bestCallAsk) {
+						obRow.call_ask = bestCallAsk.price
+						obRow.call_ask_iv = getDeltaAndIV(bestCallBid, obRow.call_ask, coinPrice[marketSelector])
+						obRow.call_ask_iv = obRow.call_ask_iv.toFixed(1)
+						obRow.call_ask = Math.round(obRow.call_ask * 100) / 100
+					}
 
-						obRow.put_bid_iv = getDeltaAndIV(putPostition, obRow.put_bid, coinPrice[marketSelector])
+					obRow.call_ask_size = _.chain(calls)
+						.filter((quote) => quote.side === 'ask')
+						.map((quote) => quote.remainingSize)
+						.sum()
+						.round(4)
+						.value()
+				}
+
+				if (puts.length > 0) {
+					const openPositionsPuts = openPositions.filter((option) => {
+						return (
+							option.expiration === activeExpirationOrders.expiration &&
+							option.strike === strike &&
+							option.base === marketSelector &&
+							option.type === 'P'
+						)
+					})
+
+					obRow.put_positions = _.chain(openPositionsPuts)
+						.map((quote) => quote.amount)
+						.sum()
+						.round(4)
+						.value()
+
+					obRow.put_bid_size = _.chain(puts)
+						.filter((quote) => quote.side === 'bid')
+						.map((quote) => quote.remainingSize)
+						.sum()
+						.round(4)
+						.value()
+
+					const bestPutBid = _.chain(puts)
+						.filter((quote) => quote.side === 'bid')
+						.map((quote) => ({
+							...quote,
+							price: quote.price * strike,
+						}))
+						.maxBy('price')
+						.value()
+
+					if (bestPutBid) {
+						obRow.put_bid = bestPutBid.price
+						obRow.put_bid_iv = getDeltaAndIV(bestPutBid, obRow.put_bid, coinPrice[marketSelector])
 						obRow.put_bid_iv = obRow.put_bid_iv.toFixed(1)
 						obRow.put_bid = Math.round(obRow.put_bid * 100) / 100
 					}
 
-					if (putPostition.side === 'ask') {
-						obRow.put_ask_size = _.chain(puts)
-							.filter((quote) => quote.side === 'ask')
-							.map((quote) => quote.remainingSize)
-							.sum()
-							.round(4)
-							.value()
+					obRow.put_ask_size = _.chain(puts)
+						.filter((quote) => quote.side === 'ask')
+						.map((quote) => quote.remainingSize)
+						.sum()
+						.round(4)
+						.value()
 
-						obRow.put_ask = _.chain(puts)
-							.filter((quote) => quote.side === 'ask')
-							.map((quote) => quote.price * strike)
-							.min()
-							.value()
+					const bestPutAsk = _.chain(puts)
+						.filter((quote) => quote.side === 'ask')
+						.map((quote) => ({
+							...quote,
+							price: quote.price * strike,
+						}))
+						.minBy('price')
+						.value()
 
-						obRow.put_ask_iv = getDeltaAndIV(putPostition, obRow.put_ask, coinPrice[marketSelector])
+					if (bestPutAsk) {
+						obRow.put_ask = bestPutAsk.price
+						obRow.put_ask_iv = getDeltaAndIV(bestPutAsk, obRow.put_ask, coinPrice[marketSelector])
 						obRow.put_ask_iv = obRow.put_ask_iv.toFixed(1)
 						obRow.put_ask = Math.round(obRow.put_ask * 100) / 100
 					}
@@ -325,7 +371,7 @@ function Main() {
 			</Tooltip>
 			<Tooltip id="iv" place="bottom">
 				IV based on best bid / best ask. <br />
-				Deep ITM option IV is default to 0%.
+				Deep ITM / near-dated option IV is default to 0%.
 			</Tooltip>
 			<Tooltip id="positions" place="bottom">
 				Total sum for your contracts.

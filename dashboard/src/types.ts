@@ -51,3 +51,12 @@ export interface CollateralBalances {
 	success: TokenBalance[]
 	failed: RejectedTokenBalance[]
 }
+
+export interface OpenPosition {
+	base: string
+	quote: string
+	expiration: string
+	strike: number
+	type: string
+	amount: number
+}

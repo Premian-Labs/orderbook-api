@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { CollateralBalances, Market } from '../types'
 import { PREMIA_API_URL } from '../config'
+import { OptionPositions } from '../../../src/types/balances'
 
 const APIKey = process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY!
 
@@ -41,4 +42,14 @@ export async function getCollateralBalance() {
 	return balance.success.filter(
 		(tokenBalance) => tokenBalance.symbol === 'WBTC' || tokenBalance.symbol === 'WETH' || tokenBalance.symbol === 'ARB',
 	)
+}
+
+export async function getOptionBalance() {
+	const getOptionBalanceResponse = await axios.get(PREMIA_API_URL + '/account/option_balances', {
+		headers: {
+			'x-apikey': APIKey,
+		},
+	})
+
+	return (getOptionBalanceResponse.data as OptionPositions).open
 }
