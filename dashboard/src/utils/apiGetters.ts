@@ -1,24 +1,23 @@
 import axios from 'axios'
-import { CollateralBalances, Market } from '../types'
+import { SpotPrice, CollateralBalances, Market } from '../types'
 import { PREMIA_API_URL } from '../config'
 import { OptionPositions } from '../../../src/types/balances'
+import { IVResponse, SpotResponse } from '../../../src/types/validate'
 
 const APIKey = process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY!
 
-export async function getIVOracle(market: Market, spotPrice: number, strike: number, expiration: string) {
+export async function getIVOracle(market: Market, expiration: string) {
 	const getIVResponse = await axios.get(PREMIA_API_URL + '/oracles/iv', {
 		headers: {
 			'x-apikey': APIKey,
 		},
 		params: {
 			market: market,
-			spotPrice: spotPrice,
-			strike: strike,
 			expiration: expiration,
 		},
 	})
 
-	return getIVResponse.data as number
+	return getIVResponse.data as IVResponse[]
 }
 
 export async function getNativeBalance() {
@@ -52,4 +51,25 @@ export async function getOptionBalance() {
 	})
 
 	return (getOptionBalanceResponse.data as OptionPositions).open
+}
+
+export async function getSpotPrice() {
+	const getSpotResponse = await axios.get(PREMIA_API_URL + '/oracles/spot', {
+		headers: {
+			'x-apikey': APIKey,
+		},
+		params: {
+			markets: ['WETH', 'WBTC', 'ARB'],
+		},
+	})
+
+	const responseData = getSpotResponse.data as SpotResponse[]
+
+	const prices: SpotPrice = {
+		WETH: responseData[0].price,
+		WBTC: responseData[1].price,
+		ARB: responseData[2].price,
+	}
+
+	return prices
 }

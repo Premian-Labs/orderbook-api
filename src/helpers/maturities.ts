@@ -8,8 +8,7 @@ export function nextYearOfMaturities() {
 	const nextYear = today.clone().add(1, 'year')
 
 	// if there's still time to 8:00 AM UTC - 1 hour buffer
-	if (moment.utc().hour() < 7)
-		maturities.push(today.clone().add(8, 'hours'))
+	if (moment.utc().hour() < 7) maturities.push(today.clone().add(8, 'hours'))
 
 	const tomorrow = today.clone().add(1, 'day').add(8, 'hours')
 

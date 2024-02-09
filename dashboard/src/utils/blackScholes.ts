@@ -4,7 +4,7 @@ import moment from 'moment'
 
 const BSchInstance = new BlackScholes()
 
-const ONE_YEAR_SEC = 60 * 60 * 24 * 365
+export const ONE_YEAR_SEC = 60 * 60 * 24 * 365
 
 export function getDeltaAndIV(option: ReturnedOrderbookQuote, price: number, spot: number) {
 	// deep ITM IV
@@ -40,7 +40,14 @@ function bisections(price: number, strike: number, time: number, type: 'call' | 
 
 	for (let i = 0; i < MAX_ITERATIONS; i++) {
 		sigma = (sigmaLeft + sigmaRight) / 2
-		option = blackScholes(sigma, underlying, time, strike, type)
+		option = BSchInstance.option({
+			sigma: sigma,
+			rate: 0.05,
+			strike: strike,
+			time: time,
+			type: type,
+			underlying: underlying,
+		})
 		dprice = option.price - price
 
 		if (Math.abs(dprice) < ACCURACY) return sigma

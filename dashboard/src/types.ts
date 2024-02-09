@@ -1,7 +1,8 @@
 import { ReturnedOrderbookQuote } from '../../src/types/quote'
 import { RejectedTokenBalance, TokenBalance } from '../../src/types/balances'
+import { IVResponse } from '../../src/types/validate'
 
-export interface CoinPrice {
+export interface SpotPrice {
 	WBTC: number
 	WETH: number
 	ARB: number
@@ -59,4 +60,10 @@ export interface OpenPosition {
 	strike: number
 	type: string
 	amount: number
+}
+
+export interface IVResponseExtended {
+	expiration: string
+	market: string
+	ivs: IVResponse[]
 }

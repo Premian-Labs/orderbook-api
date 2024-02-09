@@ -1,14 +1,13 @@
 import React, { useEffect, useMemo } from 'react'
 import './Main.css'
 import './Account.css'
-import { getCollateralBalance, getNativeBalance } from './utils/apiGetters'
+import { getCollateralBalance, getNativeBalance, getSpotPrice } from './utils/apiGetters'
 import { WALLET_ADDRESS } from './config'
 import { TokenBalance } from '../../src/types/balances'
 import { getOwnOrders, prepareOrders } from './utils/getOrderbookState'
 import { ReturnedOrderbookQuote } from '../../src/types/quote'
 import { Column, useTable } from 'react-table'
-import { CoinPrice, Market, OptionsTableData, OrderbookRows, OwnOrdersRows } from './types'
-import { getCoinsPrice } from './Navbar'
+import { SpotPrice, Market, OptionsTableData, OwnOrdersRows } from './types'
 import logo from './logo.svg'
 import moment from 'moment'
 
@@ -47,11 +46,11 @@ function Account() {
 	const [activeExpiration, setActiveExpiration] = React.useState('')
 
 	const [marketSelector, setMarketSelector] = React.useState('WETH' as Market)
-	const [coinPrice, setCoinPrice] = React.useState({
+	const [spotPrice, setSpotPrice] = React.useState({
 		WBTC: 43000,
 		WETH: 2200,
 		ARB: 1.9,
-	} as CoinPrice)
+	} as SpotPrice)
 
 	const columns = useMemo<Column<OwnOrdersRows>[]>(() => COLUMNS, [])
 	const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data: ordersRows })
@@ -65,15 +64,15 @@ function Account() {
 	}, [])
 
 	useEffect(() => {
-		getCoinsPrice()
-			.then((coins) => setCoinPrice(coins))
+		getSpotPrice()
+			.then((coins) => setSpotPrice(coins))
 			.catch(console.error)
 
 		getOwnOrders().then(setRawOrders).catch(console.error)
 	}, [])
 
 	useEffect(() => {
-		const groupedOrders = prepareOrders(marketSelector, coinPrice[marketSelector], rawOrders)
+		const groupedOrders = prepareOrders(marketSelector, spotPrice[marketSelector], rawOrders)
 		setOrders(groupedOrders)
 		const expirations = groupedOrders.map((order) => order.expiration)
 		setExpirations(expirations)
@@ -87,7 +86,7 @@ function Account() {
 				.flatMap((positions) => positions.quotes)
 				.filter((order) => order.base === marketSelector)
 				.map((order) => {
-					const priceUSD = order.type === 'C' ? order.price * coinPrice[marketSelector] : order.price * order.strike
+					const priceUSD = order.type === 'C' ? order.price * spotPrice[marketSelector] : order.price * order.strike
 					const expiresInSec: number = order.ts + order.deadline - moment.utc().unix()
 
 					return {
