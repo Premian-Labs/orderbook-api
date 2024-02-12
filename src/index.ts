@@ -1,4 +1,5 @@
 import express from 'express'
+import cors from 'cors'
 import dotenv from 'dotenv'
 import WebSocket from 'ws'
 import moment from 'moment'
@@ -134,6 +135,7 @@ dotenv.config()
 checkEnv()
 
 const app = express()
+app.use(cors())
 // body parser for POST requests
 app.use(express.json())
 // unkey Auth check

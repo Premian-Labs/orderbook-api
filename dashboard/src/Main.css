@@ -1,0 +1,107 @@
+.app {
+	text-align: center;
+}
+
+.app-logo {
+	margin-top: 10vmin;
+	height: 30vmin;
+	pointer-events: none;
+}
+
+.app-container {
+	background-color: rgba(0, 0, 10, 0.9);
+	min-height: 95vh;
+	font-size: calc(10px + 1vmin);
+	color: white;
+}
+
+.table-container {
+	font-size: calc(10px + 0.5vmin);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.positions-container {
+	margin: 0 20px;
+	display: flex;
+	flex-direction: row;
+}
+
+.expirations-container {
+	text-align: left;
+}
+
+.selector {
+	margin: 10px;
+}
+.selector button {
+	margin: 0 10px;
+	border-radius: 8px;
+}
+
+.selector-btn {
+	background-color: rgb(31, 31, 45);
+	border-width: 0;
+	color: #5294ff;
+	display: inline-block;
+	line-height: 20px;
+	list-style: none;
+	margin: 0;
+	padding: 10px 12px;
+	text-align: center;
+	cursor: pointer;
+}
+
+.selector-btn:hover {
+	background-color: rgb(82, 148, 255);
+	color: rgb(31, 31, 45);
+}
+
+.selector-btn-active {
+	background-color: rgb(82, 148, 255);
+	color: rgb(31, 31, 45);
+	border-width: 0;
+	display: inline-block;
+	line-height: 20px;
+	list-style: none;
+	margin: 0;
+	padding: 10px 12px;
+	text-align: center;
+	cursor: pointer;
+}
+
+table {
+	border-collapse: collapse;
+	width: 100%;
+	table-layout: fixed;
+}
+td,
+th {
+	border: 1px solid rgb(82, 148, 255);
+	text-align: center;
+	padding: 8px;
+}
+tr:nth-child(even) {
+	background-color: rgb(13, 22, 38);
+}
+
+tr:hover {
+	background-color: rgba(82, 148, 255, 0.4);
+}
+
+.strike-col {
+	background-color: rgba(82, 148, 255, 0.7);
+}
+
+.strike-col:hover {
+	background-color: rgba(82, 148, 255, 0.7);
+}
+
+.bid-col {
+	color: rgba(0, 185, 80, 0.8);
+}
+
+.ask-col {
+	color: rgba(185, 0, 0, 0.8);
+}
