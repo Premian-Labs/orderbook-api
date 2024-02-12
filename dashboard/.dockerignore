@@ -1,6 +1,4 @@
 node_modules
-dist
+build
 .env
 .idea
-src/test
-dashboard

@@ -1,0 +1,26 @@
+.config {
+	text-align: left;
+	margin: 2vmin;
+}
+
+.sensitive-button {
+	width: 200px;
+	background-color: rgb(31, 31, 45);
+	border-radius: 8px;
+	border-width: 0;
+	color: rgb(82, 148, 255);
+	display: inline-block;
+	line-height: 20px;
+	list-style: none;
+	margin: 0;
+	padding: 10px 12px;
+	text-align: center;
+	cursor: pointer;
+}
+
+.sensitive-button:hover {
+	background-color: rgb(82, 148, 255);
+	border-radius: 8px;
+	border-width: 0;
+	color: rgb(31, 31, 45);
+}
