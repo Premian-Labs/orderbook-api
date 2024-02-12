@@ -46,7 +46,7 @@ describe('IV Oracles', () => {
 
 		expect(invalidMarketIVResponse.status).to.eq(400)
 		expect(invalidMarketIVResponse.data[0].message).to.eq(
-			`must match pattern \"^WETH$|^WBTC$|^ARB$|^LINK$|^WSTETH$|^GMX$|^MAGIC$|^SOL$|^FXS$\"`
+			`must match pattern \"^WETH$|^WBTC$|^ARB$|^LINK$|^wstETH$|^GMX$|^MAGIC$|^SOL$|^FXS$\"`
 		)
 	})
 
