@@ -53,20 +53,24 @@ function Account() {
 	const columns = useMemo<Column<OwnOrdersRows>[]>(() => COLUMNS, [])
 	const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data: ordersRows })
 
-	useEffect(() => {
+	const getData = () => {
+		console.log('fetching account data...')
+
 		getNativeBalance().then(setEthBalance).catch(console.error)
-	}, [])
-
-	useEffect(() => {
 		getCollateralBalance().then(setCollateralBalance).catch(console.error)
-	}, [])
-
-	useEffect(() => {
 		getSpotPrice()
 			.then((coins) => setSpotPrice(coins))
 			.catch(console.error)
-
 		getOwnOrders().then(setRawOrders).catch(console.error)
+	}
+
+	useEffect(() => {
+		getData()
+		const interval = setInterval(() => {
+			getData()
+		}, 15 * 1000)
+
+		return () => clearTimeout(interval)
 	}, [])
 
 	useEffect(() => {
@@ -77,7 +81,7 @@ function Account() {
 		if (!activeExpiration) setActiveExpiration(expirations[0])
 	}, [rawOrders, marketSelector])
 
-	useEffect(() => {
+	const prepareRowsRows = () => {
 		const activeExpirationOrders = orders.find((order) => order.expiration === activeExpiration)
 		if (activeExpirationOrders) {
 			const ordersRows: OwnOrdersRows[] = activeExpirationOrders.positions
@@ -94,11 +98,22 @@ function Account() {
 						price: priceUSD.toFixed(2),
 						amount: order.remainingSize,
 						expiration: moment.utc().startOf('day').seconds(expiresInSec).format('mm [min] ss [sec]'),
+						expiresInSec: expiresInSec
 					}
 				})
+				.filter(row => row.expiresInSec > 0)
 
 			setOrdersRows(ordersRows)
 		}
+	}
+
+	useEffect(() => {
+		prepareRowsRows()
+		const interval = setInterval(() => {
+			prepareRowsRows()
+		}, 1000)
+
+		return () => clearTimeout(interval)
 	}, [activeExpiration, marketSelector, orders])
 
 	return (
@@ -173,7 +188,7 @@ function Account() {
 					<p>Wallet Collateral Balance:</p>
 					{collateralBalance.map((tokenBalance) => {
 						return (
-							<ul className="collateral-balance">
+							<ul key={tokenBalance.symbol} className="collateral-balance">
 								{tokenBalance.symbol}: <code>{tokenBalance.balance}</code>
 							</ul>
 						)
