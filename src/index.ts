@@ -1381,7 +1381,7 @@ app.get('/vaults/quote', async (req, res) => {
 		return res.send(validateGetVaultQuote.errors)
 	}
 
-	// TODO: check that quote asset is USDC in request
+	// TODO: check that quote asset is USDC or FRAX (for FXS) in request
 	// TODO: check that base asset has a vault
 
 	const quoteRequest = req.query as unknown as VaultQuoteRequest
