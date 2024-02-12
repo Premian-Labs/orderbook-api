@@ -27,6 +27,7 @@ import {
 	NonceManager,
 	BigNumberish,
 } from 'ethers'
+import { arbitrum, arbitrumGoerli } from '@premia/v3-abi/deployment'
 
 import Logger from './lib/logger'
 import { checkEnv } from './config/checkConfig'
@@ -111,8 +112,6 @@ import {
 	validateBalances,
 } from './helpers/check'
 import { proxyHTTPRequest } from './helpers/proxy'
-import arb from './config/arbitrum.json'
-import arbGoerli from './config/arbitrumGoerli.json'
 import {
 	getQuote,
 	signQuote,
@@ -978,8 +977,8 @@ app.post('/account/collateral_approval', async (req, res) => {
 	for (const approval of approvals) {
 		const erc20Addr =
 			process.env.ENV == 'production'
-				? arb.tokens[approval.token]
-				: arbGoerli.tokens[approval.token]
+				? arbitrum.tokens[approval.token]
+				: arbitrumGoerli.tokens[approval.token]
 		const erc20 = ISolidStateERC20__factory.connect(erc20Addr, signer)
 
 		let approveTX: ContractTransactionResponse
@@ -1370,12 +1369,14 @@ app.get('/oracles/spot', async (req, res) => {
 })
 
 app.get('/vaults/quote', async (req, res) => {
-
+	// TODO: AJV validation
+	// vault market: 'WETH' | 'BTC` | 'ARB'  (only 'WETH' on testnet)
+	// type: C
+	// size: 2
+	// direction: buy
 })
 
-app.get('/vaults/trade', async (req, res) => {
-
-})
+app.get('/vaults/trade', async (req, res) => {})
 
 const server = app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`)

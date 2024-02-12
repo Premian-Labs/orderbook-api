@@ -1,5 +1,6 @@
 import moment from 'moment'
 import { formatEther, parseEther, toBigInt } from 'ethers'
+import { arbitrum, arbitrumGoerli } from '@premia/v3-abi/deployment'
 
 import {
 	FillableQuote,
@@ -14,8 +15,6 @@ import { Option } from '../types/validate'
 import { PublishQuoteRequest } from '../types/validate'
 import { tokenAddr } from '../config/constants'
 import { getTokenByAddress } from './get'
-import arb from '../config/arbitrum.json'
-import arbGoerli from '../config/arbitrumGoerli.json'
 import { RFQMessage, RFQMessageParsed } from '../types/ws'
 
 /*
@@ -130,16 +129,16 @@ export function createPoolKey(
 	return {
 		base:
 			process.env.ENV == 'production'
-				? arb.tokens[quote.base]
-				: arbGoerli.tokens[quote.base],
+				? arbitrum.tokens[quote.base]
+				: arbitrumGoerli.tokens[quote.base],
 		quote:
 			process.env.ENV == 'production'
-				? arb.tokens[quote.quote]
-				: arbGoerli.tokens[quote.quote],
+				? arbitrum.tokens[quote.quote]
+				: arbitrumGoerli.tokens[quote.quote],
 		oracleAdapter:
 			process.env.ENV == 'production'
-				? arb.core.ChainlinkAdapterProxy.address
-				: arbGoerli.core.ChainlinkAdapterProxy.address,
+				? arbitrum.core.ChainlinkAdapterProxy.address
+				: arbitrumGoerli.core.ChainlinkAdapterProxy.address,
 		strike: parseEther(quote.strike.toString()),
 		maturity: expiration ? expiration : quote.expiration,
 		isCallPool: quote.type === 'C',

@@ -6,9 +6,7 @@ import {
 	IPoolFactory__factory,
 	IVolatilityOracle__factory,
 } from '@premia/v3-abi/typechain'
-
-import arb from './arbitrum.json'
-import arbGoerli from './arbitrumGoerli.json'
+import { arbitrum, arbitrumGoerli } from '@premia/v3-abi/deployment'
 
 dotenv.config()
 
@@ -43,21 +41,21 @@ export const apiKey =
 export const referralAddress = process.env.REFERRAL_ADDRESS ?? ZeroAddress
 
 export const tokenAddr =
-	process.env.ENV === 'production' ? arb.tokens : arbGoerli.tokens
+	process.env.ENV === 'production' ? arbitrum.tokens : arbitrumGoerli.tokens
 export const supportedTokens = Object.keys(tokenAddr)
-export const productionTokenAddr: Record<string, string> = arb.tokens
+export const productionTokenAddr: Record<string, string> = arbitrum.tokens
 const prodProvider = new JsonRpcProvider(process.env.MAINNET_RPC_URL!)
 const prodMultiCallProvider = MulticallWrapper.wrap(prodProvider)
 
 export const routerAddr =
 	process.env.ENV == 'production'
-		? arb.core.ERC20Router.address
-		: arbGoerli.core.ERC20Router.address
+		? arbitrum.core.ERC20Router.address
+		: arbitrumGoerli.core.ERC20Router.address
 
 const poolFactoryAddr =
 	process.env.ENV == 'production'
-		? arb.core.PoolFactoryProxy.address
-		: arbGoerli.core.PoolFactoryProxy.address
+		? arbitrum.core.PoolFactoryProxy.address
+		: arbitrumGoerli.core.PoolFactoryProxy.address
 
 export const poolFactory = IPoolFactory__factory.connect(
 	poolFactoryAddr,
@@ -66,7 +64,7 @@ export const poolFactory = IPoolFactory__factory.connect(
 
 // NOTE: we use production instance
 export const ivOracle = IVolatilityOracle__factory.connect(
-	arb.core.VolatilityOracleProxy.address,
+	arbitrum.core.VolatilityOracleProxy.address,
 	prodMultiCallProvider
 )
 
@@ -84,14 +82,14 @@ export const productionTokensWithIVOracles = [
 
 // NOTE: we use production
 export const chainlink = IChainlinkAdapter__factory.connect(
-	arb.core.ChainlinkAdapterProxy.address,
+	arbitrum.core.ChainlinkAdapterProxy.address,
 	prodMultiCallProvider
 )
 
 export const availableTokens =
 	process.env.ENV === 'production'
-		? Object.keys(arb.tokens)
-		: Object.keys(arbGoerli.tokens)
+		? Object.keys(arbitrum.tokens)
+		: Object.keys(arbitrumGoerli.tokens)
 
 export const blockByTsEndpoint =
 	process.env.ENV == 'production'

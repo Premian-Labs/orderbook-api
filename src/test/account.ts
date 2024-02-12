@@ -2,6 +2,7 @@ import axios from 'axios'
 import { expect } from 'chai'
 import { ethers, formatUnits, MaxUint256 } from 'ethers'
 import { ISolidStateERC20__factory } from '@premia/v3-abi/typechain'
+import { arbitrum, arbitrumGoerli } from '@premia/v3-abi/deployment'
 
 import { checkEnv } from '../config/checkConfig'
 import {
@@ -20,8 +21,6 @@ import {
 	rpcUrl,
 } from '../config/constants'
 import { RejectedTokenBalance, TokenBalance } from '../types/balances'
-import arb from '../config/arbitrum.json'
-import arbGoerli from '../config/arbitrumGoerli.json'
 import { baseUrl, deployPools, getMaturity, setApproval } from './helpers/utils'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
@@ -115,8 +114,8 @@ describe('Balances, Approvals & Open Orders', () => {
 		for (const approval of approvals) {
 			const erc20Addr =
 				process.env.ENV == 'production'
-					? arb.tokens[approval.token]
-					: arbGoerli.tokens[approval.token]
+					? arbitrum.tokens[approval.token]
+					: arbitrumGoerli.tokens[approval.token]
 			const erc20 = ISolidStateERC20__factory.connect(erc20Addr, signer)
 			const decimals = await erc20.decimals()
 			const allowance = await erc20.allowance(signer.address, routerAddr)
