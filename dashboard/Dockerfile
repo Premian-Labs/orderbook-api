@@ -4,5 +4,7 @@ COPY . ./
 
 RUN yarn install --production && yarn cache clean
 
-RUN yarn run build
-CMD ["yarn", "run", "start"]
+#RUN yarn build
+#CMD ["yarn", "serve", "-l", "3010" ,"-s", "build"]
+
+CMD ["yarn", "start"]

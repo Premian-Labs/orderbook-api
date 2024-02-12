@@ -3,8 +3,15 @@ import logo from './logo.svg'
 import './Main.css'
 import { Column, useTable } from 'react-table'
 import { getOrderbookState, prepareOrders } from './utils/getOrderbookState'
-import { IVResponseExtended, Market, OpenPosition, OptionsTableData, OrderbookRows, SpotPrice } from './types'
-import { ReturnedOrderbookQuote } from '../../src/types/quote'
+import {
+	IVResponseExtended,
+	Market,
+	OpenPosition,
+	OptionsTableData,
+	OrderbookRows,
+	SpotPrice,
+	ReturnedOrderbookQuote,
+} from './types'
 import _ from 'lodash'
 import { blackScholes, getDeltaAndIV, ONE_YEAR_SEC } from './utils/blackScholes'
 import { getIVOracle, getOptionBalance, getSpotPrice } from './utils/apiGetters'

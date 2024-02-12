@@ -1,5 +1,5 @@
 import { BlackScholes } from '@uqee/black-scholes'
-import { ReturnedOrderbookQuote } from '../../../src/types/quote'
+import { ReturnedOrderbookQuote } from '../types'
 import moment from 'moment'
 
 const BSchInstance = new BlackScholes()

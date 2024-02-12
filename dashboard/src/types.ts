@@ -1,6 +1,12 @@
-import { ReturnedOrderbookQuote } from '../../src/types/quote'
-import { RejectedTokenBalance, TokenBalance } from '../../src/types/balances'
-import { IVResponse } from '../../src/types/validate'
+export interface IVResponse {
+	strike: number
+	iv: number
+}
+
+export interface SpotResponse {
+	market: string
+	price: number
+}
 
 export interface SpotPrice {
 	WBTC: number
@@ -48,6 +54,11 @@ export interface OwnOrdersRows {
 	expiration: string
 }
 
+export interface RejectedTokenBalance {
+	token: string
+	reason: any
+}
+
 export interface CollateralBalances {
 	success: TokenBalance[]
 	failed: RejectedTokenBalance[]
@@ -66,4 +77,41 @@ export interface IVResponseExtended {
 	expiration: string
 	market: string
 	ivs: IVResponse[]
+}
+
+export interface NFTBalance {
+	token_address: string
+	amount: number
+	name: string
+	exposure: 'SHORT' | 'LONG'
+}
+
+export interface OptionPositions {
+	open: NFTBalance[]
+	expired: NFTBalance[]
+}
+
+export interface TokenBalance {
+	token_address: string
+	symbol: string
+	balance: number | string
+}
+
+export interface Option {
+	base: string //token name | token address
+	quote: string //token name | token address
+	expiration: string // i.e. 23NOV2023
+	strike: number
+	type: 'C' | 'P'
+}
+
+export interface ReturnedOrderbookQuote extends Option {
+	side: 'bid' | 'ask'
+	remainingSize: number
+	price: number
+	provider: string
+	taker: string
+	deadline: number
+	quoteId: string
+	ts: number
 }

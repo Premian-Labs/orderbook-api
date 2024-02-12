@@ -6,12 +6,12 @@ services:
     build: .
     ports:
       - '3000:3000'
-#  premia-dashboard:
-#    env_file: dashboard/.env
-#    restart: on-failure
-#    build: dashboard
-#    ports:
-#      - '3010:3010'
+  premia-dashboard:
+    env_file: dashboard/.env
+    restart: on-failure
+    build: dashboard
+    ports:
+      - '3010:3010'
 #  premia-orderbook-ngrok:
 #    depends_on: [ premia-orderbook ]
 #    image: ngrok/ngrok

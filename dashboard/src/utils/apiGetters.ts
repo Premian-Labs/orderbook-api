@@ -1,8 +1,6 @@
 import axios from 'axios'
-import { SpotPrice, CollateralBalances, Market } from '../types'
+import { SpotPrice, CollateralBalances, Market, OptionPositions, IVResponse, SpotResponse } from '../types'
 import { PREMIA_API_URL } from '../config'
-import { OptionPositions } from '../../../src/types/balances'
-import { IVResponse, SpotResponse } from '../../../src/types/validate'
 
 const APIKey = process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY!
 

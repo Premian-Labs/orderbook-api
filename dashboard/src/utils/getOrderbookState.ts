@@ -1,8 +1,7 @@
 import axios from 'axios'
-import { PREMIA_API_URL, WALLET_ADDRESS } from '../config'
-import { ReturnedOrderbookQuote } from '../../../src/types/quote'
+import { PREMIA_API_URL } from '../config'
 import _ from 'lodash'
-import { Market } from '../types'
+import { Market, OptionsTableData, ReturnedOrderbookQuote } from '../types'
 import { getSurroundingStrikes } from './strikes'
 import moment from 'moment'
 
@@ -32,7 +31,7 @@ export async function getOwnOrders() {
 	return orders
 }
 
-export function prepareOrders(market: Market, spot: number, orders: ReturnedOrderbookQuote[]) {
+export function prepareOrders(market: Market, spot: number, orders: ReturnedOrderbookQuote[]): OptionsTableData[] {
 	const strikes = getSurroundingStrikes(spot)
 	const ordersPerMarket = orders.filter((order) => order.base === market)
 	const groupedByExpiration = _.chain(ordersPerMarket)
