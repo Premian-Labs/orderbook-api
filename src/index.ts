@@ -1367,6 +1367,14 @@ app.get('/oracles/spot', async (req, res) => {
 	}
 })
 
+app.get('/vaults/quote', async (req, res) => {
+
+})
+
+app.get('/vaults/trade', async (req, res) => {
+
+})
+
 const server = app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`)
 })
