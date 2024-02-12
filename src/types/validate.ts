@@ -97,3 +97,8 @@ export interface SpotResponse {
 	market: string
 	price: number
 }
+
+export interface VaultQuoteRequest extends Option {
+	size: number
+	direction: 'buy' | 'sell'
+}

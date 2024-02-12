@@ -301,3 +301,28 @@ export const validateGetSpot = ajv.compile({
 	required: ['markets'],
 	additionalProperties: false,
 })
+
+export const validateGetVaultQuote = ajv.compile({
+	type: 'object',
+	properties: {
+		...validateOptionEntity,
+		size: {
+			type: 'string',
+			pattern: '^[0-9]{1,}([.][0-9]*)?$',
+		},
+		direction: {
+			type: 'string',
+			pattern: '^buy$|^sell$',
+		},
+	},
+	required: [
+		'base',
+		'quote',
+		'expiration',
+		'strike',
+		'type',
+		'size',
+		'direction',
+	],
+	additionalProperties: false,
+})

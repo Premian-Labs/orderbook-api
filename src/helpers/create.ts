@@ -11,9 +11,9 @@ import {
 	PoolKey,
 	ReturnedOrderbookQuote,
 } from '../types/quote'
-import { Option } from '../types/validate'
+import { Option, VaultQuoteRequest } from '../types/validate'
 import { PublishQuoteRequest } from '../types/validate'
-import { tokenAddr } from '../config/constants'
+import { spotOracleAddr, tokenAddr } from '../config/constants'
 import { getTokenByAddress } from './get'
 import { RFQMessage, RFQMessageParsed } from '../types/ws'
 
@@ -123,22 +123,13 @@ export function createReturnedQuotes(
 	}
 }
 export function createPoolKey(
-	quote: PublishQuoteRequest | Option,
+	quote: PublishQuoteRequest | Option | VaultQuoteRequest,
 	expiration?: number
 ): PoolKey {
 	return {
-		base:
-			process.env.ENV == 'production'
-				? arbitrum.tokens[quote.base]
-				: arbitrumGoerli.tokens[quote.base],
-		quote:
-			process.env.ENV == 'production'
-				? arbitrum.tokens[quote.quote]
-				: arbitrumGoerli.tokens[quote.quote],
-		oracleAdapter:
-			process.env.ENV == 'production'
-				? arbitrum.core.ChainlinkAdapterProxy.address
-				: arbitrumGoerli.core.ChainlinkAdapterProxy.address,
+		base: tokenAddr[quote.base],
+		quote: tokenAddr[quote.quote],
+		oracleAdapter: spotOracleAddr,
 		strike: parseEther(quote.strike.toString()),
 		maturity: expiration ? expiration : quote.expiration,
 		isCallPool: quote.type === 'C',

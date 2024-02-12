@@ -42,6 +42,9 @@ export const referralAddress = process.env.REFERRAL_ADDRESS ?? ZeroAddress
 
 export const tokenAddr =
 	process.env.ENV === 'production' ? arbitrum.tokens : arbitrumGoerli.tokens
+
+export const vaults =
+	process.env.ENV === 'production' ? arbitrum.vaults : arbitrumGoerli.vaults
 export const supportedTokens = Object.keys(tokenAddr)
 export const productionTokenAddr: Record<string, string> = arbitrum.tokens
 const prodProvider = new JsonRpcProvider(process.env.MAINNET_RPC_URL!)
@@ -57,12 +60,17 @@ const poolFactoryAddr =
 		? arbitrum.core.PoolFactoryProxy.address
 		: arbitrumGoerli.core.PoolFactoryProxy.address
 
+export const spotOracleAddr =
+	process.env.ENV == 'production'
+		? arbitrum.core.ChainlinkAdapterProxy.address
+		: arbitrumGoerli.core.ChainlinkAdapterProxy.address
+
 export const poolFactory = IPoolFactory__factory.connect(
 	poolFactoryAddr,
 	signer
 )
 
-// NOTE: we use production instance
+// NOTE: we use production only instance for IV Oracle
 export const ivOracle = IVolatilityOracle__factory.connect(
 	arbitrum.core.VolatilityOracleProxy.address,
 	prodMultiCallProvider
@@ -73,14 +81,14 @@ export const productionTokensWithIVOracles = [
 	'WBTC',
 	'ARB',
 	'LINK',
-	'WSTETH',
+	'wstETH',
 	'GMX',
 	'MAGIC',
 	'SOL',
 	'FXS',
 ]
 
-// NOTE: we use production
+// NOTE: we use production only for Spot Oracle endpoints
 export const chainlink = IChainlinkAdapter__factory.connect(
 	arbitrum.core.ChainlinkAdapterProxy.address,
 	prodMultiCallProvider

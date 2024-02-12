@@ -6,6 +6,7 @@ import moment from 'moment'
 import {
 	IPool__factory,
 	ISolidStateERC20__factory,
+	IVault__factory,
 } from '@premia/v3-abi/typechain'
 import {
 	difference,
@@ -27,7 +28,6 @@ import {
 	NonceManager,
 	BigNumberish,
 } from 'ethers'
-import { arbitrum, arbitrumGoerli } from '@premia/v3-abi/deployment'
 
 import Logger from './lib/logger'
 import { checkEnv } from './config/checkConfig'
@@ -44,6 +44,7 @@ import {
 	ivOracle,
 	productionTokenAddr,
 	chainlink,
+	vaults,
 } from './config/constants'
 import {
 	FillableQuote,
@@ -74,6 +75,7 @@ import {
 	SpotRequest,
 	SpotResponse,
 	StrikesRequestSymbol,
+	VaultQuoteRequest,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -90,6 +92,7 @@ import {
 	validateGetStrikes,
 	validateGetIV,
 	validateGetSpot,
+	validateGetVaultQuote,
 } from './helpers/validators'
 import {
 	getBalances,
@@ -975,11 +978,10 @@ app.post('/account/collateral_approval', async (req, res) => {
 
 	// iterate through each approval request synchronously
 	for (const approval of approvals) {
-		const erc20Addr =
-			process.env.ENV == 'production'
-				? arbitrum.tokens[approval.token]
-				: arbitrumGoerli.tokens[approval.token]
-		const erc20 = ISolidStateERC20__factory.connect(erc20Addr, signer)
+		const erc20 = ISolidStateERC20__factory.connect(
+			tokenAddr[approval.token],
+			signer
+		)
 
 		let approveTX: ContractTransactionResponse
 		let confirm: TransactionReceipt | null
@@ -1369,11 +1371,33 @@ app.get('/oracles/spot', async (req, res) => {
 })
 
 app.get('/vaults/quote', async (req, res) => {
-	// TODO: AJV validation
-	// vault market: 'WETH' | 'BTC` | 'ARB'  (only 'WETH' on testnet)
-	// type: C
-	// size: 2
-	// direction: buy
+	const valid = validateGetVaultQuote(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'AJV get vault quote req params validation error',
+			error: validateGetVaultQuote.errors,
+		})
+		return res.send(validateGetVaultQuote.errors)
+	}
+
+	// TODO: check that quote asset is USDC in request
+	// TODO: check that base asset has a vault
+
+	const quoteRequest = req.query as unknown as VaultQuoteRequest
+	const vaultName = `pSV-${quoteRequest.base}/USDCe-${quoteRequest.type}`
+	const vault = IVault__factory.connect(vaults[vaultName].address, provider)
+	const poolKey = createPoolKey(quoteRequest)
+
+	// TODO: add try/catch
+	const quoteBigInt = await vault.getQuote(
+		poolKey,
+		parseEther(quoteRequest.size.toString()),
+		quoteRequest.direction === 'buy',
+		walletAddr
+	)
+
+	return res.status(200).json(parseFloat(formatEther(quoteBigInt)))
 })
 
 app.get('/vaults/trade', async (req, res) => {})
