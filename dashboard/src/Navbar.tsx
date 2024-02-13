@@ -21,7 +21,7 @@ export const Navbar = () => {
 				.then((coins) => setSpotPrice(coins))
 				.catch(console.error)
 			console.log('coins pricing update')
-		}, 10 * 1000)
+		}, 30 * 1000)
 
 		return () => clearTimeout(interval)
 	}, [])

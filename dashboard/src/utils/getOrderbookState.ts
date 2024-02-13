@@ -1,11 +1,9 @@
 import axios from 'axios'
-import { PREMIA_API_URL } from '../config'
+import { APIKey, PREMIA_API_URL } from '../config'
 import _ from 'lodash'
 import { Market, OptionsTableData, ReturnedOrderbookQuote } from '../types'
 import { getSurroundingStrikes } from './strikes'
 import moment from 'moment'
-
-const APIKey = process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY!
 
 export async function getOrderbookState() {
 	const ordersResponse = await axios.get(PREMIA_API_URL + '/orderbook/orders', {

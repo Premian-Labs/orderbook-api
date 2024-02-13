@@ -11,12 +11,17 @@ import {
 	OrderbookRows,
 	SpotPrice,
 	ReturnedOrderbookQuote,
+	WSMsg,
+	AuthMessage,
+	FilterMessage,
 } from './types'
 import _ from 'lodash'
 import { blackScholes, getDeltaAndIV, ONE_YEAR_SEC } from './utils/blackScholes'
 import { getIVOracle, getOptionBalance, getSpotPrice } from './utils/apiGetters'
 import { Tooltip } from 'react-tooltip'
 import moment from 'moment/moment'
+import { connectWS, delay } from './utils/ws'
+import { APIKey, chainId } from './config'
 
 const COLUMNS = [
 	// {
@@ -143,18 +148,18 @@ function Main() {
 	const [expirations, setExpirations] = React.useState([] as string[])
 	const [marketSelector, setMarketSelector] = React.useState('WETH' as Market)
 	const [activeExpiration, setActiveExpiration] = React.useState('')
-	const [activeExpirationOrders, setActiveExpirationOrders] = React.useState(
-		[] as { quotes: ReturnedOrderbookQuote[]; strike: number }[],
-	)
+	const [activeExpirationOrders, setActiveExpirationOrders] = React.useState([] as OptionsTableData['positions'])
 	const [quotesRows, setQuotesRows] = React.useState([] as OrderbookRows[])
 	const [openPositions, setOpenPositions] = React.useState([] as OpenPosition[])
-	const [ivData, setIvData] = React.useState([] as IVResponseExtended[])
+	const [ivData, setIvData] = React.useState({} as IVResponseExtended)
 
 	const columns = useMemo<Column<OrderbookRows>[]>(() => COLUMNS, [])
 	const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data: quotesRows })
+	const getData = () => {
+		console.log('fetching orderbook data...')
 
-	useEffect(() => {
 		getSpotPrice().then(setSpotPrice).catch(console.error)
+		getOrderbookState().then(setRawOrders).catch(console.error)
 		getOptionBalance()
 			.then((positions) => {
 				return positions.map((option) => {
@@ -172,7 +177,81 @@ function Main() {
 			})
 			.then(setOpenPositions)
 			.catch(console.error)
-		getOrderbookState().then(setRawOrders).catch(console.error)
+	}
+
+	useEffect(() => {
+		let wsLink: WebSocket | undefined = undefined
+
+		connectWS()
+			.then(async (ws) => {
+				wsLink = ws
+				const authMsg: AuthMessage = {
+					type: 'AUTH',
+					apiKey: APIKey,
+					body: null,
+				}
+
+				const wsCallback = (message: MessageEvent<string>) => {
+					const msg = JSON.parse(message.data) as WSMsg
+					switch (msg.type) {
+						case 'INFO': {
+							console.log('INFO WS MSG', msg.message)
+							break
+						}
+						case 'ERROR': {
+							console.error('ERROR WS MSG', msg.message)
+							break
+						}
+						case 'FILL_QUOTE': {
+							if (msg.body.remainingSize === 0) {
+								setRawOrders((rawData) => rawData.filter((order) => order.quoteId !== msg.body.quoteId))
+							} else {
+								setRawOrders((rawData) => {
+									const ex = rawData.filter((order) => order.quoteId !== msg.body.quoteId)
+									return [...ex, msg.body]
+								})
+							}
+							break
+						}
+						case 'POST_QUOTE': {
+							setRawOrders((rawData) => [...rawData, msg.body])
+							break
+						}
+						case 'DELETE_QUOTE': {
+							setRawOrders((rawData) => rawData.filter((order) => order.quoteId !== msg.body.quoteId))
+							break
+						}
+						default: {
+							console.error(msg)
+						}
+					}
+				}
+				await delay(2000)
+				ws.onmessage = wsCallback
+				ws.send(JSON.stringify(authMsg))
+				await delay(2000)
+
+				const webSocketFilter: FilterMessage = {
+					type: 'FILTER',
+					channel: 'QUOTES',
+					body: {
+						chainId: chainId,
+					},
+				}
+				ws.send(JSON.stringify(webSocketFilter))
+			})
+			.catch(console.error)
+
+		return () => (wsLink ? wsLink.close() : void 0)
+	}, [])
+
+	useEffect(() => {
+		getData()
+		const interval = setInterval(() => {
+			getData()
+		}, 10 * 1000)
+
+		return () => clearTimeout(interval)
 	}, [])
 
 	useEffect(() => {
@@ -185,23 +264,19 @@ function Main() {
 	}, [rawOrders, marketSelector, spotPrice])
 
 	useEffect(() => {
-		Promise.all(
-			orders.map(async (order) => {
-				const ivs = await getIVOracle(marketSelector, order.expiration)
-				return {
-					expiration: order.expiration,
+		if (activeExpiration)
+			getIVOracle(marketSelector, activeExpiration)
+				.then((ivs) => ({
+					expiration: activeExpiration,
 					market: marketSelector,
 					ivs: ivs,
-				}
-			}),
-		)
-			.then(setIvData)
-			.catch(console.error)
-	}, [orders, marketSelector])
+				}))
+				.then(setIvData)
+				.catch(console.error)
+	}, [marketSelector, activeExpiration])
 
 	useEffect(() => {
 		const activeExpirationOrders = orders.find((order) => order.expiration === activeExpiration)
-		const ivDataExpiration = ivData.find((iv) => iv.expiration === activeExpiration)
 		if (activeExpirationOrders) {
 			setActiveExpirationOrders(activeExpirationOrders.positions)
 			const quotesRow = activeExpirationOrders.positions.map(({ strike, quotes }) => {
@@ -228,8 +303,8 @@ function Main() {
 					put_positions: '-',
 				} as OrderbookRows
 
-				if (ivDataExpiration) {
-					const ivDataExpirationStrike = ivDataExpiration.ivs.find((iv) => iv.strike === strike)
+				if (!_.isEmpty(ivData)) {
+					const ivDataExpirationStrike = ivData.ivs.find((iv) => iv.strike === strike)
 					if (ivDataExpirationStrike) {
 						obRow.call_mark = blackScholes(
 							ivDataExpirationStrike.iv,
