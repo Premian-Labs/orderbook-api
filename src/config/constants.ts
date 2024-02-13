@@ -70,12 +70,13 @@ export const poolFactory = IPoolFactory__factory.connect(
 	signer
 )
 
-// NOTE: we use production only instance for IV Oracle
+// NOTE: we use PRODUCTION ONLY instance for IV Oracle endpoints
 export const ivOracle = IVolatilityOracle__factory.connect(
 	arbitrum.core.VolatilityOracleProxy.address,
 	prodMultiCallProvider
 )
 
+// TODO: get from arbitrum json instead of hardcoding
 export const productionTokensWithIVOracles = [
 	'WETH',
 	'WBTC',
@@ -88,7 +89,7 @@ export const productionTokensWithIVOracles = [
 	'FXS',
 ]
 
-// NOTE: we use production only for Spot Oracle endpoints
+// NOTE: we use PRODUCTION ONLY instance for Spot Oracle endpoints
 export const chainlink = IChainlinkAdapter__factory.connect(
 	arbitrum.core.ChainlinkAdapterProxy.address,
 	prodMultiCallProvider

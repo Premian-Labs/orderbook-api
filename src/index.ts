@@ -1380,22 +1380,55 @@ app.get('/vaults/quote', async (req, res) => {
 		})
 		return res.send(validateGetVaultQuote.errors)
 	}
-
-	// TODO: check that quote asset is USDC or FRAX (for FXS) in request
-	// TODO: check that base asset has a vault
-
 	const quoteRequest = req.query as unknown as VaultQuoteRequest
-	const vaultName = `pSV-${quoteRequest.base}/USDCe-${quoteRequest.type}`
-	const vault = IVault__factory.connect(vaults[vaultName].address, provider)
-	const poolKey = createPoolKey(quoteRequest)
 
-	// TODO: add try/catch
-	const quoteBigInt = await vault.getQuote(
-		poolKey,
-		parseEther(quoteRequest.size.toString()),
-		quoteRequest.direction === 'buy',
-		walletAddr
-	)
+	let quoteSymbol: string
+	// NOTE: production USDC is USDCe (bridged)
+	if (chainId == '42161' && quoteRequest.quote == 'USDC') quoteSymbol = `USDCe`
+	else quoteSymbol = quoteRequest.quote
+
+	// create vault key
+	const vaultName = `pSV-${quoteRequest.base}/${quoteSymbol}-${quoteRequest.type}`
+
+	// check to make sure vault exists
+	if (!(vaultName in vaults))
+		return res.status(400).json({
+			message: 'Vault does not exist',
+			quote: quoteRequest,
+		})
+
+	// format expiration for poolKey object (reject if invalid expiration)
+	let expiration: number
+	try {
+		expiration = createExpiration(quoteRequest.expiration)
+	} catch (e) {
+		return res.status(400).json({
+			message: (e as Error).message,
+			quote: quoteRequest,
+		})
+	}
+
+	const poolKey = createPoolKey(quoteRequest, expiration)
+
+	const vault = IVault__factory.connect(vaults[vaultName].address, provider)
+	let quoteBigInt: bigint
+	try {
+		quoteBigInt = await vault.getQuote(
+			poolKey,
+			parseEther(quoteRequest.size.toString()),
+			quoteRequest.direction === 'buy',
+			walletAddr
+		)
+	} catch (e) {
+		Logger.error({
+			message: 'Vault quote failed',
+			error: e,
+		})
+
+		return res.status(500).json({
+			message: `Failed to get quote from vault`,
+		})
+	}
 
 	return res.status(200).json(parseFloat(formatEther(quoteBigInt)))
 })
