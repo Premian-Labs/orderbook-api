@@ -2,12 +2,23 @@ import React, { useEffect, useMemo } from 'react'
 import './Main.css'
 import './Account.css'
 import { getCollateralBalance, getNativeBalance, getSpotPrice } from './utils/apiGetters'
-import { WALLET_ADDRESS } from './config'
+import { APIKey, chainId, WALLET_ADDRESS } from './config'
 import { getOwnOrders, prepareOrders } from './utils/getOrderbookState'
 import { Column, useTable } from 'react-table'
-import { TokenBalance, ReturnedOrderbookQuote, SpotPrice, Market, OptionsTableData, OwnOrdersRows } from './types'
+import {
+	TokenBalance,
+	ReturnedOrderbookQuote,
+	SpotPrice,
+	Market,
+	OptionsTableData,
+	OwnOrdersRows,
+	WSMsg,
+	AuthMessage,
+	FilterMessage
+} from './types'
 import logo from './logo.svg'
 import moment from 'moment'
+import { connectWS, delay } from './utils/ws'
 
 const COLUMNS = [
 	{
@@ -68,9 +79,76 @@ function Account() {
 		getData()
 		const interval = setInterval(() => {
 			getData()
-		}, 15 * 1000)
+		}, 30 * 1000)
 
 		return () => clearTimeout(interval)
+	}, [])
+
+	useEffect(() => {
+		let wsLink: WebSocket | undefined = undefined
+
+		connectWS()
+			.then(async (ws) => {
+				wsLink = ws
+				const authMsg: AuthMessage = {
+					type: 'AUTH',
+					apiKey: APIKey,
+					body: null,
+				}
+
+				const wsCallback = (message: MessageEvent<string>) => {
+					const msg = JSON.parse(message.data) as WSMsg
+					switch (msg.type) {
+						case 'INFO': {
+							console.log('INFO WS MSG', msg.message)
+							break
+						}
+						case 'ERROR': {
+							console.error('ERROR WS MSG', msg.message)
+							break
+						}
+						case 'FILL_QUOTE': {
+							if (msg.body.remainingSize === 0) {
+								setRawOrders((rawData) => rawData.filter((order) => order.quoteId !== msg.body.quoteId))
+							} else {
+								setRawOrders((rawData) => {
+									const ex = rawData.filter((order) => order.quoteId !== msg.body.quoteId)
+									return [...ex, msg.body]
+								})
+							}
+							break
+						}
+						case 'POST_QUOTE': {
+							setRawOrders((rawData) => [...rawData, msg.body])
+							break
+						}
+						case 'DELETE_QUOTE': {
+							setRawOrders((rawData) => rawData.filter((order) => order.quoteId !== msg.body.quoteId))
+							break
+						}
+						default: {
+							console.error(msg)
+						}
+					}
+				}
+				await delay(2000)
+				ws.onmessage = wsCallback
+				ws.send(JSON.stringify(authMsg))
+				await delay(2000)
+
+				const webSocketFilter: FilterMessage = {
+					type: 'FILTER',
+					channel: 'QUOTES',
+					body: {
+						chainId: chainId,
+						provider: WALLET_ADDRESS.toLowerCase(),
+					},
+				}
+				ws.send(JSON.stringify(webSocketFilter))
+			})
+			.catch(console.error)
+
+		return () => (wsLink ? wsLink.close() : void 0)
 	}, [])
 
 	useEffect(() => {
@@ -81,7 +159,7 @@ function Account() {
 		if (!activeExpiration) setActiveExpiration(expirations[0])
 	}, [rawOrders, marketSelector])
 
-	const prepareRowsRows = () => {
+	const prepareRows = () => {
 		const activeExpirationOrders = orders.find((order) => order.expiration === activeExpiration)
 		if (activeExpirationOrders) {
 			const ordersRows: OwnOrdersRows[] = activeExpirationOrders.positions
@@ -98,19 +176,19 @@ function Account() {
 						price: priceUSD.toFixed(2),
 						amount: order.remainingSize,
 						expiration: moment.utc().startOf('day').seconds(expiresInSec).format('mm [min] ss [sec]'),
-						expiresInSec: expiresInSec
+						expiresInSec: expiresInSec,
 					}
 				})
-				.filter(row => row.expiresInSec > 0)
+				.filter((row) => row.expiresInSec > 0)
 
 			setOrdersRows(ordersRows)
 		}
 	}
 
 	useEffect(() => {
-		prepareRowsRows()
+		prepareRows()
 		const interval = setInterval(() => {
-			prepareRowsRows()
+			prepareRows()
 		}, 1000)
 
 		return () => clearTimeout(interval)
