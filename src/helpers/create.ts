@@ -1,6 +1,5 @@
 import moment from 'moment'
 import { formatEther, parseEther, toBigInt } from 'ethers'
-import { arbitrum, arbitrumGoerli } from '@premia/v3-abi/deployment'
 
 import {
 	FillableQuote,
@@ -11,7 +10,7 @@ import {
 	PoolKey,
 	ReturnedOrderbookQuote,
 } from '../types/quote'
-import { Option, VaultQuoteRequest } from '../types/validate'
+import { Option, VaultRequest } from '../types/validate'
 import { PublishQuoteRequest } from '../types/validate'
 import { spotOracleAddr, tokenAddr } from '../config/constants'
 import { getTokenByAddress } from './get'
@@ -77,7 +76,6 @@ export function createExpiration(exp: string): number {
 	return expirationMoment.add(8, 'hours').unix()
 }
 
-// TODO: rename size to availableSize
 export function parseInvalidQuotes(
 	orderbookQuote: InvalidPostQuoteResponse
 ): InvalidOrderbookQuote {
@@ -99,7 +97,6 @@ export function parseInvalidQuotes(
 	}
 }
 
-// TODO: rename size to availableSize
 export function createReturnedQuotes(
 	orderbookQuote: OrderbookQuote
 ): ReturnedOrderbookQuote {
@@ -123,7 +120,7 @@ export function createReturnedQuotes(
 	}
 }
 export function createPoolKey(
-	quote: PublishQuoteRequest | Option | VaultQuoteRequest,
+	quote: PublishQuoteRequest | Option | VaultRequest,
 	expiration?: number
 ): PoolKey {
 	return {

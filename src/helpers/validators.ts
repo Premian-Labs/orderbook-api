@@ -302,7 +302,7 @@ export const validateGetSpot = ajv.compile({
 	additionalProperties: false,
 })
 
-export const validateGetVaultQuote = ajv.compile({
+export const validateVault = ajv.compile({
 	type: 'object',
 	properties: {
 		...validateOptionEntity,
@@ -313,6 +313,10 @@ export const validateGetVaultQuote = ajv.compile({
 		direction: {
 			type: 'string',
 			pattern: '^buy$|^sell$',
+		},
+		premiumLimit: {
+			type: 'string',
+			pattern: '^[0-9]{1,}([.][0-9]*)?$',
 		},
 	},
 	required: [

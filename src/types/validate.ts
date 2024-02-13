@@ -98,7 +98,8 @@ export interface SpotResponse {
 	price: number
 }
 
-export interface VaultQuoteRequest extends Option {
-	size: number
+export interface VaultRequest extends Option {
+	size: string
 	direction: 'buy' | 'sell'
+	premiumLimit?: string
 }

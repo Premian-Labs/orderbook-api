@@ -75,7 +75,7 @@ import {
 	SpotRequest,
 	SpotResponse,
 	StrikesRequestSymbol,
-	VaultQuoteRequest,
+	VaultRequest,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -92,7 +92,7 @@ import {
 	validateGetStrikes,
 	validateGetIV,
 	validateGetSpot,
-	validateGetVaultQuote,
+	validateVault,
 } from './helpers/validators'
 import {
 	getBalances,
@@ -1371,16 +1371,16 @@ app.get('/oracles/spot', async (req, res) => {
 })
 
 app.get('/vaults/quote', async (req, res) => {
-	const valid = validateGetVaultQuote(req.query)
+	const valid = validateVault(req.query)
 	if (!valid) {
 		res.status(400)
 		Logger.error({
 			message: 'AJV get vault quote req params validation error',
-			error: validateGetVaultQuote.errors,
+			error: validateVault.errors,
 		})
-		return res.send(validateGetVaultQuote.errors)
+		return res.send(validateVault.errors)
 	}
-	const quoteRequest = req.query as unknown as VaultQuoteRequest
+	const quoteRequest = req.query as unknown as VaultRequest
 
 	let quoteSymbol: string
 	// NOTE: production USDC is USDCe (bridged)
@@ -1433,7 +1433,81 @@ app.get('/vaults/quote', async (req, res) => {
 	return res.status(200).json(parseFloat(formatEther(quoteBigInt)))
 })
 
-app.get('/vaults/trade', async (req, res) => {})
+app.post('/vaults/trade', async (req, res) => {
+	const valid = validateVault(req.body)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'AJV post vault trade validation error',
+			error: validateVault.errors,
+		})
+		return res.send(validateVault.errors)
+	}
+
+	const tradeRequest = req.body as unknown as VaultRequest
+
+	if (!('premiumLimit' in tradeRequest))
+		return res.status(400).json({
+			message: 'Max slippage not set via premiumLimit',
+			trade: tradeRequest,
+		})
+
+	let quoteSymbol: string
+	// NOTE: production USDC is USDCe (bridged)
+	if (chainId == '42161' && tradeRequest.quote == 'USDC') quoteSymbol = `USDCe`
+	else quoteSymbol = tradeRequest.quote
+
+	// create vault key
+	const vaultName = `pSV-${tradeRequest.base}/${quoteSymbol}-${tradeRequest.type}`
+
+	// check to make sure vault exists
+	if (!(vaultName in vaults))
+		return res.status(400).json({
+			message: 'Vault does not exist',
+			trade: tradeRequest,
+		})
+
+	// format expiration for poolKey object (reject if invalid expiration)
+	let expiration: number
+	try {
+		expiration = createExpiration(tradeRequest.expiration)
+	} catch (e) {
+		return res.status(400).json({
+			message: (e as Error).message,
+			trade: tradeRequest,
+		})
+	}
+
+	const poolKey = createPoolKey(tradeRequest, expiration)
+
+	const vault = IVault__factory.connect(vaults[vaultName].address, provider)
+	let quoteBigInt: bigint
+	try {
+		const tradeTX = await vault.trade(
+			poolKey,
+			parseEther(tradeRequest.size),
+			tradeRequest.direction === 'buy',
+			parseEther(tradeRequest.premiumLimit!), // checked upstream to exist
+			referralAddress
+		)
+		const confirm = await tradeTX.wait(1)
+
+		if (confirm?.status == 0) {
+			throw new Error(`Failed to confirm vault trade: ${confirm}`)
+		}
+	} catch (e) {
+		Logger.error({
+			message: 'Vault trade failed',
+			error: e,
+		})
+
+		return res.status(500).json({
+			message: `Failed to trade with vault`,
+		})
+	}
+
+	return res.status(200)
+})
 
 const server = app.listen(process.env.HTTP_PORT, () => {
 	Logger.info(`HTTP listening on port ${process.env.HTTP_PORT}`)
