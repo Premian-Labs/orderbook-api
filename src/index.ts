@@ -1393,7 +1393,7 @@ app.get('/vaults/quote', async (req, res) => {
 	const vaultName = `pSV-${quoteRequest.base}/${quoteSymbol}-${quoteRequest.type}`
 
 	// check to make sure vault exists
-	if (!(vaultName in vaults))
+	if (!(Object.keys(vaults).includes(vaultName)))
 		return res.status(400).json({
 			message: 'Vault does not exist',
 			quote: quoteRequest,
@@ -1468,7 +1468,7 @@ app.post('/vaults/trade', async (req, res) => {
 	const vaultName = `pSV-${tradeRequest.base}/${quoteSymbol}-${tradeRequest.type}`
 
 	// check to make sure vault exists
-	if (!(vaultName in vaults))
+	if (!(Object.keys(vaults).includes(vaultName)))
 		return res.status(400).json({
 			message: 'Vault does not exist',
 			trade: tradeRequest,
