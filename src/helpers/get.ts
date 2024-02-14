@@ -9,7 +9,6 @@ import {
 	availableTokens,
 	chainlink,
 	poolFactory,
-	productionTokenAddr,
 	provider,
 	SECONDS_IN_YEAR,
 	tokenAddr,
@@ -110,10 +109,7 @@ export async function getBalances() {
 export async function getSpotPrice(market: string, retry: boolean = true) {
 	try {
 		return formatEther(
-			await chainlink.getPrice(
-				productionTokenAddr[market],
-				productionTokenAddr.USDC
-			)
+			await chainlink.getPrice(tokenAddr[market], tokenAddr.USDC)
 		)
 	} catch (err) {
 		await delay(2000)

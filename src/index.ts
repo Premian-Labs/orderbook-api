@@ -42,7 +42,6 @@ import {
 	routerAddr,
 	tokenAddr,
 	ivOracle,
-	productionTokenAddr,
 	chainlink,
 	vaults,
 } from './config/constants'
@@ -1291,7 +1290,7 @@ app.get('/oracles/iv', async (req, res) => {
 	// multi call to ivOracle
 	const ivPromises = suggestedStrikes.map((strike) => {
 		return ivOracle['getVolatility(address,uint256,uint256,uint256)'](
-			productionTokenAddr[request.market],
+			tokenAddr[request.market],
 			parseEther(spotPrice!),
 			parseEther(strike.toString()),
 			parseEther(ttm.toFixed(12))
@@ -1338,10 +1337,7 @@ app.get('/oracles/spot', async (req, res) => {
 
 	// multi call to spot Oracle
 	const spotPromises = spotRequest.markets.map((market) => {
-		return chainlink.getPrice(
-			productionTokenAddr[market],
-			productionTokenAddr.USDC
-		)
+		return chainlink.getPrice(tokenAddr[market], tokenAddr.USDC)
 	})
 
 	let spotRequestsBigInt

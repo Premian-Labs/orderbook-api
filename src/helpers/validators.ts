@@ -1,9 +1,6 @@
 import Ajv from 'ajv'
 
-import {
-	productionTokensWithIVOracles,
-	supportedTokens,
-} from '../config/constants'
+import { tokensWithIVOracles, supportedTokens } from '../config/constants'
 
 const ajv = new Ajv()
 
@@ -269,9 +266,7 @@ export const validateGetIV = ajv.compile({
 	properties: {
 		market: {
 			type: 'string',
-			pattern: productionTokensWithIVOracles
-				.map((token) => `^${token}$`)
-				.join('|'),
+			pattern: tokensWithIVOracles.map((token) => `^${token}$`).join('|'),
 		},
 		expiration: {
 			type: 'string',

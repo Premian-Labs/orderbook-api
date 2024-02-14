@@ -22,6 +22,7 @@ export const chainId = process.env.ENV == 'production' ? '42161' : '421613'
 export const provider = new JsonRpcProvider(rpcUrl, Number(chainId), {
 	staticNetwork: true,
 })
+const multiCallProvider = MulticallWrapper.wrap(provider)
 
 export const signer = new Wallet(privateKey, provider)
 
@@ -47,9 +48,6 @@ export const tokenAddr =
 export const vaults =
 	process.env.ENV === 'production' ? arbitrum.vaults : arbitrumGoerli.vaults
 export const supportedTokens = Object.keys(tokenAddr)
-export const productionTokenAddr: Record<string, string> = arbitrum.tokens
-const prodProvider = new JsonRpcProvider(process.env.MAINNET_RPC_URL!)
-const prodMultiCallProvider = MulticallWrapper.wrap(prodProvider)
 
 export const routerAddr =
 	process.env.ENV == 'production'
@@ -66,29 +64,31 @@ export const spotOracleAddr =
 		? arbitrum.core.ChainlinkAdapterProxy.address
 		: arbitrumGoerli.core.ChainlinkAdapterProxy.address
 
+const ivOracleAddr =
+	process.env.ENV == 'production'
+		? arbitrum.core.VolatilityOracleProxy.address
+		: arbitrumGoerli.core.VolatilityOracleProxy.address
+
 export const poolFactory = IPoolFactory__factory.connect(
 	poolFactoryAddr,
 	signer
 )
 
-// NOTE: we use PRODUCTION ONLY instance for IV Oracle endpoints
 export const ivOracle = IVolatilityOracle__factory.connect(
-	arbitrum.core.VolatilityOracleProxy.address,
-	prodMultiCallProvider
+	ivOracleAddr,
+	multiCallProvider
 )
 
-// NOTE: gets the base token symbol from vault names from PRODUCTION ONLY
-export const productionTokensWithIVOracles = uniq(
+export const tokensWithIVOracles = uniq(
 	Object.keys(arbitrum.vaults)
 		.map((vaultName) => vaultName.split('-'))
 		.map((vaultNameParsed) => vaultNameParsed[1].split('/'))
 		.map((tokenPair) => tokenPair[0])
 )
 
-// NOTE: we use PRODUCTION ONLY instance for Spot Oracle endpoints
 export const chainlink = IChainlinkAdapter__factory.connect(
-	arbitrum.core.ChainlinkAdapterProxy.address,
-	prodMultiCallProvider
+	spotOracleAddr,
+	multiCallProvider
 )
 
 export const availableTokens =
