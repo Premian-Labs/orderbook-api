@@ -7,6 +7,7 @@ import {
 	IVolatilityOracle__factory,
 } from '@premia/v3-abi/typechain'
 import { arbitrum, arbitrumGoerli } from '@premia/v3-abi/deployment'
+import { uniq } from 'lodash'
 
 dotenv.config()
 
@@ -76,18 +77,13 @@ export const ivOracle = IVolatilityOracle__factory.connect(
 	prodMultiCallProvider
 )
 
-// TODO: get from arbitrum json instead of hardcoding
-export const productionTokensWithIVOracles = [
-	'WETH',
-	'WBTC',
-	'ARB',
-	'LINK',
-	'wstETH',
-	'GMX',
-	'MAGIC',
-	'SOL',
-	'FXS',
-]
+// NOTE: gets the base token symbol from vault names from PRODUCTION ONLY
+export const productionTokensWithIVOracles = uniq(
+	Object.keys(arbitrum.vaults)
+		.map((vaultName) => vaultName.split('-'))
+		.map((vaultNameParsed) => vaultNameParsed[1].split('/'))
+		.map((tokenPair) => tokenPair[0])
+)
 
 // NOTE: we use PRODUCTION ONLY instance for Spot Oracle endpoints
 export const chainlink = IChainlinkAdapter__factory.connect(
