@@ -15,10 +15,10 @@ import {
 	ReturnedOrderbookQuote,
 } from '../types/quote'
 import {
-	availableTokens,
 	privateKey,
 	routerAddr,
 	rpcUrl,
+	supportedTokens,
 } from '../config/constants'
 import { RejectedTokenBalance, TokenBalance } from '../types/balances'
 import { baseUrl, deployPools, getMaturity, setApproval } from './helpers/utils'
@@ -71,7 +71,7 @@ describe('Balances, Approvals & Open Orders', () => {
 
 		expect(responseData.failed).is.empty
 		expect(responseData.success).is.not.empty
-		expect(responseData.success.map((x) => x.symbol)).deep.eq(availableTokens)
+		expect(responseData.success.map((x) => x.symbol)).deep.eq(supportedTokens)
 	})
 
 	it('should get native balance', async () => {

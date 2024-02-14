@@ -22,7 +22,10 @@ export const chainId = process.env.ENV == 'production' ? '42161' : '421613'
 export const provider = new JsonRpcProvider(rpcUrl, Number(chainId), {
 	staticNetwork: true,
 })
-const multiCallProvider = MulticallWrapper.wrap(provider)
+
+// NOTE: used for spot & IV oracles
+const prodProvider = new JsonRpcProvider(process.env.MAINNET_RPC_URL!)
+const prodMultiCallProvider = MulticallWrapper.wrap(prodProvider)
 
 export const signer = new Wallet(privateKey, provider)
 
@@ -44,10 +47,13 @@ export const referralAddress = process.env.REFERRAL_ADDRESS ?? ZeroAddress
 
 export const tokenAddr =
 	process.env.ENV === 'production' ? arbitrum.tokens : arbitrumGoerli.tokens
+export const supportedTokens = Object.keys(tokenAddr)
+// NOTE: use PRODUCTION oracles for spot
+export const prodTokenAddr = arbitrum.tokens
+export const prodTokens = Object.keys(arbitrum.tokens)
 
 export const vaults =
 	process.env.ENV === 'production' ? arbitrum.vaults : arbitrumGoerli.vaults
-export const supportedTokens = Object.keys(tokenAddr)
 
 export const routerAddr =
 	process.env.ENV == 'production'
@@ -64,37 +70,29 @@ export const spotOracleAddr =
 		? arbitrum.core.ChainlinkAdapterProxy.address
 		: arbitrumGoerli.core.ChainlinkAdapterProxy.address
 
-const ivOracleAddr =
-	process.env.ENV == 'production'
-		? arbitrum.core.VolatilityOracleProxy.address
-		: arbitrumGoerli.core.VolatilityOracleProxy.address
-
 export const poolFactory = IPoolFactory__factory.connect(
 	poolFactoryAddr,
 	signer
 )
 
-export const ivOracle = IVolatilityOracle__factory.connect(
-	ivOracleAddr,
-	multiCallProvider
+// NOTE: we use PRODUCTION oracles to get IV
+export const prodIVOracle = IVolatilityOracle__factory.connect(
+	arbitrum.core.VolatilityOracleProxy.address,
+	prodMultiCallProvider
 )
 
-export const tokensWithIVOracles = uniq(
+export const prodTokensWithIVOracles = uniq(
 	Object.keys(arbitrum.vaults)
 		.map((vaultName) => vaultName.split('-'))
 		.map((vaultNameParsed) => vaultNameParsed[1].split('/'))
 		.map((tokenPair) => tokenPair[0])
 )
 
-export const chainlink = IChainlinkAdapter__factory.connect(
-	spotOracleAddr,
-	multiCallProvider
+// NOTE: we usd PRODUCTION oracles to get spot price
+export const prodChainlink = IChainlinkAdapter__factory.connect(
+	arbitrum.core.ChainlinkAdapterProxy.address,
+	prodMultiCallProvider
 )
-
-export const availableTokens =
-	process.env.ENV === 'production'
-		? Object.keys(arbitrum.tokens)
-		: Object.keys(arbitrumGoerli.tokens)
 
 export const blockByTsEndpoint =
 	process.env.ENV == 'production'
