@@ -92,7 +92,8 @@ import {
 	validateGetStrikes,
 	validateGetIV,
 	validateGetSpot,
-	validateVault,
+	validateVaultQuote,
+	validateVaultTrade,
 } from './helpers/validators'
 import {
 	getBalances,
@@ -1368,20 +1369,21 @@ app.get('/oracles/spot', async (req, res) => {
 })
 
 app.get('/vaults/quote', async (req, res) => {
-	const valid = validateVault(req.query)
+	const valid = validateVaultQuote(req.query)
 	if (!valid) {
 		res.status(400)
 		Logger.error({
 			message: 'AJV get vault quote req params validation error',
-			error: validateVault.errors,
+			error: validateVaultQuote.errors,
 		})
-		return res.send(validateVault.errors)
+		return res.send(validateVaultQuote.errors)
 	}
 	const quoteRequest = req.query as unknown as VaultRequest
 
 	let quoteSymbol: string
 	// NOTE: production USDC is USDCe (bridged)
-	if (chainId == '42161' && quoteRequest.quote == 'USDC') quoteSymbol = `USDCe`
+	if (chainId === '42161' && quoteRequest.quote === 'USDC')
+		quoteSymbol = `USDCe`
 	else quoteSymbol = quoteRequest.quote
 
 	// create vault key
@@ -1431,27 +1433,22 @@ app.get('/vaults/quote', async (req, res) => {
 })
 
 app.post('/vaults/trade', async (req, res) => {
-	const valid = validateVault(req.body)
+	const valid = validateVaultTrade(req.body)
 	if (!valid) {
 		res.status(400)
 		Logger.error({
 			message: 'AJV post vault trade validation error',
-			error: validateVault.errors,
+			error: validateVaultTrade.errors,
 		})
-		return res.send(validateVault.errors)
+		return res.send(validateVaultTrade.errors)
 	}
 
 	const tradeRequest = req.body as unknown as VaultRequest
 
-	if (!('premiumLimit' in tradeRequest))
-		return res.status(400).json({
-			message: 'Max slippage not set via premiumLimit',
-			trade: tradeRequest,
-		})
-
 	let quoteSymbol: string
 	// NOTE: production USDC is USDCe (bridged)
-	if (chainId == '42161' && tradeRequest.quote == 'USDC') quoteSymbol = `USDCe`
+	if (chainId === '42161' && tradeRequest.quote === 'USDC')
+		quoteSymbol = `USDCe`
 	else quoteSymbol = tradeRequest.quote
 
 	// create vault key

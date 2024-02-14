@@ -301,10 +301,15 @@ export const validateGetSpot = ajv.compile({
 	additionalProperties: false,
 })
 
-export const validateVault = ajv.compile({
+//NOTE: strike comes in as a string when passed via GET params
+export const validateVaultQuote = ajv.compile({
 	type: 'object',
 	properties: {
 		...validateOptionEntity,
+		strike: {
+			type: 'string',
+			pattern: '^[0-9]{1,}([.][0-9]*)?$',
+		},
 		size: {
 			type: 'string',
 			pattern: '^[0-9]{1,}([.][0-9]*)?$',
@@ -312,10 +317,6 @@ export const validateVault = ajv.compile({
 		direction: {
 			type: 'string',
 			pattern: '^buy$|^sell$',
-		},
-		premiumLimit: {
-			type: 'string',
-			pattern: '^[0-9]{1,}([.][0-9]*)?$',
 		},
 	},
 	required: [
@@ -326,6 +327,30 @@ export const validateVault = ajv.compile({
 		'type',
 		'size',
 		'direction',
+	],
+	additionalProperties: false,
+})
+
+export const validateVaultTrade = ajv.compile({
+	type: 'object',
+	properties: {
+		...validateOptionEntity,
+		size: { type: 'number' },
+		direction: {
+			type: 'string',
+			pattern: '^buy$|^sell$',
+		},
+		premiumLimit: { type: 'number' },
+	},
+	required: [
+		'base',
+		'quote',
+		'expiration',
+		'strike',
+		'type',
+		'size',
+		'direction',
+		'premiumLimit',
 	],
 	additionalProperties: false,
 })
