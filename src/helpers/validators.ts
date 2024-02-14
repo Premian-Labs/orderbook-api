@@ -301,7 +301,7 @@ export const validateGetSpot = ajv.compile({
 	additionalProperties: false,
 })
 
-//NOTE: strike comes in as a string when passed via GET params
+//NOTE: strike comes in as a string when passed via GET params, so we override validateOptionEntity
 export const validateVaultQuote = ajv.compile({
 	type: 'object',
 	properties: {

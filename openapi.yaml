@@ -110,9 +110,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
     patch:
       summary: Used to fill quote(s) (max quotes quantity is 25).  
         Only the size and quoteId for each quote are required. All quoteIds are returned either as 'success' or 'failed'.
@@ -161,9 +158,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
     delete:
       summary: Deletes the quote(s) from the orderbook that have not exceeded their deadline (max quotes quantity is 25).
         Please note that orders that have surpassed their deadline do NOT need to be cancelled.  
@@ -217,9 +211,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
     get:
       summary: Get all quotes for a specific option up to a specified size/qty. All orders will be ranked from best
         to worst according to price. Please note that this will not show the full state of the orderbook if the total
@@ -231,7 +222,6 @@ paths:
           description: base token symbol (ie WETH)
           schema:
             type: string
-            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
             example: WETH
         - name: quote
           in: query
@@ -239,7 +229,6 @@ paths:
           description: quote token symbol (ie USDC)
           schema:
             type: string
-            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
             example: USDC
         - name: expiration
           in: query
@@ -247,7 +236,6 @@ paths:
           description: option expiration (ie 03NOV23)
           schema:
             type: string
-            pattern: ^\d\d\w\w\w\d\d$
             example: 03NOV23
         - name: strike
           in: query
@@ -318,9 +306,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /pools:
     post:
       summary: Creates new option pools.
@@ -412,9 +397,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /pools/strikes:
     get:
       summary: Returns all valid strikes for a given market.
@@ -448,9 +430,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /pools/maturities:
     get:
       summary: Returns all valid maturities - tomorrow, the day after tomorrow, each Friday of current month, last Friday of each next month.
@@ -476,9 +455,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /orderbook/orders:
     get:
       summary: Gets all valid quote(s) on the orderbook by using broad query params. If no parameters are supplied 
@@ -537,9 +513,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /pool/settle:
     post:
       summary: Settles all short positions in each specified option in the request.
@@ -579,9 +552,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /pool/exercise:
     post:
       summary: Exercises all long positions in each specified option in the request. Please note that there is a fee 
@@ -620,9 +590,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /pool/annihilate:
     post:
       summary: Annihilates all long/short positions that offset in each specified option in the request. Please note 
@@ -662,9 +629,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /account/collateral_approval:
     post:
       summary: Approve collateral for trading.  The `amt` field can be either a number or a string `max`.  Setting 
@@ -705,9 +669,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /account/orders:
     get:
       summary: Gets all open quotes.  Any valid orders that are fillable and present in the orderbook for the address
@@ -727,9 +688,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /account/collateral_balances:
     get:
       summary: Checks collateral balance for all tokens that have tradeable option markets.
@@ -761,9 +719,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /account/native_balance:
     get:
       summary: Checks the balance of ETH for the given account specified in the .env file.
@@ -781,9 +736,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /account/option_balances:
     get:
       summary: Checks the balance of all option positions for the given account specified in the .env file.
@@ -800,9 +752,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-      security:
-        - api_key:
-            - api
   /oracles/iv:
     get:
       summary: Gets multiple IV values for all valid strikes for a given option expiration of an underlying market via IV oracles.
@@ -813,7 +762,6 @@ paths:
           description: base token symbol (ie WETH)
           schema:
             type: string
-            pattern: ^WETH$|^WBTC$|^ARB$|^LINK$|^WSTETH$|^GMX$|^MAGIC$|^SOL$|^FXS$
             example: WETH
         - name: expiration
           in: query
@@ -821,7 +769,6 @@ paths:
           description: option expiration (ie 03NOV23)
           schema:
             type: string
-            pattern: ^\d\d\w\w\w\d\d$
             example: 03NOV23
         - name: spotPrice
           in: query
@@ -906,6 +853,119 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+  /vaults/quote:
+    get:
+      summary: Get a quote from a vault.
+      parameters:
+        - name: base
+          in: query
+          required: true
+          description: base token symbol (ie WETH)
+          schema:
+            type: string
+            example: WETH
+        - name: quote
+          in: query
+          required: true
+          description: quote token symbol (ie USDC)
+          schema:
+            type: string
+            example: USDC
+        - name: expiration
+          in: query
+          required: true
+          description: option expiration (ie 03NOV23)
+          schema:
+            type: string
+            example: 03NOV23
+        - name: strike
+          in: query
+          required: true
+          description: option strike (ie 1800)
+          schema:
+            type: number
+            minimum: 0
+            example: 1800
+        - name: type
+          in: query
+          description: C or P
+          required: true
+          schema:
+            type: string
+            pattern: ^C$|^P$
+            example: P
+        - name: size
+          in: query
+          description: number of contracts (ie 4)
+          required: true
+          schema:
+            type: number
+            minimum: 0
+            example: 4
+        - name: direction
+          in: query
+          description: direction of trade (buy or sell)
+          required: true
+          schema:
+            type: string
+            example: buy
+
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              type: number
+              example: 0.254
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+  /vaults/trade:
+    post:
+      summary: Trade with a vault.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              allOf:
+                - $ref: "#/components/schemas/Option"
+              properties:
+                size:
+                  type: number
+                  example: 4
+                direction:
+                  type: string
+                  example: 'buy'
+                premiumLimit:
+                  type: number
+                  example: 0.23
+        required: true
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+
 components:
   schemas:
     Option:
