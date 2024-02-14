@@ -1475,7 +1475,6 @@ app.post('/vaults/trade', async (req, res) => {
 	const poolKey = createPoolKey(tradeRequest, expiration)
 
 	const vault = IVault__factory.connect(vaults[vaultName].address, provider)
-	let quoteBigInt: bigint
 	try {
 		const tradeTX = await vault.trade(
 			poolKey,
@@ -1486,7 +1485,7 @@ app.post('/vaults/trade', async (req, res) => {
 		)
 		const confirm = await tradeTX.wait(1)
 
-		if (confirm?.status == 0) {
+		if (confirm?.status === 0) {
 			throw new Error(`Failed to confirm vault trade: ${confirm}`)
 		}
 	} catch (e) {
@@ -1500,7 +1499,7 @@ app.post('/vaults/trade', async (req, res) => {
 		})
 	}
 
-	return res.status(200)
+	return res.sendStatus(200)
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {
