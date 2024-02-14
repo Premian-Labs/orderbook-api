@@ -75,7 +75,10 @@ import {
 	SpotRequest,
 	SpotResponse,
 	StrikesRequestSymbol,
-	VaultRequest,
+	VaultTradeRequest,
+	VaultQuoteRequest,
+	QuoteResponse,
+	TradeResponse,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -1303,7 +1306,7 @@ app.get('/oracles/iv', async (req, res) => {
 	try {
 		ivRequestsBigInt = await Promise.all(ivPromises)
 		const ivRequests = ivRequestsBigInt.map((iv) => {
-			return Number(parseFloat(formatEther(iv)).toFixed(2))
+			return parseFloat(parseFloat(formatEther(iv)).toFixed(2))
 		})
 		let ivStrikes: IVResponse[] = []
 		for (let i = 0; i < suggestedStrikes.length; i++) {
@@ -1346,7 +1349,7 @@ app.get('/oracles/spot', async (req, res) => {
 	try {
 		spotRequestsBigInt = await Promise.all(spotPromises)
 		const spotRequests = spotRequestsBigInt.map((price) => {
-			return Number(parseFloat(formatEther(price)).toFixed(6))
+			return parseFloat(parseFloat(formatEther(price)).toFixed(6))
 		})
 		let spotMarkets: SpotResponse[] = []
 		for (let i = 0; i < spotRequest.markets.length; i++) {
@@ -1378,7 +1381,7 @@ app.get('/vaults/quote', async (req, res) => {
 		})
 		return res.send(validateVaultQuote.errors)
 	}
-	const quoteRequest = req.query as unknown as VaultRequest
+	const quoteRequest = req.query as unknown as VaultQuoteRequest
 
 	let quoteSymbol: string
 	// NOTE: production USDC is USDCe (bridged)
@@ -1429,7 +1432,17 @@ app.get('/vaults/quote', async (req, res) => {
 		})
 	}
 
-	return res.status(200).json(parseFloat(formatEther(quoteBigInt)))
+	const quoteResponse: QuoteResponse = {
+		market: {
+			vault: vaultName,
+			strike: parseFloat(quoteRequest.strike),
+			expiration: quoteRequest.expiration,
+			size: parseFloat(quoteRequest.size),
+			direction: quoteRequest.direction,
+		},
+		quote: parseFloat(formatEther(quoteBigInt)),
+	}
+	return res.status(200).json(quoteResponse)
 })
 
 app.post('/vaults/trade', async (req, res) => {
@@ -1443,7 +1456,7 @@ app.post('/vaults/trade', async (req, res) => {
 		return res.send(validateVaultTrade.errors)
 	}
 
-	const tradeRequest = req.body as unknown as VaultRequest
+	const tradeRequest = req.body as unknown as VaultTradeRequest
 
 	let quoteSymbol: string
 	// NOTE: production USDC is USDCe (bridged)
@@ -1478,9 +1491,9 @@ app.post('/vaults/trade', async (req, res) => {
 	try {
 		const tradeTX = await vault.trade(
 			poolKey,
-			parseEther(tradeRequest.size),
+			parseEther(tradeRequest.size.toString()),
 			tradeRequest.direction === 'buy',
-			parseEther(tradeRequest.premiumLimit!), // checked upstream to exist
+			parseEther(tradeRequest.premiumLimit.toString()),
 			referralAddress
 		)
 		const confirm = await tradeTX.wait(1)
@@ -1499,7 +1512,17 @@ app.post('/vaults/trade', async (req, res) => {
 		})
 	}
 
-	return res.sendStatus(200)
+	const tradeResponse: TradeResponse = {
+		market: {
+			vault: vaultName,
+			strike: tradeRequest.strike,
+			expiration: tradeRequest.expiration,
+			size: tradeRequest.size,
+			direction: tradeRequest.direction,
+		},
+	}
+
+	return res.status(200).json(tradeResponse)
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {

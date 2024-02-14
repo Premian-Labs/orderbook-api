@@ -98,8 +98,29 @@ export interface SpotResponse {
 	price: number
 }
 
-export interface VaultRequest extends Option {
+export interface VaultQuoteRequest extends Omit<Option, 'strike'> {
+	strike: string
 	size: string
 	direction: 'buy' | 'sell'
-	premiumLimit?: string
+}
+export interface VaultTradeRequest extends Option {
+	size: number
+	direction: 'buy' | 'sell'
+	premiumLimit: number
+}
+
+export interface VaultMarket {
+	vault: string
+	strike: number
+	expiration: string
+	size: number
+	direction: 'buy' | 'sell'
+}
+export interface TradeResponse {
+	market: VaultMarket
+}
+
+export interface QuoteResponse {
+	market: VaultMarket
+	quote: number
 }

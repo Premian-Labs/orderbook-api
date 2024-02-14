@@ -909,14 +909,19 @@ paths:
           schema:
             type: string
             example: buy
-
       responses:
         '200':
           description: Successful operation
           content:
             application/json:
-              type: number
-              example: 0.254
+              schema:
+                type: object
+                properties:
+                  market:
+                    $ref: "#/components/schemas/VaultResponse"
+                  quote:
+                    type: number
+                    example: 0.2356
         '400':
           description: Invalid parameters supplied
           content:
@@ -937,9 +942,26 @@ paths:
           application/json:
             schema:
               type: object
-              allOf:
-                - $ref: "#/components/schemas/Option"
               properties:
+                base:
+                  type: string
+                  example: WETH
+                quote:
+                  type: string
+                  example: USDC
+                expiration:
+                  type: string
+                  pattern: ^\d\d\w\w\w\d\d$
+                  example: 03NOV23
+                strike:
+                  type: number
+                  example: 1700
+                type:
+                  enum:
+                    - C
+                    - P
+                  type: string
+                  example: P
                 size:
                   type: number
                   example: 4
@@ -952,7 +974,14 @@ paths:
         required: true
       responses:
         '200':
-          description: Success
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  market:
+                    $ref: "#/components/schemas/VaultResponse"
         '400':
           description: Invalid parameters supplied
           content:
@@ -1236,6 +1265,25 @@ components:
         - size
         - price
         - deadline
+    VaultResponse:
+      type: object
+      properties:
+        vault:
+          type: string
+          example: 'pSV-WETH/USDCe-C'
+        strike:
+          type: number
+          example: 2500
+        expiration:
+          type: string
+          pattern: ^\d\d\w\w\w\d\d$
+          example: 03NOV23
+        size:
+          type: number
+          example: 4
+        direction:
+          type: string
+          example: 'buy'
     FailedOptions:
       type: object
       properties:
@@ -1272,8 +1320,3 @@ components:
             type: object
           message:
             type: string
-  securitySchemes:
-    api_key:
-      type: apiKey
-      name: x-apikey
-      in: header

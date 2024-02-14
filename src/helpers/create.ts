@@ -10,7 +10,7 @@ import {
 	PoolKey,
 	ReturnedOrderbookQuote,
 } from '../types/quote'
-import { Option, VaultRequest } from '../types/validate'
+import { Option, VaultQuoteRequest, VaultTradeRequest } from '../types/validate'
 import { PublishQuoteRequest } from '../types/validate'
 import { spotOracleAddr, tokenAddr } from '../config/constants'
 import { getTokenByAddress } from './get'
@@ -120,7 +120,7 @@ export function createReturnedQuotes(
 	}
 }
 export function createPoolKey(
-	quote: PublishQuoteRequest | Option | VaultRequest,
+	quote: PublishQuoteRequest | Option | VaultTradeRequest | VaultQuoteRequest,
 	expiration?: number
 ): PoolKey {
 	return {
