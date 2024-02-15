@@ -1085,13 +1085,13 @@ components:
           type: string
           example: P
     PoolWithAddress:
-      type: object
       allOf:
         - $ref: "#/components/schemas/Option"
-      properties:
-        poolAddress:
-          type: string
-          example: 0x...4cFF2
+        - type: object
+          properties:
+            poolAddress:
+              type: string
+              example: 0x...4cFF2
     NFTBalance:
       type: object
       properties:
