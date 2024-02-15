@@ -374,7 +374,7 @@ function Main() {
 
 					if (bestCallAsk) {
 						obRow.call_ask = bestCallAsk.price
-						obRow.call_ask_iv = getDeltaAndIV(bestCallBid, obRow.call_ask, spotPrice[marketSelector])
+						obRow.call_ask_iv = getDeltaAndIV(bestCallAsk, obRow.call_ask, spotPrice[marketSelector])
 						obRow.call_ask_iv = obRow.call_ask_iv.toFixed(1)
 						obRow.call_ask = Math.round(obRow.call_ask * 100) / 100
 					}
