@@ -455,12 +455,6 @@ app.patch('/orderbook/quotes', async (req, res) => {
 				'salt',
 			])
 
-			const signedQuoteObject = await signQuote(
-				signer,
-				fillableQuoteDeserialized.poolAddress,
-				quoteOB
-			)
-
 			// ensure that tradeSize is not larger than fillableSize (otherwise tx will fail)
 			if (
 				fillableQuoteDeserialized.tradeSize >
@@ -479,7 +473,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 					(await pool.fillQuoteOB.estimateGas(
 						quoteOB,
 						parseEther(fillableQuoteDeserialized.tradeSize.toString()),
-						signedQuoteObject,
+						fillableQuoteDeserialized.signature,
 						referralAddress
 					)) + 100_000n
 			} catch (e) {
@@ -493,7 +487,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 			return pool.fillQuoteOB(
 				quoteOB,
 				parseEther(fillableQuoteDeserialized.tradeSize.toString()),
-				signedQuoteObject,
+				fillableQuoteDeserialized.signature,
 				referralAddress,
 				{
 					gasLimit: fillQuoteOBGasEst,
