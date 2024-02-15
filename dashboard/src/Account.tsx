@@ -4,7 +4,7 @@ import './Account.css'
 import { getCollateralBalance, getNativeBalance, getSpotPrice } from './utils/apiGetters'
 import { APIKey, chainId, WALLET_ADDRESS } from './config'
 import { getOwnOrders, prepareOrders } from './utils/getOrderbookState'
-import { Column, useTable } from 'react-table'
+import { Column, useSortBy, useTable } from 'react-table'
 import {
 	TokenBalance,
 	ReturnedOrderbookQuote,
@@ -62,7 +62,7 @@ function Account() {
 	} as SpotPrice)
 
 	const columns = useMemo<Column<OwnOrdersRows>[]>(() => COLUMNS, [])
-	const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data: ordersRows })
+	const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data: ordersRows, autoResetSortBy: false }, useSortBy)
 
 	const getData = () => {
 		console.log('fetching account data...')
@@ -199,7 +199,7 @@ function Account() {
 			<div className="app-container">
 				<img hidden={orders.length > 0} src={logo} className="app-logo" alt="logo" />
 				<p hidden={orders.length > 0}>Loading your positions...</p>
-				<p hidden={orders.length === 0}>Open Positions</p>
+				<p hidden={orders.length === 0}>Open Orders</p>
 				<div className="selector">
 					<button
 						className={marketSelector === 'WETH' ? 'selector-btn-active' : 'selector-btn'}
@@ -234,7 +234,9 @@ function Account() {
 								{headerGroups.map((headerGroup) => (
 									<tr {...headerGroup.getHeaderGroupProps()}>
 										{headerGroup.headers.map((column) => (
-											<th {...column.getHeaderProps()}>{column.render('Header')}</th>
+											<th
+												className={ column.isSorted ? 'sorted' : '' }
+												{...column.getHeaderProps(column.getSortByToggleProps())}>{column.render('Header')}</th>
 										))}
 									</tr>
 								))}
