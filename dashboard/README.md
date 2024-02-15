@@ -2,19 +2,19 @@
   <img src="../img/premia.png" alt='logo' height="50">
 </p>
 
-## Premia Market Maker Live Dashboard
-A lightweight UI for containerised API build on top of Premia Containerized API featuring live Premia Orderbook state, live list of active positions, programmatic user setting, etc.
-
-## How to run
-
-1. Make sure to populate [.env](.env) according to [.env.example](.env.example). 
-`REACT_APP_WALLET_ADDRESS` should match your `WALLET_ADDRESS` from [Containerized API .env](../.env), and `REACT_APP_MAINNET_ORDERBOOK_API_KEY` should match `MAINNET_ORDERBOOK_API_KEY`.
-2. Make sure to set `ENV=production` in [Containerized API .env](../.env)
-3. Make sure [Docker Compose](https://docs.docker.com/compose/) is installed. 
-4. Open a terminal session, from the UI App root directory (`dashboard`), run  `docker-compose up`. This will build and spin Premia Containerized API and Premia Live Dashboard containers. 
-5. Containerized API will be accessible on `http://localhost:3000`, and Premia Live Dashboard on `http://localhost:3010` respectively. 
-6. To stop the container run `docker-compose down`.
+## Premia Orderbook Dashboard
+A read-only lightweight UI of Premia's Containerized API featuring live orderbook state, active positions, user setting, etc.
 
 ## Limitations
-The purpose of the UI app is solely to be a read-only lightweight dashboard, all state-mutating operations (like posting, cancelling and filling quotes, modifying collateral allowance) are only available via Containerized API.
-The app does not work on testnet.
+The app does not run on testnet.
+
+## Start Guide
+
+1. Prior to running the Orderbook Dashboard, read [setup instructions](../readme.md) for the Containerized API.
+2. Make sure to populate the Dashboard [.env](.env) according to [.env.example](.env.example). 
+`REACT_APP_WALLET_ADDRESS` should match your `WALLET_ADDRESS` from [Containerized API .env](../.env), and `REACT_APP_MAINNET_ORDERBOOK_API_KEY` should match `MAINNET_ORDERBOOK_API_KEY`.
+3. Make sure to set `ENV=production` in [Containerized API .env](../.env)
+4. We recommend using [Docker Compose](https://docs.docker.com/compose/) to run the container on a local host. 
+5. Open a terminal session, from the Dashboard root directory (`dashboard`) run `docker-compose up`. This will build and spin Containerized API and Dashboard containers. 
+6. Containerized API will be accessible on `http://localhost:3000`, and the Dashboard on `http://localhost:3010` respectively.
+7. To stop both containers run `docker-compose down`.
