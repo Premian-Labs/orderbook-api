@@ -1,0 +1,22 @@
+version: '3.9'
+services:
+  premia-orderbook:
+    env_file: ../.env
+    restart: on-failure
+    build: ..
+    ports:
+      - '3000:3000'
+  premia-dashboard:
+    env_file: .env
+    restart: on-failure
+    build:
+      context: .
+      args:
+        PORT: 3010
+        NODE_ENV: ${NODE_ENV}
+        REACT_APP_WALLET_ADDRESS: ${REACT_APP_WALLET_ADDRESS}
+        REACT_APP_MAINNET_ORDERBOOK_API_KEY: ${REACT_APP_MAINNET_ORDERBOOK_API_KEY}
+        REACT_APP_PREMIA_API_URL: ${REACT_APP_PREMIA_API_URL}
+        REACT_APP_PREMIA_WS_URL:  ${REACT_APP_PREMIA_WS_URL}
+    ports:
+      - '3010:3010'
