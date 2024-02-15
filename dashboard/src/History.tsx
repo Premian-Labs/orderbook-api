@@ -1,6 +1,6 @@
 import React from 'react'
 import './Main.css'
-import logo from '../public/logo.svg'
+import logo from './logo.svg'
 
 function History() {
 	return (

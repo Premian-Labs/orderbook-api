@@ -16,7 +16,7 @@ import {
 	AuthMessage,
 	FilterMessage
 } from './types'
-import logo from '../public/logo.svg'
+import logo from './logo.svg'
 import moment from 'moment'
 import { connectWS, delay } from './utils/ws'
 
