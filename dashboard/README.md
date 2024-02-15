@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="img/premia.png" alt='logo' height="50">
+  <img src="../img/premia.png" alt='logo' height="50">
 </p>
 
 ## Premia Market Maker Live Dashboard
