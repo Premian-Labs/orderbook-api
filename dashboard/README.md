@@ -12,7 +12,7 @@ A lightweight UI for containerised API build on top of Premia Containerized API 
 2. Make sure to set `ENV=production` in [Containerized API .env](../.env)
 3. Make sure [Docker Compose](https://docs.docker.com/compose/) is installed. 
 4. Open a terminal session, from the UI App root directory (`dashboard`), run  `docker-compose up`. This will build and spin Premia Containerized API and Premia Live Dashboard containers. 
-5. Containerized API will be accessible on `http//:localhost:3000`, and Premia Live Dashboard on `http//:localhost:3010` respectively. 
+5. Containerized API will be accessible on `http://localhost:3000`, and Premia Live Dashboard on `http://localhost:3010` respectively. 
 6. To stop the container run `docker-compose down`.
 
 ## Limitations
