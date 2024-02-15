@@ -6,6 +6,7 @@ import moment from 'moment'
 import {
 	IPool__factory,
 	ISolidStateERC20__factory,
+	IVault__factory,
 } from '@premia/v3-abi/typechain'
 import {
 	difference,
@@ -40,9 +41,10 @@ import {
 	walletAddr,
 	routerAddr,
 	tokenAddr,
-	ivOracle,
-	productionTokenAddr,
-	chainlink,
+	prodIVOracle,
+	prodChainlink,
+	vaults,
+	prodTokenAddr,
 } from './config/constants'
 import {
 	FillableQuote,
@@ -73,6 +75,10 @@ import {
 	SpotRequest,
 	SpotResponse,
 	StrikesRequestSymbol,
+	VaultTradeRequest,
+	VaultQuoteRequest,
+	QuoteResponse,
+	TradeResponse,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -89,6 +95,8 @@ import {
 	validateGetStrikes,
 	validateGetIV,
 	validateGetSpot,
+	validateVaultQuote,
+	validateVaultTrade,
 } from './helpers/validators'
 import {
 	getBalances,
@@ -111,8 +119,6 @@ import {
 	validateBalances,
 } from './helpers/check'
 import { proxyHTTPRequest } from './helpers/proxy'
-import arb from './config/arbitrum.json'
-import arbGoerli from './config/arbitrumGoerli.json'
 import {
 	getQuote,
 	signQuote,
@@ -970,11 +976,10 @@ app.post('/account/collateral_approval', async (req, res) => {
 
 	// iterate through each approval request synchronously
 	for (const approval of approvals) {
-		const erc20Addr =
-			process.env.ENV == 'production'
-				? arb.tokens[approval.token]
-				: arbGoerli.tokens[approval.token]
-		const erc20 = ISolidStateERC20__factory.connect(erc20Addr, signer)
+		const erc20 = ISolidStateERC20__factory.connect(
+			tokenAddr[approval.token],
+			signer
+		)
 
 		let approveTX: ContractTransactionResponse
 		let confirm: TransactionReceipt | null
@@ -1283,8 +1288,8 @@ app.get('/oracles/iv', async (req, res) => {
 
 	// multi call to ivOracle
 	const ivPromises = suggestedStrikes.map((strike) => {
-		return ivOracle['getVolatility(address,uint256,uint256,uint256)'](
-			productionTokenAddr[request.market],
+		return prodIVOracle['getVolatility(address,uint256,uint256,uint256)'](
+			prodTokenAddr[request.market],
 			parseEther(spotPrice!),
 			parseEther(strike.toString()),
 			parseEther(ttm.toFixed(12))
@@ -1295,7 +1300,7 @@ app.get('/oracles/iv', async (req, res) => {
 	try {
 		ivRequestsBigInt = await Promise.all(ivPromises)
 		const ivRequests = ivRequestsBigInt.map((iv) => {
-			return Number(parseFloat(formatEther(iv)).toFixed(2))
+			return parseFloat(parseFloat(formatEther(iv)).toFixed(2))
 		})
 		let ivStrikes: IVResponse[] = []
 		for (let i = 0; i < suggestedStrikes.length; i++) {
@@ -1331,17 +1336,14 @@ app.get('/oracles/spot', async (req, res) => {
 
 	// multi call to spot Oracle
 	const spotPromises = spotRequest.markets.map((market) => {
-		return chainlink.getPrice(
-			productionTokenAddr[market],
-			productionTokenAddr.USDC
-		)
+		return prodChainlink.getPrice(prodTokenAddr[market], prodTokenAddr.USDC)
 	})
 
 	let spotRequestsBigInt
 	try {
 		spotRequestsBigInt = await Promise.all(spotPromises)
 		const spotRequests = spotRequestsBigInt.map((price) => {
-			return Number(parseFloat(formatEther(price)).toFixed(6))
+			return parseFloat(parseFloat(formatEther(price)).toFixed(6))
 		})
 		let spotMarkets: SpotResponse[] = []
 		for (let i = 0; i < spotRequest.markets.length; i++) {
@@ -1361,6 +1363,160 @@ app.get('/oracles/spot', async (req, res) => {
 			message: `Failed to get spot prices from oracle`,
 		})
 	}
+})
+
+app.get('/vaults/quote', async (req, res) => {
+	const valid = validateVaultQuote(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'AJV get vault quote req params validation error',
+			error: validateVaultQuote.errors,
+		})
+		return res.send(validateVaultQuote.errors)
+	}
+	const quoteRequest = req.query as unknown as VaultQuoteRequest
+
+	let quoteSymbol: string
+	// NOTE: production USDC is USDCe (bridged)
+	if (chainId === '42161' && quoteRequest.quote === 'USDC')
+		quoteSymbol = `USDCe`
+	else quoteSymbol = quoteRequest.quote
+
+	// create vault key
+	const vaultName = `pSV-${quoteRequest.base}/${quoteSymbol}-${quoteRequest.type}`
+
+	// check to make sure vault exists
+	if (!(vaultName in vaults))
+		return res.status(400).json({
+			message: 'Vault does not exist',
+			quote: quoteRequest,
+		})
+
+	// format expiration for poolKey object (reject if invalid expiration)
+	let expiration: number
+	try {
+		expiration = createExpiration(quoteRequest.expiration)
+	} catch (e) {
+		return res.status(400).json({
+			message: (e as Error).message,
+			quote: quoteRequest,
+		})
+	}
+
+	const poolKey = createPoolKey(quoteRequest, expiration)
+
+	const vault = IVault__factory.connect(vaults[vaultName].address, provider)
+	let quoteBigInt: bigint
+	try {
+		quoteBigInt = await vault.getQuote(
+			poolKey,
+			parseEther(quoteRequest.size.toString()),
+			quoteRequest.direction === 'buy',
+			walletAddr
+		)
+	} catch (e) {
+		Logger.error({
+			message: 'Vault quote failed',
+			error: e,
+		})
+
+		return res.status(500).json({
+			message: `Failed to get quote from vault`,
+		})
+	}
+
+	const quoteResponse: QuoteResponse = {
+		market: {
+			vault: vaultName,
+			strike: parseFloat(quoteRequest.strike),
+			expiration: quoteRequest.expiration,
+			size: parseFloat(quoteRequest.size),
+			direction: quoteRequest.direction,
+		},
+		quote: parseFloat(formatEther(quoteBigInt)),
+	}
+	return res.status(200).json(quoteResponse)
+})
+
+app.post('/vaults/trade', async (req, res) => {
+	const valid = validateVaultTrade(req.body)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'AJV post vault trade validation error',
+			error: validateVaultTrade.errors,
+		})
+		return res.send(validateVaultTrade.errors)
+	}
+
+	const tradeRequest = req.body as unknown as VaultTradeRequest
+
+	let quoteSymbol: string
+	// NOTE: production USDC is USDCe (bridged)
+	if (chainId === '42161' && tradeRequest.quote === 'USDC')
+		quoteSymbol = `USDCe`
+	else quoteSymbol = tradeRequest.quote
+
+	// create vault key
+	const vaultName = `pSV-${tradeRequest.base}/${quoteSymbol}-${tradeRequest.type}`
+
+	// check to make sure vault exists
+	if (!(vaultName in vaults))
+		return res.status(400).json({
+			message: 'Vault does not exist',
+			trade: tradeRequest,
+		})
+
+	// format expiration for poolKey object (reject if invalid expiration)
+	let expiration: number
+	try {
+		expiration = createExpiration(tradeRequest.expiration)
+	} catch (e) {
+		return res.status(400).json({
+			message: (e as Error).message,
+			trade: tradeRequest,
+		})
+	}
+
+	const poolKey = createPoolKey(tradeRequest, expiration)
+
+	const vault = IVault__factory.connect(vaults[vaultName].address, provider)
+	try {
+		const tradeTX = await vault.trade(
+			poolKey,
+			parseEther(tradeRequest.size.toString()),
+			tradeRequest.direction === 'buy',
+			parseEther(tradeRequest.premiumLimit.toString()),
+			referralAddress
+		)
+		const confirm = await tradeTX.wait(1)
+
+		if (confirm?.status === 0) {
+			throw new Error(`Failed to confirm vault trade: ${confirm}`)
+		}
+	} catch (e) {
+		Logger.error({
+			message: 'Vault trade failed',
+			error: e,
+		})
+
+		return res.status(500).json({
+			message: `Failed to trade with vault`,
+		})
+	}
+
+	const tradeResponse: TradeResponse = {
+		market: {
+			vault: vaultName,
+			strike: tradeRequest.strike,
+			expiration: tradeRequest.expiration,
+			size: tradeRequest.size,
+			direction: tradeRequest.direction,
+		},
+	}
+
+	return res.status(200).json(tradeResponse)
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {

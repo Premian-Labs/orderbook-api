@@ -46,7 +46,7 @@ describe('IV Oracles', () => {
 
 		expect(invalidMarketIVResponse.status).to.eq(400)
 		expect(invalidMarketIVResponse.data[0].message).to.eq(
-			`must match pattern \"^WETH$|^WBTC$|^ARB$|^LINK$|^WSTETH$|^GMX$|^MAGIC$|^SOL$|^FXS$\"`
+			`must match pattern \"^WETH$|^WBTC$|^ARB$|^LINK$|^wstETH$|^GMX$|^MAGIC$|^SOL$|^FXS$\"`
 		)
 	})
 
@@ -128,9 +128,8 @@ describe('Spot Oracles', () => {
 		})
 
 		expect(invalidGetSpotResponse.status).to.eq(400)
-		// NOTE: this list is a testnet list, in production the list is different
 		expect(invalidGetSpotResponse.data[0].message).to.eq(
-			`must match pattern \"^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$\"`
+			`must match pattern \"^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$|^WSTETH$|^KNC$|^DPX$|^AAVE$|^RPL$|^GNS$|^COMP$|^BAL$|^MKR$|^FRAX$|^MAGIC$|^YFI$|^CRV$|^RDNT$|^USDT$|^TUSD$|^GMX$|^JOE$|^CBETH$|^DODO$|^MIMATIC$|^USDD$|^SUSHI$|^UNI$|^SPELL$|^FXS$|^LUSD$|^SOL$\"`
 		)
 	})
 })

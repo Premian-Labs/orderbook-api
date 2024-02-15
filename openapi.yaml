@@ -231,7 +231,6 @@ paths:
           description: base token symbol (ie WETH)
           schema:
             type: string
-            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
             example: WETH
         - name: quote
           in: query
@@ -239,7 +238,6 @@ paths:
           description: quote token symbol (ie USDC)
           schema:
             type: string
-            pattern: ^testWETH$|^WETH$|^WBTC$|^PREMIA$|^LINK$|^USDC$|^DAI$|^ARB$
             example: USDC
         - name: expiration
           in: query
@@ -247,7 +245,6 @@ paths:
           description: option expiration (ie 03NOV23)
           schema:
             type: string
-            pattern: ^\d\d\w\w\w\d\d$
             example: 03NOV23
         - name: strike
           in: query
@@ -364,6 +361,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
     get:
       summary: Returns all active pool up to 90 days old.
       parameters:
@@ -813,7 +813,6 @@ paths:
           description: base token symbol (ie WETH)
           schema:
             type: string
-            pattern: ^WETH$|^WBTC$|^ARB$|^LINK$|^WSTETH$|^GMX$|^MAGIC$|^SOL$|^FXS$
             example: WETH
         - name: expiration
           in: query
@@ -821,7 +820,6 @@ paths:
           description: option expiration (ie 03NOV23)
           schema:
             type: string
-            pattern: ^\d\d\w\w\w\d\d$
             example: 03NOV23
         - name: spotPrice
           in: query
@@ -862,6 +860,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /oracles/spot:
     get:
       summary: Gets multiple spot prices from chainlink oracles by providing an array of one or more token symbols.
@@ -906,6 +907,159 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /vaults/quote:
+    get:
+      summary: Get a quote from a vault. Quotes are normalized prices.
+        For calls, price is denominated in the base token (ie 0.13 WETH), and for puts price is in denominated in the
+        quote token but normalized using strike. For example, a put price of 0.13 => (234 USDC price / 1800 Strike )
+        is equivalent to 234 USDC if the strike is 1800.
+      parameters:
+        - name: base
+          in: query
+          required: true
+          description: base token symbol (ie WETH)
+          schema:
+            type: string
+            example: WETH
+        - name: quote
+          in: query
+          required: true
+          description: quote token symbol (ie USDC)
+          schema:
+            type: string
+            example: USDC
+        - name: expiration
+          in: query
+          required: true
+          description: option expiration (ie 03NOV23)
+          schema:
+            type: string
+            example: 03NOV23
+        - name: strike
+          in: query
+          required: true
+          description: option strike (ie 1800)
+          schema:
+            type: number
+            minimum: 0
+            example: 1800
+        - name: type
+          in: query
+          description: C or P
+          required: true
+          schema:
+            type: string
+            pattern: ^C$|^P$
+            example: P
+        - name: size
+          in: query
+          description: number of contracts (ie 4)
+          required: true
+          schema:
+            type: number
+            minimum: 0
+            example: 4
+        - name: direction
+          in: query
+          description: direction of trade (buy or sell)
+          required: true
+          schema:
+            type: string
+            example: buy
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  market:
+                    $ref: "#/components/schemas/VaultResponse"
+                  quote:
+                    type: number
+                    example: 0.2356
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /vaults/trade:
+    post:
+      summary: Trade with a vault.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                base:
+                  type: string
+                  example: WETH
+                quote:
+                  type: string
+                  example: USDC
+                expiration:
+                  type: string
+                  pattern: ^\d\d\w\w\w\d\d$
+                  example: 03NOV23
+                strike:
+                  type: number
+                  example: 1700
+                type:
+                  enum:
+                    - C
+                    - P
+                  type: string
+                  example: P
+                size:
+                  type: number
+                  example: 4
+                direction:
+                  type: string
+                  example: 'buy'
+                premiumLimit:
+                  type: number
+                  example: 0.23
+        required: true
+      responses:
+        '200':
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  market:
+                    $ref: "#/components/schemas/VaultResponse"
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
 components:
   schemas:
     Option:
@@ -931,13 +1085,13 @@ components:
           type: string
           example: P
     PoolWithAddress:
-      type: object
       allOf:
         - $ref: "#/components/schemas/Option"
-      properties:
-        poolAddress:
-          type: string
-          example: 0x...4cFF2
+        - type: object
+          properties:
+            poolAddress:
+              type: string
+              example: 0x...4cFF2
     NFTBalance:
       type: object
       properties:
@@ -1176,6 +1330,25 @@ components:
         - size
         - price
         - deadline
+    VaultResponse:
+      type: object
+      properties:
+        vault:
+          type: string
+          example: 'pSV-WETH/USDCe-C'
+        strike:
+          type: number
+          example: 2500
+        expiration:
+          type: string
+          pattern: ^\d\d\w\w\w\d\d$
+          example: 03NOV23
+        size:
+          type: number
+          example: 4
+        direction:
+          type: string
+          example: 'buy'
     FailedOptions:
       type: object
       properties:

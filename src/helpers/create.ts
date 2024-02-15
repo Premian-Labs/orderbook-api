@@ -10,12 +10,10 @@ import {
 	PoolKey,
 	ReturnedOrderbookQuote,
 } from '../types/quote'
-import { Option } from '../types/validate'
+import { Option, VaultQuoteRequest, VaultTradeRequest } from '../types/validate'
 import { PublishQuoteRequest } from '../types/validate'
-import { tokenAddr } from '../config/constants'
+import { spotOracleAddr, tokenAddr } from '../config/constants'
 import { getTokenByAddress } from './get'
-import arb from '../config/arbitrum.json'
-import arbGoerli from '../config/arbitrumGoerli.json'
 import { RFQMessage, RFQMessageParsed } from '../types/ws'
 
 /*
@@ -78,7 +76,6 @@ export function createExpiration(exp: string): number {
 	return expirationMoment.add(8, 'hours').unix()
 }
 
-// TODO: rename size to availableSize
 export function parseInvalidQuotes(
 	orderbookQuote: InvalidPostQuoteResponse
 ): InvalidOrderbookQuote {
@@ -100,7 +97,6 @@ export function parseInvalidQuotes(
 	}
 }
 
-// TODO: rename size to availableSize
 export function createReturnedQuotes(
 	orderbookQuote: OrderbookQuote
 ): ReturnedOrderbookQuote {
@@ -124,22 +120,13 @@ export function createReturnedQuotes(
 	}
 }
 export function createPoolKey(
-	quote: PublishQuoteRequest | Option,
+	quote: PublishQuoteRequest | Option | VaultTradeRequest | VaultQuoteRequest,
 	expiration?: number
 ): PoolKey {
 	return {
-		base:
-			process.env.ENV == 'production'
-				? arb.tokens[quote.base]
-				: arbGoerli.tokens[quote.base],
-		quote:
-			process.env.ENV == 'production'
-				? arb.tokens[quote.quote]
-				: arbGoerli.tokens[quote.quote],
-		oracleAdapter:
-			process.env.ENV == 'production'
-				? arb.core.ChainlinkAdapterProxy.address
-				: arbGoerli.core.ChainlinkAdapterProxy.address,
+		base: tokenAddr[quote.base],
+		quote: tokenAddr[quote.quote],
+		oracleAdapter: spotOracleAddr,
 		strike: parseEther(quote.strike.toString()),
 		maturity: expiration ? expiration : quote.expiration,
 		isCallPool: quote.type === 'C',

@@ -1,7 +1,8 @@
 import Ajv from 'ajv'
 
 import {
-	productionTokensWithIVOracles,
+	prodTokens,
+	prodTokensWithIVOracles,
 	supportedTokens,
 } from '../config/constants'
 
@@ -269,9 +270,7 @@ export const validateGetIV = ajv.compile({
 	properties: {
 		market: {
 			type: 'string',
-			pattern: productionTokensWithIVOracles
-				.map((token) => `^${token}$`)
-				.join('|'),
+			pattern: prodTokensWithIVOracles.map((token) => `^${token}$`).join('|'),
 		},
 		expiration: {
 			type: 'string',
@@ -293,11 +292,65 @@ export const validateGetSpot = ajv.compile({
 			type: 'array',
 			items: {
 				type: 'string',
-				pattern: supportedTokens.map((token) => `^${token}$`).join('|'),
+				pattern: prodTokens.map((token) => `^${token}$`).join('|'),
 			},
 			minItems: 1,
 		},
 	},
 	required: ['markets'],
+	additionalProperties: false,
+})
+
+export const validateVaultQuote = ajv.compile({
+	type: 'object',
+	properties: {
+		...validateOptionEntity,
+		//NOTE: strike comes in as a string when passed via GET params, so we override validateOptionEntity
+		strike: {
+			type: 'string',
+			pattern: '^[0-9]{1,}([.][0-9]*)?$',
+		},
+		size: {
+			type: 'string',
+			pattern: '^[0-9]{1,}([.][0-9]*)?$',
+		},
+		direction: {
+			type: 'string',
+			pattern: '^buy$|^sell$',
+		},
+	},
+	required: [
+		'base',
+		'quote',
+		'expiration',
+		'strike',
+		'type',
+		'size',
+		'direction',
+	],
+	additionalProperties: false,
+})
+
+export const validateVaultTrade = ajv.compile({
+	type: 'object',
+	properties: {
+		...validateOptionEntity,
+		size: { type: 'number' },
+		direction: {
+			type: 'string',
+			pattern: '^buy$|^sell$',
+		},
+		premiumLimit: { type: 'number' },
+	},
+	required: [
+		'base',
+		'quote',
+		'expiration',
+		'strike',
+		'type',
+		'size',
+		'direction',
+		'premiumLimit',
+	],
 	additionalProperties: false,
 })

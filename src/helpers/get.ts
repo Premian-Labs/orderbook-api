@@ -6,14 +6,14 @@ import { PoolKey, TokenAddr } from '../types/quote'
 import { RejectedTokenBalance, TokenBalance } from '../types/balances'
 import Logger from '../lib/logger'
 import {
-	availableTokens,
-	chainlink,
+	prodChainlink,
 	poolFactory,
-	productionTokenAddr,
 	provider,
 	SECONDS_IN_YEAR,
+	supportedTokens,
 	tokenAddr,
 	walletAddr,
+	prodTokenAddr,
 } from '../config/constants'
 import { delay } from './util'
 
@@ -70,7 +70,7 @@ export function getTokenByAddress(tokenObject: TokenAddr, address: string) {
 // IMPORTANT: Promise.allSettled works here because we do not do any on-chain tx
 export async function getBalances() {
 	const promiseAll = await Promise.allSettled(
-		availableTokens.map(async (token) => {
+		supportedTokens.map(async (token) => {
 			const erc20 = ISolidStateERC20__factory.connect(
 				tokenAddr[token],
 				provider
@@ -96,7 +96,7 @@ export async function getBalances() {
 		}
 		if (result.status === 'rejected') {
 			rejectedTokenBalances.push({
-				token: availableTokens[index],
+				token: supportedTokens[index],
 				reason: result.reason,
 			})
 		}
@@ -110,10 +110,7 @@ export async function getBalances() {
 export async function getSpotPrice(market: string, retry: boolean = true) {
 	try {
 		return formatEther(
-			await chainlink.getPrice(
-				productionTokenAddr[market],
-				productionTokenAddr.USDC
-			)
+			await prodChainlink.getPrice(prodTokenAddr[market], prodTokenAddr.USDC)
 		)
 	} catch (err) {
 		await delay(2000)
