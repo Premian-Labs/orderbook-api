@@ -110,6 +110,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
     patch:
       summary: Used to fill quote(s) (max quotes quantity is 25).  
         Only the size and quoteId for each quote are required. All quoteIds are returned either as 'success' or 'failed'.
@@ -158,6 +161,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
     delete:
       summary: Deletes the quote(s) from the orderbook that have not exceeded their deadline (max quotes quantity is 25).
         Please note that orders that have surpassed their deadline do NOT need to be cancelled.  
@@ -211,6 +217,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
     get:
       summary: Get all quotes for a specific option up to a specified size/qty. All orders will be ranked from best
         to worst according to price. Please note that this will not show the full state of the orderbook if the total
@@ -306,6 +315,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /pools:
     post:
       summary: Creates new option pools.
@@ -349,6 +361,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
     get:
       summary: Returns all active pool up to 90 days old.
       parameters:
@@ -397,6 +412,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /pools/strikes:
     get:
       summary: Returns all valid strikes for a given market.
@@ -430,6 +448,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /pools/maturities:
     get:
       summary: Returns all valid maturities - tomorrow, the day after tomorrow, each Friday of current month, last Friday of each next month.
@@ -455,6 +476,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /orderbook/orders:
     get:
       summary: Gets all valid quote(s) on the orderbook by using broad query params. If no parameters are supplied 
@@ -513,6 +537,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /pool/settle:
     post:
       summary: Settles all short positions in each specified option in the request.
@@ -552,6 +579,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /pool/exercise:
     post:
       summary: Exercises all long positions in each specified option in the request. Please note that there is a fee 
@@ -590,6 +620,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /pool/annihilate:
     post:
       summary: Annihilates all long/short positions that offset in each specified option in the request. Please note 
@@ -629,6 +662,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /account/collateral_approval:
     post:
       summary: Approve collateral for trading.  The `amt` field can be either a number or a string `max`.  Setting 
@@ -669,6 +705,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /account/orders:
     get:
       summary: Gets all open quotes.  Any valid orders that are fillable and present in the orderbook for the address
@@ -688,6 +727,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /account/collateral_balances:
     get:
       summary: Checks collateral balance for all tokens that have tradeable option markets.
@@ -719,6 +761,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /account/native_balance:
     get:
       summary: Checks the balance of ETH for the given account specified in the .env file.
@@ -736,6 +781,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /account/option_balances:
     get:
       summary: Checks the balance of all option positions for the given account specified in the .env file.
@@ -752,6 +800,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /oracles/iv:
     get:
       summary: Gets multiple IV values for all valid strikes for a given option expiration of an underlying market via IV oracles.
@@ -809,6 +860,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /oracles/spot:
     get:
       summary: Gets multiple spot prices from chainlink oracles by providing an array of one or more token symbols.
@@ -853,6 +907,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /vaults/quote:
     get:
       summary: Get a quote from a vault.
@@ -934,6 +991,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
   /vaults/trade:
     post:
       summary: Trade with a vault.
@@ -994,7 +1054,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthError'
-
+      security:
+        - api_key:
+            - api
 components:
   schemas:
     Option:
@@ -1320,3 +1382,8 @@ components:
             type: object
           message:
             type: string
+  securitySchemes:
+    api_key:
+      type: apiKey
+      name: x-apikey
+      in: header

@@ -301,11 +301,11 @@ export const validateGetSpot = ajv.compile({
 	additionalProperties: false,
 })
 
-//NOTE: strike comes in as a string when passed via GET params, so we override validateOptionEntity
 export const validateVaultQuote = ajv.compile({
 	type: 'object',
 	properties: {
 		...validateOptionEntity,
+		//NOTE: strike comes in as a string when passed via GET params, so we override validateOptionEntity
 		strike: {
 			type: 'string',
 			pattern: '^[0-9]{1,}([.][0-9]*)?$',
