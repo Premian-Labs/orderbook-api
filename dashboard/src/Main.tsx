@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo } from 'react'
-import logo from './logo.svg'
+import logo from '../public/logo.svg'
 import './Main.css'
 import { Column, useTable } from 'react-table'
 import { getOrderbookState, prepareOrders } from './utils/getOrderbookState'
