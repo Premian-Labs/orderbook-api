@@ -14,7 +14,7 @@ import {
 	OwnOrdersRows,
 	WSMsg,
 	AuthMessage,
-	FilterMessage
+	FilterMessage,
 } from './types'
 import logo from './logo.svg'
 import moment from 'moment'
@@ -62,7 +62,10 @@ function Account() {
 	} as SpotPrice)
 
 	const columns = useMemo<Column<OwnOrdersRows>[]>(() => COLUMNS, [])
-	const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable({ columns, data: ordersRows, autoResetSortBy: false }, useSortBy)
+	const { getTableProps, getTableBodyProps, headerGroups, rows, prepareRow } = useTable(
+		{ columns, data: ordersRows, autoResetSortBy: false },
+		useSortBy,
+	)
 
 	const getData = () => {
 		console.log('fetching account data...')
@@ -235,8 +238,11 @@ function Account() {
 									<tr {...headerGroup.getHeaderGroupProps()}>
 										{headerGroup.headers.map((column) => (
 											<th
-												className={ column.isSorted ? 'sorted' : '' }
-												{...column.getHeaderProps(column.getSortByToggleProps())}>{column.render('Header')}</th>
+												className={column.isSorted ? 'sorted' : ''}
+												{...column.getHeaderProps(column.getSortByToggleProps())}
+											>
+												{column.render('Header')}
+											</th>
 										))}
 									</tr>
 								))}
@@ -263,13 +269,13 @@ function Account() {
 						Wallet Address: <code>{WALLET_ADDRESS}</code>
 					</p>
 					<p>
-						Wallet Native Balance: <code>{ethBalance}</code> ETH
+						Wallet Native Balance: <code>{ethBalance.toFixed(4)}</code> ETH
 					</p>
 					<p>Wallet Collateral Balance:</p>
 					{collateralBalance.map((tokenBalance) => {
 						return (
 							<ul key={tokenBalance.symbol} className="collateral-balance">
-								{tokenBalance.symbol}: <code>{tokenBalance.balance}</code>
+								{tokenBalance.symbol}: <code>{Number(tokenBalance.balance).toFixed(4)}</code>
 							</ul>
 						)
 					})}

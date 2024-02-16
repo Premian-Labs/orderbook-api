@@ -309,7 +309,7 @@ function Main() {
 						obRow.call_mark = blackScholes(
 							ivDataExpirationStrike.iv,
 							spotPrice[marketSelector],
-							(moment.utc(activeExpiration, 'DDMMMYY').unix() - moment.utc().unix()) / ONE_YEAR_SEC,
+							(moment.utc(activeExpiration, 'DDMMMYY').add(8, 'hours').unix() - moment.utc().unix()) / ONE_YEAR_SEC,
 							strike,
 							'call',
 						).price.toFixed(2)
@@ -317,7 +317,7 @@ function Main() {
 						obRow.put_mark = blackScholes(
 							ivDataExpirationStrike.iv,
 							spotPrice[marketSelector],
-							(moment.utc(activeExpiration, 'DDMMMYY').unix() - moment.utc().unix()) / ONE_YEAR_SEC,
+							(moment.utc(activeExpiration, 'DDMMMYY').add(8, 'hours').unix() - moment.utc().unix()) / ONE_YEAR_SEC,
 							strike,
 							'put',
 						).price.toFixed(2)
