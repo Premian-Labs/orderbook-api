@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react'
 import logo from './logo.svg'
-import './Main.css'
+import './styles/Main.css'
 import { Column, useTable } from 'react-table'
 import { getOrderbookState, prepareOrders } from './utils/getOrderbookState'
 import {

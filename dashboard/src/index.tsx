@@ -6,6 +6,7 @@ import Account from './Account'
 import Error404 from './Error404'
 import { Navbar } from './Navbar'
 import History from './History'
+import Vaults from './Vaults'
 
 const HeaderLayout = () => (
 	<>
@@ -37,6 +38,10 @@ const router = createBrowserRouter([
 			{
 				path: 'history',
 				element: <History />,
+			},
+			{
+				path: 'vaults',
+				element: <Vaults />,
 			},
 		],
 	},

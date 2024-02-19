@@ -12,3 +12,5 @@ export const chainId = '42161'
 if (!process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY)
 	throw Error('REACT_APP_MAINNET_ORDERBOOK_API_KEY env. var must be set')
 export const APIKey = process.env.REACT_APP_MAINNET_ORDERBOOK_API_KEY!
+
+export const availableTokens = ['WETH', 'WBTC', 'ARB']

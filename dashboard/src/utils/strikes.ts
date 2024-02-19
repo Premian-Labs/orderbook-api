@@ -1,3 +1,4 @@
+// TODO: remove in favor to `/pools/strikes/` API
 export function getSurroundingStrikes(spotPrice: number, maxProportion = 2) {
 	const minStrike = spotPrice / maxProportion
 	const maxStrike = spotPrice * maxProportion

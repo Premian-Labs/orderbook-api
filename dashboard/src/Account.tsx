@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo } from 'react'
-import './Main.css'
-import './Account.css'
+import './styles/Main.css'
+import './styles/Account.css'
 import { getCollateralBalance, getNativeBalance, getSpotPrice } from './utils/apiGetters'
 import { APIKey, chainId, WALLET_ADDRESS } from './config'
 import { getOwnOrders, prepareOrders } from './utils/getOrderbookState'

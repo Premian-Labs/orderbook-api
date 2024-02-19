@@ -167,3 +167,24 @@ export interface DeleteQuoteMessage {
 }
 
 export type WSMsg = InfoMessage | ErrorMessage | FillQuoteMessage | PostQuoteMessage | DeleteQuoteMessage
+
+export interface VaultMarket {
+	vault: string
+	strike: number
+	expiration: string
+	size: number
+	direction: 'buy' | 'sell'
+}
+
+export interface QuoteResponse {
+	market: VaultMarket
+	quote: number
+}
+
+export interface VaultsTable {
+	vault: string
+	strike: number
+	expiration: string
+	direction: 'buy' | 'sell'
+	quote: number
+}

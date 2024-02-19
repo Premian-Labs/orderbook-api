@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import './Navbar.css'
+import './styles/Navbar.css'
 import React, { useEffect } from 'react'
 import { SpotPrice } from './types'
 import { getSpotPrice } from './utils/apiGetters'
@@ -58,6 +58,16 @@ export const Navbar = () => {
 					}}
 				>
 					History
+				</NavLink>
+				<NavLink
+					to="/vaults"
+					style={({ isActive, isPending, isTransitioning }) => {
+						return {
+							color: isActive ? 'white' : '#a2a2a2',
+						}
+					}}
+				>
+					Vaults
 				</NavLink>
 			</div>
 			<div className="currencies">
