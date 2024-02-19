@@ -22,6 +22,7 @@ import {
 	MaxUint256,
 	parseUnits,
 	formatEther,
+	formatUnits,
 	ContractTransactionResponse,
 	TransactionReceipt,
 	EthersError,
@@ -1418,7 +1419,7 @@ app.get('/vaults/quote', async (req, res) => {
 	} catch (e) {
 		Logger.error({
 			message: 'Vault quote failed',
-			error: e,
+			error: (e as EthersError),
 		})
 
 		return res.status(500).json({
@@ -1426,6 +1427,7 @@ app.get('/vaults/quote', async (req, res) => {
 		})
 	}
 
+	// TODO: subtract taker fee?
 	const quoteResponse: QuoteResponse = {
 		market: {
 			vault: vaultName,
@@ -1434,7 +1436,7 @@ app.get('/vaults/quote', async (req, res) => {
 			size: parseFloat(quoteRequest.size),
 			direction: quoteRequest.direction,
 		},
-		quote: parseFloat(formatEther(quoteBigInt)),
+		quote: poolKey.isCallPool ? parseFloat(formatEther(quoteBigInt)) : parseFloat(formatUnits(quoteBigInt, 6)),
 	}
 	return res.status(200).json(quoteResponse)
 })
