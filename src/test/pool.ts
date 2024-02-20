@@ -129,7 +129,7 @@ describe('Pools Helpers API', () => {
 				// end of array
 				if (Number.isNaN(strikeRange)) return true
 
-				return nextStrike - strike === 500
+				return nextStrike - strike === 100
 			})
 		).to.be.true
 

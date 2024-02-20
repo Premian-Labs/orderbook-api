@@ -255,12 +255,12 @@ function Main() {
 	}, [])
 
 	useEffect(() => {
-		const groupedOrders = prepareOrders(marketSelector, spotPrice[marketSelector], rawOrders)
-		setOrders(groupedOrders)
-
-		const expirations = groupedOrders.map((order) => order.expiration)
-		setExpirations(expirations)
-		if (!activeExpiration) setActiveExpiration(expirations[0])
+		prepareOrders(marketSelector, spotPrice[marketSelector], rawOrders).then((groupedOrders) => {
+			setOrders(groupedOrders)
+			const expirations = groupedOrders.map((order) => order.expiration)
+			setExpirations(expirations)
+			if (!activeExpiration) setActiveExpiration(expirations[0])
+		})
 	}, [rawOrders, marketSelector, spotPrice])
 
 	useEffect(() => {

@@ -33,6 +33,5 @@ function roundUpTo(initial: number, rounding: number): number {
 
 function getInterval(price: number): number {
 	const orderOfTens = Math.floor(Math.log10(price))
-	const base = price / 10 ** orderOfTens
-	return base < 5 ? 10 ** (orderOfTens - 1) : 5 * 10 ** (orderOfTens - 1)
+	return 10 ** (orderOfTens - 1)
 }

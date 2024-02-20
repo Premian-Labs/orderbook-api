@@ -81,24 +81,7 @@ export async function getSpotPrice() {
 	return prices
 }
 
-// Min DTE 3 days
-// Max DTE 35 days
-// Min Delta 0.2
-// Max Delta 0.7
-export async function getVaults(base: Market, spotPrice: number) {
-	const maturitiesResponse = await axios.get(PREMIA_API_URL + '/pools/maturities', {
-		headers: {
-			'x-apikey': APIKey,
-		},
-	})
-	const maturities = maturitiesResponse.data as string[]
-	const threeDaysAhead = moment.utc().startOf('day').add(8, 'hours').add(3, 'days')
-	const thirtyFiveDaysAhead = moment.utc().startOf('day').add(8, 'hours').add(35, 'days')
-	const vaultsMaturities = maturities.filter((maturity) => {
-		const poolMaturity = moment.utc(maturity).add(8, 'hours')
-		return poolMaturity.isAfter(threeDaysAhead, 'days') && poolMaturity.isBefore(thirtyFiveDaysAhead, 'days')
-	})
-
+export async function getStrikes(spotPrice: number) {
 	const strikesResponse = await axios.get(PREMIA_API_URL + '/pools/strikes', {
 		headers: {
 			'x-apikey': APIKey,
@@ -107,7 +90,32 @@ export async function getVaults(base: Market, spotPrice: number) {
 			spotPrice: spotPrice,
 		},
 	})
-	const strikes = strikesResponse.data as number[]
+	return strikesResponse.data as number[]
+}
+
+export async function getMaturities() {
+	const maturitiesResponse = await axios.get(PREMIA_API_URL + '/pools/maturities', {
+		headers: {
+			'x-apikey': APIKey,
+		},
+	})
+	return maturitiesResponse.data as string[]
+}
+
+// Min DTE 3 days
+// Max DTE 35 days
+// Min Delta 0.2
+// Max Delta 0.7
+export async function getVaults(base: Market, spotPrice: number) {
+	const maturities = await getMaturities()
+	const threeDaysAhead = moment.utc().startOf('day').add(8, 'hours').add(3, 'days')
+	const thirtyFiveDaysAhead = moment.utc().startOf('day').add(8, 'hours').add(35, 'days')
+	const vaultsMaturities = maturities.filter((maturity) => {
+		const poolMaturity = moment.utc(maturity).add(8, 'hours')
+		return poolMaturity.isAfter(threeDaysAhead, 'days') && poolMaturity.isBefore(thirtyFiveDaysAhead, 'days')
+	})
+
+	const strikes = await getStrikes(spotPrice)
 
 	const validStrikesMaturitiesPromise = vaultsMaturities.map(async (maturity) => {
 		const vaultsStrikes = []

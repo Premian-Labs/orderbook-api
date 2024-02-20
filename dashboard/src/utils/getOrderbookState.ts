@@ -2,8 +2,8 @@ import axios from 'axios'
 import { APIKey, PREMIA_API_URL } from '../config'
 import _ from 'lodash'
 import { Market, OptionsTableData, ReturnedOrderbookQuote } from '../types'
-import { getSurroundingStrikes } from './strikes'
 import moment from 'moment'
+import { getStrikes } from './apiGetters'
 
 export async function getOrderbookState() {
 	const ordersResponse = await axios.get(PREMIA_API_URL + '/orderbook/orders', {
@@ -29,8 +29,12 @@ export async function getOwnOrders() {
 	return orders
 }
 
-export function prepareOrders(market: Market, spot: number, orders: ReturnedOrderbookQuote[]): OptionsTableData[] {
-	const strikes = getSurroundingStrikes(spot)
+export async function prepareOrders(
+	market: Market,
+	spot: number,
+	orders: ReturnedOrderbookQuote[],
+): Promise<OptionsTableData[]> {
+	const strikes = await getStrikes(spot)
 	const ordersPerMarket = orders.filter((order) => order.base === market)
 	const groupedByExpiration = _.chain(ordersPerMarket)
 		.groupBy('expiration')
