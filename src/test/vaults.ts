@@ -163,7 +163,7 @@ describe('Vault Quotes', () => {
 				base: 'WETH',
 				quote: 'USDC',
 				expiration: getMaturity(),
-				strike: 2212,
+				strike: 'XXX',
 				type: 'P',
 				size: 1,
 				direction: 'buy',
@@ -242,8 +242,8 @@ describe('Vault Quotes', () => {
 		expect(invalidExpQuote.data.message.startsWith('Invalid expiration date'))
 			.to.be.true
 		expect(
-			invalidStrikeQuote.data.message.startsWith(
-				'execution reverted: Vault__OutOfDeltaBounds()'
+			invalidStrikeQuote.data[0].message.startsWith(
+				'must match pattern "^[0-9]{1,}([.][0-9]*)?$"'
 			)
 		).to.be.true
 		expect(
