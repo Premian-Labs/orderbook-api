@@ -1423,6 +1423,7 @@ app.get('/vaults/quote', async (req, res) => {
 		const poolAddr = await getPoolAddress(poolKey)
 		const pool = IPool__factory.connect(poolAddr, signer)
 
+		// TODO: confirm proper fee structure for vault
 		takerFeeBigInt = await pool.takerFee(
 			poolAddr,
 			parseEther(quoteRequest.size),
@@ -1537,6 +1538,7 @@ app.post('/vaults/trade', async (req, res) => {
 		})
 	}
 
+	// TODO: return fill price (and fee paid)
 	const tradeResponse: VaultTradeResponse = {
 		market: {
 			vault: vaultName,
