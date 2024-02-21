@@ -1439,14 +1439,10 @@ app.get('/vaults/quote', async (req, res) => {
 			error: error,
 		})
 
-		// if error message is a user error, return 400
-		for (let userError of vaultUserErrors) {
-			if (error.message.startsWith(`execution reverted: ${userError}`)) {
-				return res.status(400).json({
-					message: error.message,
-				})
-			}
-		}
+		const userError = vaultUserErrors.find((userError) =>
+			error.message.startsWith(`execution reverted: ${userError}`)
+		)
+		if (userError) return res.status(400).json({ message: userError })
 
 		return res.status(500).json({
 			message: `Failed to get quote from vault`,
