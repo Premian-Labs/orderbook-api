@@ -3,7 +3,6 @@ import { expect } from 'chai'
 
 import { baseUrl, getMaturity } from './helpers/utils'
 import { VaultQuoteResponse } from '../types/validate'
-import { deepEqual } from 'node:assert'
 
 const vaultQuoteUrl = `${baseUrl}/vaults/quote`
 
