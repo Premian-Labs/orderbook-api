@@ -100,3 +100,17 @@ export const blockByTsEndpoint =
 		: 'https://api-goerli.arbiscan.io/api'
 
 export const SECONDS_IN_YEAR = 365 * 24 * 60 * 60
+
+export const vaultUserErrors = [
+	`Vault__AboveMaxSlippage`,
+	`Vault__AddressZero`,
+	`Vault__InsufficientFunds`,
+	`Vault__InsufficientShorts`,
+	`Vault__MaximumAmountExceeded`,
+	`Vault__OptionExpired`,
+	`Vault__OptionPoolNotListed`,
+	`Vault__OutOfDeltaBounds`,
+	`Vault__OutOfDTEBounds`,
+	`Vault__SellDisabled`,
+	`Vault__TradeMustBeBuy`,
+]

@@ -28,6 +28,7 @@ import {
 	EthersError,
 	NonceManager,
 	BigNumberish,
+	ZeroAddress,
 } from 'ethers'
 
 import Logger from './lib/logger'
@@ -46,6 +47,7 @@ import {
 	prodChainlink,
 	vaults,
 	prodTokenAddr,
+	vaultUserErrors,
 } from './config/constants'
 import {
 	FillableQuote,
@@ -78,8 +80,8 @@ import {
 	StrikesRequestSymbol,
 	VaultTradeRequest,
 	VaultQuoteRequest,
-	QuoteResponse,
-	TradeResponse,
+	VaultQuoteResponse,
+	VaultTradeResponse,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -1408,27 +1410,46 @@ app.get('/vaults/quote', async (req, res) => {
 	const poolKey = createPoolKey(quoteRequest, expiration)
 
 	const vault = IVault__factory.connect(vaults[vaultName].address, provider)
+
+	let takerFeeBigInt: bigint
 	let quoteBigInt: bigint
 	try {
 		quoteBigInt = await vault.getQuote(
 			poolKey,
-			parseEther(quoteRequest.size.toString()),
+			parseEther(quoteRequest.size),
 			quoteRequest.direction === 'buy',
 			walletAddr
 		)
+		const poolAddr = await getPoolAddress(poolKey)
+		const pool = IPool__factory.connect(poolAddr, signer)
+
+		// TODO: confirm proper fee structure for vault
+		takerFeeBigInt = await pool.takerFee(
+			poolAddr,
+			parseEther(quoteRequest.size),
+			0n,
+			true,
+			false
+		)
 	} catch (e) {
+		const error = e as EthersError
+
 		Logger.error({
 			message: 'Vault quote failed',
-			error: (e as EthersError),
+			error: error,
 		})
+
+		const userError = vaultUserErrors.find((userError) =>
+			error.message.startsWith(`execution reverted: ${userError}`)
+		)
+		if (userError) return res.status(400).json({ message: userError })
 
 		return res.status(500).json({
 			message: `Failed to get quote from vault`,
 		})
 	}
 
-	// TODO: subtract taker fee?
-	const quoteResponse: QuoteResponse = {
+	const quoteResponse: VaultQuoteResponse = {
 		market: {
 			vault: vaultName,
 			strike: parseFloat(quoteRequest.strike),
@@ -1436,7 +1457,12 @@ app.get('/vaults/quote', async (req, res) => {
 			size: parseFloat(quoteRequest.size),
 			direction: quoteRequest.direction,
 		},
-		quote: poolKey.isCallPool ? parseFloat(formatEther(quoteBigInt)) : parseFloat(formatUnits(quoteBigInt, 6)),
+		quote: poolKey.isCallPool
+			? parseFloat(formatEther(quoteBigInt))
+			: parseFloat(formatUnits(quoteBigInt, 6)),
+		takerFee: poolKey.isCallPool
+			? parseFloat(formatEther(takerFeeBigInt))
+			: parseFloat(formatUnits(takerFeeBigInt, 6)),
 	}
 	return res.status(200).json(quoteResponse)
 })
@@ -1508,7 +1534,8 @@ app.post('/vaults/trade', async (req, res) => {
 		})
 	}
 
-	const tradeResponse: TradeResponse = {
+	// TODO: return fill price (and fee paid)
+	const tradeResponse: VaultTradeResponse = {
 		market: {
 			vault: vaultName,
 			strike: tradeRequest.strike,

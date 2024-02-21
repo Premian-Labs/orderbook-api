@@ -116,11 +116,12 @@ export interface VaultMarket {
 	size: number
 	direction: 'buy' | 'sell'
 }
-export interface TradeResponse {
+export interface VaultTradeResponse {
 	market: VaultMarket
 }
 
-export interface QuoteResponse {
+export interface VaultQuoteResponse {
 	market: VaultMarket
 	quote: number
+	takerFee: number
 }
