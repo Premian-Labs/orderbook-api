@@ -912,8 +912,10 @@ paths:
             - api
   /vaults/quote:
     get:
-      summary: Get a quote from a vault. Quotes are normalized prices.
-        For calls, price is denominated in the base token (ie 0.13 WETH), and for puts price is in denominated in the quote token (USDC).
+      summary: For calls, price is denominated in the base token (ie 0.13 WETH), and for puts price is in denominated in the
+        quote token (USDC). The quote price is inclusive of the trading fee and is represented as a the total cost.  To
+        get the price per option, simply divide by the size.  To get the quote w/o the fee, simply subtract the fee
+        from the quote price.
       parameters:
         - name: base
           in: query
