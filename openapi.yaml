@@ -980,6 +980,9 @@ paths:
                   quote:
                     type: number
                     example: 0.2356
+                  fee:
+                    type: number
+                    example: 0.003
         '400':
           description: Invalid parameters supplied
           content:
