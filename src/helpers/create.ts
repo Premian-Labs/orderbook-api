@@ -49,6 +49,11 @@ export function createExpiration(exp: string): number {
 		throw new Error(`Invalid expiration date: ${exp} is more then in 1 year`)
 	}
 
+	// 1.3 0-DTE Options
+	if (daysToExpiration === 0 && hoursToExpiration > 0) {
+		return expirationMoment.add(8, 'hours').unix()
+	}
+
 	// 2. DAILY OPTIONS: if option expiration is tomorrow or the day after tomorrow, return as vaild
 	if (daysToExpiration === 1 || daysToExpiration === 2) {
 		// Set time to 8:00 AM
