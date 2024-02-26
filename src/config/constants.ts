@@ -101,7 +101,7 @@ export const blockByTsEndpoint =
 
 export const SECONDS_IN_YEAR = 365 * 24 * 60 * 60
 
-export const internalErrorMessage =
+export const INTERNAL_ERROR_MESSAGE =
 	'Internal error, please contact support if issue persists.'
 
 export const vaultUserErrors = [

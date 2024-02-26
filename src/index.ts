@@ -47,7 +47,7 @@ import {
 	vaults,
 	prodTokenAddr,
 	vaultUserErrors,
-	internalErrorMessage,
+	INTERNAL_ERROR_MESSAGE,
 } from './config/constants'
 import {
 	FillableQuote,
@@ -255,7 +255,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: internalErrorMessage,
+			message: INTERNAL_ERROR_MESSAGE,
 		})
 	}
 
@@ -325,7 +325,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: internalErrorMessage,
+			message: INTERNAL_ERROR_MESSAGE,
 		})
 	}
 
@@ -558,7 +558,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: internalErrorMessage,
+			message: INTERNAL_ERROR_MESSAGE,
 		})
 	}
 
@@ -712,7 +712,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: internalErrorMessage,
+			message: INTERNAL_ERROR_MESSAGE,
 		})
 	}
 
@@ -755,7 +755,7 @@ app.get('/orderbook/orders', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: internalErrorMessage,
+			message: INTERNAL_ERROR_MESSAGE,
 		})
 	}
 
@@ -915,7 +915,7 @@ app.get('/account/option_balances', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: internalErrorMessage,
+			message: INTERNAL_ERROR_MESSAGE,
 		})
 	}
 
@@ -951,7 +951,7 @@ app.get('/account/orders', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: internalErrorMessage,
+			message: INTERNAL_ERROR_MESSAGE,
 		})
 	}
 
