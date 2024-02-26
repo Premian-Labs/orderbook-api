@@ -141,14 +141,14 @@ paths:
                       type: string
                       description: filled quote ids
                       pattern: "[a-fA-F0-9]{64}"
-                      example: ba638...fb25e
+                      example: 0x3ba638...fb25e
                   failed:
                     type: array
                     items:
                       type: string
                       description: failed to fill quote ids
                       pattern: "[a-fA-F0-9]{64}"
-                      example: ba638...fb25e
+                      example: 0x3ba638...fb25e
         '400':
           description: Bad request
           content:
@@ -192,19 +192,19 @@ paths:
                     items:
                       type: string
                       pattern: '[a-fA-F0-9]{64}$'
-                      example: ba638...fb25e
+                      example: 0x3ba638...fb25e
                   failed:
                     type: array
                     items:
                       type: string
                       pattern: '[a-fA-F0-9]{64}$'
-                      example: ba638...fb25e
+                      example: 0x3ba638...fb25e
                   omitted:
                     type: array
                     items:
                       type: string
                       pattern: '[a-fA-F0-9]{64}$'
-                      example: ba638...fb25e
+                      example: 0x3ba638...fb25e
         '400':
           description: Invalid parameters supplied
           content:
@@ -285,7 +285,7 @@ paths:
           schema:
             type: string
             pattern: "^0x[a-fA-F0-9]{40}$"
-            example: ba638...fb25e
+            example: 0x3ba638...fb25e
         - name: taker
           in: query
           description: unique address of the taker (only for rfq quotes)
@@ -293,7 +293,7 @@ paths:
           schema:
             type: string
             pattern: "^0x[a-fA-F0-9]{40}$"
-            example: ba638...fb25e
+            example: 0x3ba638...fb25e
       responses:
         '200':
           description: Successful operation
@@ -491,7 +491,7 @@ paths:
           schema:
             type: string
             pattern: "^0x[a-fA-F0-9]{40}$"
-            example: ba638...fb25e
+            example: 0x3ba638...fb25e
         - name: size
           in: query
           description: number of contracts (ie 4)
@@ -515,7 +515,7 @@ paths:
           schema:
             type: string
             pattern: "^0x[a-fA-F0-9]{40}$"
-            example: ba638...fb25e
+            example: 0x3ba638...fb25e
       responses:
         '200':
           description: Successful operation
@@ -710,8 +710,16 @@ paths:
             - api
   /account/orders:
     get:
-      summary: Gets all open quotes.  Any valid orders that are fillable and present in the orderbook for the address
-        used for the containerized API will be returned. The address used is the one specified in the .env file.
+      summary: Gets all open quotes.  Any valid orders that are fillable and present in the orderbook for the given account (if specified), otherwise the address in the .env is used.
+      parameters:
+        - name: walletAddr
+          in: query
+          required: false
+          description: wallet address
+          schema:
+            type: string
+            pattern: "^0x[a-fA-F0-9]{40}$"
+            example: 0x3ba638...fb25e
       responses:
         '200':
           description: Successful operation
@@ -732,7 +740,16 @@ paths:
             - api
   /account/collateral_balances:
     get:
-      summary: Checks collateral balance for all tokens that have tradeable option markets.
+      summary: Checks collateral balance for all tokens that have tradeable option markets for the given account (if specified), otherwise the address in the .env is used.
+      parameters:
+        - name: walletAddr
+          in: query
+          required: false
+          description: wallet address
+          schema:
+            type: string
+            pattern: "^0x[a-fA-F0-9]{40}$"
+            example: 0x3ba638...fb25e
       responses:
         '200':
           description: Approved
@@ -766,7 +783,16 @@ paths:
             - api
   /account/native_balance:
     get:
-      summary: Checks the balance of ETH for the given account specified in the .env file.
+      summary: Checks the balance of ETH for the given account (if specified), otherwise the address in the .env is used.
+      parameters:
+        - name: walletAddr
+          in: query
+          required: false
+          description: wallet address
+          schema:
+            type: string
+            pattern: "^0x[a-fA-F0-9]{40}$"
+            example: 0x3ba638...fb25e
       responses:
         '200':
           description: Success
@@ -786,7 +812,16 @@ paths:
             - api
   /account/option_balances:
     get:
-      summary: Checks the balance of all option positions for the given account specified in the .env file.
+      summary: Checks the balance of all option positions for the given account (if specified), otherwise the address in the .env is used.
+      parameters:
+        - name: walletAddr
+          in: query
+          required: false
+          description: wallet address
+          schema:
+            type: string
+            pattern: "^0x[a-fA-F0-9]{40}$"
+            example: 0x3ba638...fb25e
       responses:
         '200':
           description: Success
@@ -1197,7 +1232,7 @@ components:
         provider:
           type: string
           pattern: '^0x[a-fA-F0-9]{40}$'
-          example: ba638...fb25e
+          example: 0x3ba638...fb25e
         taker:
           type: string
           pattern: '^0x[a-fA-F0-9]{40}$'
@@ -1211,7 +1246,7 @@ components:
         quoteId:
           type: string
           pattern: '[a-fA-F0-9]{64}$'
-          example: ba638...fb25e
+          example: 0x3ba638...fb25e
         ts:
           type: number
           example: 1698952534
@@ -1223,7 +1258,7 @@ components:
           items:
             type: string
             pattern: '[a-fA-F0-9]{64}$'
-            example: ba638...fb25e
+            example: 0x3ba638...fb25e
           minItems: 1
       required:
         - quoteIds
@@ -1237,7 +1272,7 @@ components:
         quoteId:
           type: string
           pattern: '[a-fA-F0-9]{64}$'
-          example: ba638...fb25e
+          example: 0x3ba638...fb25e
       required:
         - tradeSize
         - quoteId
