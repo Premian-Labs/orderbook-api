@@ -28,7 +28,6 @@ import {
 	EthersError,
 	NonceManager,
 	BigNumberish,
-	ZeroAddress,
 } from 'ethers'
 
 import Logger from './lib/logger'
@@ -48,6 +47,7 @@ import {
 	vaults,
 	prodTokenAddr,
 	vaultUserErrors,
+	internalErrorMessage,
 } from './config/constants'
 import {
 	FillableQuote,
@@ -253,7 +253,7 @@ app.post('/orderbook/quotes', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: e,
+			message: internalErrorMessage,
 		})
 	}
 
@@ -323,7 +323,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: e,
+			message: internalErrorMessage,
 		})
 	}
 
@@ -556,7 +556,7 @@ app.delete('/orderbook/quotes', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: e,
+			message: internalErrorMessage,
 		})
 	}
 
@@ -710,7 +710,7 @@ app.get('/orderbook/quotes', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: e,
+			message: internalErrorMessage,
 		})
 	}
 
@@ -753,7 +753,7 @@ app.get('/orderbook/orders', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: e,
+			message: internalErrorMessage,
 		})
 	}
 
@@ -901,7 +901,7 @@ app.get('/account/option_balances', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: e,
+			message: internalErrorMessage,
 		})
 	}
 
@@ -925,7 +925,7 @@ app.get('/account/orders', async (req, res) => {
 	} catch (e) {
 		Logger.error(e)
 		return res.status(500).json({
-			message: e,
+			message: internalErrorMessage,
 		})
 	}
 
