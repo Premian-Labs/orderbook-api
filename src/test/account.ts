@@ -28,6 +28,7 @@ checkEnv(true)
 
 const provider = new ethers.JsonRpcProvider(rpcUrl)
 const signer = new ethers.Wallet(privateKey, provider)
+const dummyAddr = '0xF51E1DDd22722837414efE08D3d3f2F8c121DFB6'
 const collateralTypes = ['USDC']
 const quote: PublishQuoteRequest = {
 	base: 'WETH',
@@ -55,34 +56,64 @@ describe('Balances, Approvals & Open Orders', () => {
 
 	it('should get collateral balances', async () => {
 		const url = `${baseUrl}/account/collateral_balances`
-		const getCollateralBalancesRequest = await axios.get(url, {
-			headers: {
-				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
-			},
-		})
-
 		interface CollateralBalancesResponse {
 			success: TokenBalance[]
 			failed: RejectedTokenBalance[]
 		}
 
-		const responseData =
-			getCollateralBalancesRequest.data as CollateralBalancesResponse
-
-		expect(responseData.failed).is.empty
-		expect(responseData.success).is.not.empty
-		expect(responseData.success.map((x) => x.symbol)).deep.eq(supportedTokens)
-	})
-
-	it('should get native balance', async () => {
-		const url = `${baseUrl}/account/native_balance`
-		const getNativeBalanceRequest = await axios.get(url, {
+		const containerBalRequest = await axios.get(url, {
 			headers: {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
 		})
 
-		expect(getNativeBalanceRequest.data).gt(0)
+		const dummyBalRequest = await axios.get(url, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			params: {
+				walletAddr: dummyAddr,
+			},
+		})
+
+		const containerResData =
+			containerBalRequest.data as CollateralBalancesResponse
+		const dummyResData = dummyBalRequest.data as CollateralBalancesResponse
+
+		expect(containerResData.failed).is.empty
+		expect(containerResData.success).is.not.empty
+		expect(containerResData.success.map((x) => x.symbol)).deep.eq(
+			supportedTokens
+		)
+
+		expect(dummyResData.failed).is.empty
+		expect(dummyResData.success).is.not.empty
+		expect(dummyResData.success.map((x) => x.symbol)).deep.eq(supportedTokens)
+
+		expect(containerResData).not.deep.eq(dummyResData)
+	})
+
+	it('should get native balance', async () => {
+		const url = `${baseUrl}/account/native_balance`
+		const containerNatBalRequest = await axios.get(url, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+		})
+
+		const dummyNatBalRequest = await axios.get(url, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			params: {
+				walletAddr: dummyAddr,
+			},
+		})
+
+		expect(containerNatBalRequest.data).gte(0)
+		expect(dummyNatBalRequest.data).to.gte(0)
+
+		expect(containerNatBalRequest.data).not.deep.eq(dummyNatBalRequest.data)
 	})
 
 	it('should set collateral approvals', async () => {
@@ -132,7 +163,7 @@ describe('Balances, Approvals & Open Orders', () => {
 
 	it('should get open orders', async () => {
 		const quotesURL = `${baseUrl}/orderbook/quotes`
-		// post quote to cancel
+
 		const quoteResponse = await axios.post(quotesURL, [quote], {
 			headers: {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
@@ -145,14 +176,27 @@ describe('Balances, Approvals & Open Orders', () => {
 		expect(quotes.created).is.not.empty
 
 		const ordersURL = `${baseUrl}/account/orders`
-		// post quote to cancel
+
 		const ordersRequest = await axios.get(ordersURL, {
 			headers: {
 				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
 			},
 		})
 
-		const ordersResponse = ordersRequest.data as ReturnedOrderbookQuote
+		const ordersResponse = ordersRequest.data as ReturnedOrderbookQuote[]
 		expect(ordersResponse).to.include.deep.members(quotes.created)
+
+		const dummyOrdersRequest = await axios.get(ordersURL, {
+			headers: {
+				'x-apikey': process.env.TESTNET_ORDERBOOK_API_KEY,
+			},
+			params: {
+				walletAddr: dummyAddr,
+			},
+		})
+
+		const dummyOrdersResponse =
+			dummyOrdersRequest.data as ReturnedOrderbookQuote[]
+		expect(dummyOrdersResponse).is.empty
 	})
 })
