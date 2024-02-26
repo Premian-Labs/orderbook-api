@@ -12,7 +12,6 @@ import {
 	SECONDS_IN_YEAR,
 	supportedTokens,
 	tokenAddr,
-	walletAddr,
 	prodTokenAddr,
 } from '../config/constants'
 import { delay } from './util'
@@ -68,7 +67,7 @@ export function getTokenByAddress(tokenObject: TokenAddr, address: string) {
 
 // NOTE: this returns the balance in human-readable format (number)
 // IMPORTANT: Promise.allSettled works here because we do not do any on-chain tx
-export async function getBalances() {
+export async function getBalances(queryWallet: string) {
 	const promiseAll = await Promise.allSettled(
 		supportedTokens.map(async (token) => {
 			const erc20 = ISolidStateERC20__factory.connect(
@@ -76,8 +75,9 @@ export async function getBalances() {
 				provider
 			)
 			const decimals = await erc20.decimals()
+
 			const balance: number = parseFloat(
-				formatUnits(await erc20.balanceOf(walletAddr), Number(decimals))
+				formatUnits(await erc20.balanceOf(queryWallet), Number(decimals))
 			)
 
 			const tokenBalance: TokenBalance = {

@@ -89,6 +89,18 @@ export const validatePositionManagement = ajv.compile({
 	maxItems: 1000,
 })
 
+export const validateGetBalance = ajv.compile({
+	type: 'object',
+	properties: {
+		walletAddr: {
+			type: 'string',
+			pattern: '^0x[a-fA-F0-9]{40}$',
+		},
+	},
+	required: [],
+	additionalProperties: false,
+})
+
 export const validateFillQuotes = ajv.compile({
 	type: 'array',
 	items: {

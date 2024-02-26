@@ -82,6 +82,7 @@ import {
 	VaultQuoteRequest,
 	VaultQuoteResponse,
 	VaultTradeResponse,
+	GetBalance,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -100,6 +101,7 @@ import {
 	validateGetSpot,
 	validateVaultQuote,
 	validateVaultTrade,
+	validateGetBalance,
 } from './helpers/validators'
 import {
 	getBalances,
@@ -395,7 +397,7 @@ app.patch('/orderbook/quotes', async (req, res) => {
 	)
 
 	// check that we have enough collateral balance to fill orders
-	const [tokenBalances, rejectedTokenBalances] = await getBalances()
+	const [tokenBalances, rejectedTokenBalances] = await getBalances(walletAddr)
 
 	if (rejectedTokenBalances.length > 0) {
 		return res.status(400).json({
@@ -887,6 +889,18 @@ app.post('/pool/annihilate', async (req, res) => {
 
 // NOTE: option positions currently open
 app.get('/account/option_balances', async (req, res) => {
+	const valid = validateGetBalance(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'Validation error',
+			errors: validateGetBalance.errors,
+		})
+		return res.send(validateGetBalance.errors)
+	}
+
+	const queryAddr = req.query as GetBalance
+
 	let optionBalancesRequest
 	try {
 		optionBalancesRequest = await proxyHTTPRequest(
@@ -894,7 +908,7 @@ app.get('/account/option_balances', async (req, res) => {
 			'GET',
 			{
 				chainId: chainId,
-				wallet: walletAddr,
+				wallet: queryAddr.walletAddr ?? walletAddr,
 			},
 			null
 		)
@@ -916,10 +930,22 @@ app.get('/account/option_balances', async (req, res) => {
 
 // NOTE: returns all open orders
 app.get('/account/orders', async (req, res) => {
+	const valid = validateGetBalance(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'Validation error',
+			errors: validateGetBalance.errors,
+		})
+		return res.send(validateGetBalance.errors)
+	}
+
+	const queryAddr = req.query as GetBalance
+
 	let proxyResponse
 	try {
 		proxyResponse = await proxyHTTPRequest('orders', 'GET', {
-			provider: walletAddr,
+			provider: queryAddr.walletAddr ?? walletAddr,
 			chainId: chainId,
 		})
 	} catch (e) {
@@ -937,7 +963,21 @@ app.get('/account/orders', async (req, res) => {
 
 // NOTE: returns all collateral balances on Token addressed in config file
 app.get('/account/collateral_balances', async (req, res) => {
-	const [balances, rejectedTokenBalances] = await getBalances()
+	const valid = validateGetBalance(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'Validation error',
+			errors: validateGetBalance.errors,
+		})
+		return res.send(validateGetBalance.errors)
+	}
+
+	const queryAddr = req.query as GetBalance
+
+	const [balances, rejectedTokenBalances] = await getBalances(
+		queryAddr.walletAddr ?? walletAddr
+	)
 
 	return res.status(200).json({
 		success: balances,
@@ -947,10 +987,22 @@ app.get('/account/collateral_balances', async (req, res) => {
 
 // NOTE: ETH balance
 app.get('/account/native_balance', async (req, res) => {
+	const valid = validateGetBalance(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'Validation error',
+			errors: validateGetBalance.errors,
+		})
+		return res.send(validateGetBalance.errors)
+	}
+
+	const queryAddr = req.query as GetBalance
+
 	let nativeBalance: number
 	try {
 		nativeBalance = parseFloat(
-			formatEther(await provider.getBalance(walletAddr))
+			formatEther(await provider.getBalance(queryAddr.walletAddr ?? walletAddr))
 		)
 	} catch (e) {
 		Logger.error(e)

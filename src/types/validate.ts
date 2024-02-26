@@ -70,6 +70,10 @@ export interface GetPoolsParams {
 	expiration?: string
 }
 
+export interface GetBalance {
+	walletAddr?: string
+}
+
 export interface StrikesRequestSymbol {
 	market: string
 }
