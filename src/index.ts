@@ -56,6 +56,7 @@ import {
 	OrderbookQuote,
 	OrderbookQuoteTradeDeserialized,
 	Pool,
+	PoolKeySerialized,
 	PoolWithAddress,
 	PostQuotesResponse,
 	PublishQuoteProxyRequest,
@@ -1601,7 +1602,7 @@ app.post('/vaults/trade', async (req, res) => {
 	return res.status(200).json(tradeResponse)
 })
 
-app.get('/rfq/request', async (req, res) => {
+app.get('/rfq/message', async (req, res) => {
 	// In order to submit an RFQ, a request object needs to be created, this endpoint will create that object.
 	const valid = validateQuoteRequest(req.query)
 	if (!valid) {
@@ -1627,19 +1628,25 @@ app.get('/rfq/request', async (req, res) => {
 	}
 
 	const poolKey = createPoolKey(quoteRequest, expiration)
+	const poolKeySerialized: PoolKeySerialized = {
+		...poolKey,
+		strike: poolKey.strike.toString(),
+		maturity: expiration,
+	}
 
-	const rfqRequestResponse: RFQRequestResponse = {
+	// NOTE: direction of 'buy', request is for 'ask' liquidity
+	const rfqMessageResponse: RFQMessage = {
 		type: 'RFQ',
 		body: {
-			poolKey: poolKey,
-			side: quoteRequest.direction,
+			poolKey: poolKeySerialized,
+			side: quoteRequest.direction === 'buy' ? 'ask' : 'bid',
 			chainId: chainId,
 			size: parseEther(quoteRequest.size).toString(),
 			taker: walletAddr,
 		},
 	}
 
-	return res.status(200).json(rfqRequestResponse)
+	return res.status(200).json(rfqMessageResponse)
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {

@@ -20,7 +20,8 @@ import {
 } from '../helpers/create'
 import { PublishQuoteRequest } from '../types/validate'
 import { PoolKeySerialized } from '../types/quote'
-import { delay, deployPools, getMaturity } from './helpers/utils'
+import { baseUrl, delay, deployPools, getMaturity } from './helpers/utils'
+import axios from 'axios'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
@@ -40,14 +41,6 @@ const quote: PublishQuoteRequest = {
 	size: 1,
 	price: 0.1,
 	deadline: 120,
-}
-
-// NOTE: createPoolKey key converts strike to bigint (web3 representation)
-const poolKey = createPoolKey(quote)
-const poolKeySerialised: PoolKeySerialized = {
-	...poolKey,
-	strike: poolKey.strike.toString(),
-	maturity: createExpiration(quote.expiration),
 }
 
 let poolAddress: string
@@ -200,16 +193,23 @@ describe('WS streaming', () => {
 			`Subscribed to quotes:${webSocketFilter.body.chainId}:*:*:${ZeroAddress},quotes:${webSocketFilter.body.chainId}:*:*:${webSocketFilter.body.taker} channel.`
 		)
 
-		const rfqRequest: RFQMessage = {
-			type: 'RFQ',
-			body: {
-				poolKey: poolKeySerialised,
-				side: 'ask',
-				chainId: chainId,
-				size: '1000000000000000',
-				taker: deployer.address.toLowerCase(),
+		// generate an rfq request
+		const getRFQMessage = await axios.get(`${baseUrl}/rfq/message`, {
+			headers: {
+				'x-apikey': process.env.MAINNET_ORDERBOOK_API_KEY,
 			},
-		}
+			params: {
+				base: 'WETH',
+				quote: 'USDC',
+				expiration: getMaturity(),
+				strike: 2900,
+				type: 'C',
+				size: 1,
+				direction: 'buy',
+			},
+		})
+
+		const rfqRequest = getRFQMessage.data as RFQMessage
 
 		const RFQChannelKey = `rfq:${rfqRequest.body.chainId}:${poolAddress}:${rfqRequest.body.side}:${rfqRequest.body.taker}`
 
@@ -264,17 +264,24 @@ describe('RFQ WS flow', () => {
 				chainId: chainId,
 			},
 		}
-		// params to broadcast rfq request
-		const rfqRequest: RFQMessage = {
-			type: 'RFQ',
-			body: {
-				poolKey: poolKeySerialised,
-				side: 'bid',
-				chainId: chainId,
-				size: '1000000000000000',
-				taker: deployer.address.toLowerCase(),
+
+		// generate an rfq request
+		const getRFQMessage = await axios.get(`${baseUrl}/rfq/message`, {
+			headers: {
+				'x-apikey': process.env.MAINNET_ORDERBOOK_API_KEY,
 			},
-		}
+			params: {
+				base: 'WETH',
+				quote: 'USDC',
+				expiration: getMaturity(),
+				strike: 2900,
+				type: 'C',
+				size: 1,
+				direction: 'sell',
+			},
+		})
+
+		const rfqRequest = getRFQMessage.data as RFQMessage
 
 		const wsCallback = (data: RawData) => {
 			const message: InfoMessage | ErrorMessage | RFQMessageParsed = JSON.parse(
