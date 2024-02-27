@@ -79,10 +79,11 @@ import {
 	SpotResponse,
 	StrikesRequestSymbol,
 	VaultTradeRequest,
-	VaultQuoteRequest,
 	VaultQuoteResponse,
 	VaultTradeResponse,
 	GetBalance,
+	QuoteRequest,
+	RFQRequestResponse,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -99,9 +100,9 @@ import {
 	validateGetStrikes,
 	validateGetIV,
 	validateGetSpot,
-	validateVaultQuote,
 	validateVaultTrade,
 	validateGetBalance,
+	validateQuoteRequest,
 } from './helpers/validators'
 import {
 	getBalances,
@@ -1247,7 +1248,7 @@ app.get('/pools/strikes', async (req, res) => {
 	if (!valid) {
 		res.status(400)
 		Logger.error({
-			message: 'AJV get all strikes req params validation error',
+			message: 'Validation error',
 			error: validateGetStrikes.errors,
 		})
 		return res.send(validateGetStrikes.errors)
@@ -1306,7 +1307,7 @@ app.get('/oracles/iv', async (req, res) => {
 	if (!valid) {
 		res.status(400)
 		Logger.error({
-			message: 'AJV get IV req params validation error',
+			message: 'Validation error',
 			error: validateGetIV.errors,
 		})
 		return res.send(validateGetIV.errors)
@@ -1382,7 +1383,7 @@ app.get('/oracles/spot', async (req, res) => {
 	if (!valid) {
 		res.status(400)
 		Logger.error({
-			message: 'AJV get IV req params validation error',
+			message: 'Validation error',
 			error: validateGetSpot.errors,
 		})
 		return res.send(validateGetSpot.errors)
@@ -1421,16 +1422,16 @@ app.get('/oracles/spot', async (req, res) => {
 })
 
 app.get('/vaults/quote', async (req, res) => {
-	const valid = validateVaultQuote(req.query)
+	const valid = validateQuoteRequest(req.query)
 	if (!valid) {
 		res.status(400)
 		Logger.error({
-			message: 'AJV get vault quote req params validation error',
-			error: validateVaultQuote.errors,
+			message: 'Validation error',
+			error: validateQuoteRequest.errors,
 		})
-		return res.send(validateVaultQuote.errors)
+		return res.send(validateQuoteRequest.errors)
 	}
-	const quoteRequest = req.query as unknown as VaultQuoteRequest
+	const quoteRequest = req.query as unknown as QuoteRequest
 
 	let quoteSymbol: string
 	// NOTE: production USDC is USDCe (bridged)
@@ -1524,7 +1525,7 @@ app.post('/vaults/trade', async (req, res) => {
 	if (!valid) {
 		res.status(400)
 		Logger.error({
-			message: 'AJV post vault trade validation error',
+			message: 'Validation error',
 			error: validateVaultTrade.errors,
 		})
 		return res.send(validateVaultTrade.errors)
@@ -1598,6 +1599,47 @@ app.post('/vaults/trade', async (req, res) => {
 	}
 
 	return res.status(200).json(tradeResponse)
+})
+
+app.get('/rfq/request', async (req, res) => {
+	// In order to submit an RFQ, a request object needs to be created, this endpoint will create that object.
+	const valid = validateQuoteRequest(req.query)
+	if (!valid) {
+		res.status(400)
+		Logger.error({
+			message: 'Validation error',
+			error: validateQuoteRequest.errors,
+		})
+		return res.send(validateQuoteRequest.errors)
+	}
+
+	const quoteRequest = req.query as unknown as QuoteRequest
+
+	// format expiration for poolKey object (reject if invalid expiration)
+	let expiration: number
+	try {
+		expiration = createExpiration(quoteRequest.expiration)
+	} catch (e) {
+		return res.status(400).json({
+			message: (e as Error).message,
+			quote: quoteRequest,
+		})
+	}
+
+	const poolKey = createPoolKey(quoteRequest, expiration)
+
+	const rfqRequestResponse: RFQRequestResponse = {
+		type: 'RFQ',
+		body: {
+			poolKey: poolKey,
+			side: quoteRequest.direction,
+			chainId: chainId,
+			size: parseEther(quoteRequest.size).toString(),
+			taker: walletAddr,
+		},
+	}
+
+	return res.status(200).json(rfqRequestResponse)
 })
 
 const server = app.listen(process.env.HTTP_PORT, () => {

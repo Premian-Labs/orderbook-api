@@ -313,7 +313,7 @@ export const validateGetSpot = ajv.compile({
 	additionalProperties: false,
 })
 
-export const validateVaultQuote = ajv.compile({
+export const validateQuoteRequest = ajv.compile({
 	type: 'object',
 	properties: {
 		...validateOptionEntity,
