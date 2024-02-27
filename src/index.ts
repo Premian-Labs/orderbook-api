@@ -1642,7 +1642,7 @@ app.get('/rfq/message', async (req, res) => {
 			side: quoteRequest.direction === 'buy' ? 'ask' : 'bid',
 			chainId: chainId,
 			size: parseEther(quoteRequest.size).toString(),
-			taker: walletAddr,
+			taker: walletAddr.toLowerCase(),
 		},
 	}
 

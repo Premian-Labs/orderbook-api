@@ -99,6 +99,7 @@ describe('Vault Quotes', () => {
 		)
 	})
 
+	// NOTE: This validation covers BOTH vaults/quote & rfq/request as they share the same validation check
 	it('should reject bad param schema', async () => {
 		const invalidBaseQuote = await axios.get(vaultQuoteUrl, {
 			headers: {

@@ -35,7 +35,7 @@ const quote: PublishQuoteRequest = {
 	base: 'testWETH',
 	quote: 'USDC',
 	expiration: getMaturity(),
-	strike: 2200,
+	strike: 2900,
 	type: `C`,
 	side: 'ask',
 	size: 1,
@@ -44,6 +44,13 @@ const quote: PublishQuoteRequest = {
 }
 
 let poolAddress: string
+
+/*
+NOTE:
+rfq/requests is a REST API endpoint that is used within ws tests. Since it shares the same validation
+schema as vaults/quote, there is no test coverage for validation on rfq/request.  The ws tests implicitly
+include coverage for rfq/requests
+ */
 
 before(async () => {
 	const deployment = await deployPools([quote])
@@ -199,12 +206,12 @@ describe('WS streaming', () => {
 				'x-apikey': process.env.MAINNET_ORDERBOOK_API_KEY,
 			},
 			params: {
-				base: 'WETH',
-				quote: 'USDC',
-				expiration: getMaturity(),
-				strike: 2900,
-				type: 'C',
-				size: 1,
+				base: quote.base,
+				quote: quote.quote,
+				expiration: quote.expiration,
+				strike: quote.strike,
+				type: quote.type,
+				size: quote.size,
 				direction: 'buy',
 			},
 		})
@@ -271,12 +278,12 @@ describe('RFQ WS flow', () => {
 				'x-apikey': process.env.MAINNET_ORDERBOOK_API_KEY,
 			},
 			params: {
-				base: 'WETH',
-				quote: 'USDC',
-				expiration: getMaturity(),
-				strike: 2900,
-				type: 'C',
-				size: 1,
+				base: quote.base,
+				quote: quote.quote,
+				expiration: quote.expiration,
+				strike: quote.strike,
+				type: quote.type,
+				size: quote.size,
 				direction: 'sell',
 			},
 		})
