@@ -14,7 +14,8 @@ paths:
         Deadline is the number of seconds the order is valid for. Price is normalized.  
         For calls, price is denominated in the base token (ie 0.13 WETH), and for puts price is in denominated in the 
         quote token but normalized using strike. For example, a put price of 0.13 => (234 USDC price / 1800 Strike ) 
-        is equivalent to 234 USDC if the strike is 1800.
+        is equivalent to 234 USDC if the strike is 1800.  The takerAddress is optional and should only be populated 
+        if responding to an RFQ, otherwise omit.
       requestBody:
         content:
           application/json:
