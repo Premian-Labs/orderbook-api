@@ -1000,7 +1000,7 @@ paths:
             example: 4
         - name: direction
           in: query
-          description: direction of trade (buy or sell)
+          description: direction of trade (for the requester)
           required: true
           schema:
             type: string
@@ -1084,6 +1084,125 @@ paths:
                 properties:
                   market:
                     $ref: "#/components/schemas/VaultResponse"
+        '400':
+          description: Invalid parameters supplied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Not authorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthError'
+      security:
+        - api_key:
+            - api
+  /rfq/request:
+    get:
+      summary: This endpoint is strictly related to the RFQ network.  It is a helper end point that will format RFQ requests to publish to the RFQ Network. The object returned from this endpoint must be published to the RFQ Channel of websockets (see ws instructions on how to do this).
+      parameters:
+        - name: base
+          in: query
+          required: true
+          description: base token symbol (ie WETH)
+          schema:
+            type: string
+            example: WETH
+        - name: quote
+          in: query
+          required: true
+          description: quote token symbol (ie USDC)
+          schema:
+            type: string
+            example: USDC
+        - name: expiration
+          in: query
+          required: true
+          description: option expiration (ie 03NOV23)
+          schema:
+            type: string
+            example: 03NOV23
+        - name: strike
+          in: query
+          required: true
+          description: option strike (ie 1800)
+          schema:
+            type: number
+            minimum: 0
+            example: 1800
+        - name: type
+          in: query
+          description: C or P
+          required: true
+          schema:
+            type: string
+            pattern: ^C$|^P$
+            example: P
+        - name: size
+          in: query
+          description: number of contracts (ie 4)
+          required: true
+          schema:
+            type: number
+            minimum: 0
+            example: 4
+        - name: direction
+          in: query
+          description: direction of trade (for the requester)
+          required: true
+          schema:
+            type: string
+            example: buy
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    example: 'RFQ'
+                  body:
+                    type: object
+                    properties:
+                      poolKey:
+                        type: object
+                        properties:
+                          base:
+                            type: string
+                            example: 0x...4cFF2
+                          quote:
+                            type: string
+                            example: 0x...4cFF2
+                          oraclerAdapter:
+                            type: string
+                            example: 0x...4cFF2
+                          strike:
+                            type: string
+                            example: '2900000000000000000000'
+                          maturity:
+                            type: number
+                            example: 1709066397
+                          isCallPool:
+                            type: boolean
+                            example: true
+                      side:
+                        type: string
+                        pattern: ^bid$|^ask$
+                        example: 'ask'
+                      chainId:
+                        type: string
+                        example: '42161'
+                      size:
+                        type: string
+                        example: '1000000000000000000'
+                      taker:
+                        type: string
+                        example: 0x...4cFF2
         '400':
           description: Invalid parameters supplied
           content:

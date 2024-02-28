@@ -1,5 +1,7 @@
 // validateOptionEntity & validatePositionManagement
 // NOTE: Returned Quote Objects include Option type
+import { PoolKey } from './quote'
+
 export interface Option {
 	base: string //token name | token address
 	quote: string //token name | token address
@@ -102,7 +104,7 @@ export interface SpotResponse {
 	price: number
 }
 
-export interface VaultQuoteRequest extends Omit<Option, 'strike'> {
+export interface QuoteRequest extends Omit<Option, 'strike'> {
 	strike: string
 	size: string
 	direction: 'buy' | 'sell'
@@ -128,4 +130,15 @@ export interface VaultQuoteResponse {
 	market: VaultMarket
 	quote: number
 	takerFee: number
+}
+
+export interface RFQRequestResponse {
+	type: 'RFQ'
+	body: {
+		poolKey: PoolKey
+		side: 'buy' | 'sell'
+		chainId: string
+		size: string
+		taker: string
+	}
 }

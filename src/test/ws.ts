@@ -20,7 +20,8 @@ import {
 } from '../helpers/create'
 import { PublishQuoteRequest } from '../types/validate'
 import { PoolKeySerialized } from '../types/quote'
-import { delay, deployPools, getMaturity } from './helpers/utils'
+import { baseUrl, delay, deployPools, getMaturity } from './helpers/utils'
+import axios from 'axios'
 
 // NOTE: integration tests can only be run on development mode & with testnet credentials
 checkEnv(true)
@@ -34,7 +35,7 @@ const quote: PublishQuoteRequest = {
 	base: 'testWETH',
 	quote: 'USDC',
 	expiration: getMaturity(),
-	strike: 2200,
+	strike: 2900,
 	type: `C`,
 	side: 'ask',
 	size: 1,
@@ -42,15 +43,14 @@ const quote: PublishQuoteRequest = {
 	deadline: 120,
 }
 
-// NOTE: createPoolKey key converts strike to bigint (web3 representation)
-const poolKey = createPoolKey(quote)
-const poolKeySerialised: PoolKeySerialized = {
-	...poolKey,
-	strike: poolKey.strike.toString(),
-	maturity: createExpiration(quote.expiration),
-}
-
 let poolAddress: string
+
+/*
+NOTE:
+rfq/requests is a REST API endpoint that is used within ws tests. Since it shares the same validation
+schema as vaults/quote, there is no test coverage for validation on rfq/request.  The ws tests implicitly
+include coverage for rfq/requests
+ */
 
 before(async () => {
 	const deployment = await deployPools([quote])
@@ -200,16 +200,23 @@ describe('WS streaming', () => {
 			`Subscribed to quotes:${webSocketFilter.body.chainId}:*:*:${ZeroAddress},quotes:${webSocketFilter.body.chainId}:*:*:${webSocketFilter.body.taker} channel.`
 		)
 
-		const rfqRequest: RFQMessage = {
-			type: 'RFQ',
-			body: {
-				poolKey: poolKeySerialised,
-				side: 'ask',
-				chainId: chainId,
-				size: '1000000000000000',
-				taker: deployer.address.toLowerCase(),
+		// generate an rfq request
+		const getRFQMessage = await axios.get(`${baseUrl}/rfq/message`, {
+			headers: {
+				'x-apikey': process.env.MAINNET_ORDERBOOK_API_KEY,
 			},
-		}
+			params: {
+				base: quote.base,
+				quote: quote.quote,
+				expiration: quote.expiration,
+				strike: quote.strike,
+				type: quote.type,
+				size: quote.size,
+				direction: 'buy',
+			},
+		})
+
+		const rfqRequest = getRFQMessage.data as RFQMessage
 
 		const RFQChannelKey = `rfq:${rfqRequest.body.chainId}:${poolAddress}:${rfqRequest.body.side}:${rfqRequest.body.taker}`
 
@@ -264,17 +271,24 @@ describe('RFQ WS flow', () => {
 				chainId: chainId,
 			},
 		}
-		// params to broadcast rfq request
-		const rfqRequest: RFQMessage = {
-			type: 'RFQ',
-			body: {
-				poolKey: poolKeySerialised,
-				side: 'bid',
-				chainId: chainId,
-				size: '1000000000000000',
-				taker: deployer.address.toLowerCase(),
+
+		// generate an rfq request
+		const getRFQMessage = await axios.get(`${baseUrl}/rfq/message`, {
+			headers: {
+				'x-apikey': process.env.MAINNET_ORDERBOOK_API_KEY,
 			},
-		}
+			params: {
+				base: quote.base,
+				quote: quote.quote,
+				expiration: quote.expiration,
+				strike: quote.strike,
+				type: quote.type,
+				size: quote.size,
+				direction: 'sell',
+			},
+		})
+
+		const rfqRequest = getRFQMessage.data as RFQMessage
 
 		const wsCallback = (data: RawData) => {
 			const message: InfoMessage | ErrorMessage | RFQMessageParsed = JSON.parse(
