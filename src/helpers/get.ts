@@ -57,7 +57,7 @@ export async function getPoolAddress(poolKey: PoolKey) {
 
 export function getTokenByAddress(tokenObject: TokenAddr, address: string) {
 	const tokenName = Object.keys(tokenObject).find(
-		(key) => tokenObject[key] === address
+		(key) => tokenObject[key].toLowerCase() === address.toLowerCase()
 	)
 	if (tokenName == undefined) {
 		return ''
