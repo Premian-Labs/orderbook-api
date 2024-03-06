@@ -42,7 +42,7 @@ paths:
                         reason:
                           type: string
                           enum:
-                            - 'Quote deadline is invalid (cannot be less than 60 sec)'
+                            - 'Quote deadline is invalid (cannot be less than 10 sec)'
                             - 'Failed to fetch pool address'
                             - QuoteOBExpired
                             - QuoteOBCancelled
@@ -80,7 +80,7 @@ paths:
                         reason:
                           type: string
                           enum:
-                            - 'Quote deadline is invalid (cannot be less than 60 sec)'
+                            - 'Quote deadline is invalid (cannot be less than 10 sec)'
                             - 'Failed to fetch pool address'
                             - QuoteOBExpired
                             - QuoteOBCancelled
