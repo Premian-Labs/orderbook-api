@@ -12,6 +12,7 @@ import {
 import {
 	CancelQuotesResponse,
 	PostQuotesResponse,
+	ReturnedInvalidQuote,
 	ReturnedOrderbookQuote,
 } from '../types/quote'
 import { privateKey, rpcUrl } from '../config/constants'
@@ -57,6 +58,8 @@ const quote2: PublishQuoteRequest = {
 	price: 0.1,
 	deadline: 120,
 }
+
+const INSUFFICIENT_COLLATERAL_ALLOWANCE = 'InsufficientCollateralAllowance'
 
 before(async () => {
 	console.log(`Setting Collateral Approvals to Max and Deploying Pool(s)`)
@@ -479,13 +482,15 @@ describe('Quote Validation & Quote Expiration Lifecycle', () => {
 			},
 		})
 
-		const invalidOrders: ReturnedOrderbookQuote[] =
-			invalidGetOrdersResponse.data
-		const invalidReturnedQuotes = invalidOrders.find(
-			(invalidOrder) => invalidOrder.quoteId == quoteId_A
+		const invalidOrders: ReturnedInvalidQuote[] = invalidGetOrdersResponse.data
+		const invalidReturnedQuote = invalidOrders.find(
+			(invalidOrder) => invalidOrder.quote.quoteId == quoteId_A
 		)
 
-		expect(invalidReturnedQuotes).is.not.undefined
+		console.log('invalidated quote id', invalidReturnedQuote?.quote.quoteId)
+
+		expect(invalidReturnedQuote).is.not.undefined
+		expect(invalidReturnedQuote?.reason).eq(INSUFFICIENT_COLLATERAL_ALLOWANCE)
 	})
 
 	it('should validate an invalid order if the maker token allowance is re instated', async () => {
@@ -502,6 +507,9 @@ describe('Quote Validation & Quote Expiration Lifecycle', () => {
 
 		const orders: ReturnedOrderbookQuote[] = validGetOrdersResponse.data
 		const validQuote = orders.find((order) => order.quoteId == quoteId_A)
+
+		console.log('re-validated quote id', validQuote?.quoteId)
+
 		expect(validQuote).is.not.undefined
 	})
 
@@ -565,13 +573,15 @@ describe('Quote Validation & Quote Expiration Lifecycle', () => {
 			},
 		})
 
-		const invalidOrders: ReturnedOrderbookQuote[] =
-			invalidGetOrdersResponse.data
-		const invalidReturnedQuotes = invalidOrders.find(
-			(invalidOrder) => invalidOrder.quoteId == quoteId_C
+		const invalidOrders: ReturnedInvalidQuote[] = invalidGetOrdersResponse.data
+		const invalidReturnedQuote = invalidOrders.find(
+			(invalidOrder) => invalidOrder.quote.quoteId == quoteId_C
 		)
 
-		expect(invalidReturnedQuotes).is.not.undefined
+		console.log('expired invalid quote id', invalidReturnedQuote?.quote.quoteId)
+
+		expect(invalidReturnedQuote).is.not.undefined
+		expect(invalidReturnedQuote?.reason).eq(INSUFFICIENT_COLLATERAL_ALLOWANCE)
 		await delay(80 * 1000)
 
 		const validGetOrdersResponse2 = await axios.get(ordersUrl, {
