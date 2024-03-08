@@ -145,7 +145,7 @@ function Account() {
 					body: {
 						chainId: chainId,
 						provider: WALLET_ADDRESS.toLowerCase(),
-						taker: '*'
+						taker: '*',
 					},
 				}
 				ws.send(JSON.stringify(webSocketFilter))

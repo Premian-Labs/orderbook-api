@@ -110,12 +110,12 @@ export interface ReturnedOrderbookQuote extends Option {
 	taker: string
 	deadline: number
 	quoteId: string
-	ts: number
+	createdAt: number
 }
 
 export type InvalidOrderbookQuote = Omit<
 	ReturnedOrderbookQuote,
-	'quoteId' | 'ts'
+	'quoteId' | 'createdAt'
 >
 
 export interface TokenAddr {

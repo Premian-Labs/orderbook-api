@@ -119,9 +119,9 @@ export function createReturnedQuotes(
 		price: parseFloat(formatEther(orderbookQuote.price)),
 		provider: orderbookQuote.provider,
 		taker: orderbookQuote.taker,
-		deadline: orderbookQuote.deadline - orderbookQuote.ts,
+		deadline: Math.max(orderbookQuote.deadline - moment.utc().unix(), 0),
 		quoteId: orderbookQuote.quoteId,
-		ts: orderbookQuote.ts,
+		createdAt: orderbookQuote.ts,
 	}
 }
 export function createPoolKey(

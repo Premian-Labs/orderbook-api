@@ -236,7 +236,7 @@ function Main() {
 					channel: 'QUOTES',
 					body: {
 						chainId: chainId,
-						taker: '*'
+						taker: '*',
 					},
 				}
 				ws.send(JSON.stringify(webSocketFilter))
