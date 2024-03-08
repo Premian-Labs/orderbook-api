@@ -61,6 +61,8 @@ import {
 	PostQuotesResponse,
 	PublishQuoteProxyRequest,
 	QuoteOB,
+	ReturnedInvalidQuote,
+	ReturnedOrderbookQuote,
 	TokenType,
 } from './types/quote'
 import {
@@ -767,11 +769,9 @@ app.get('/orderbook/orders', async (req, res) => {
 		})
 	}
 
-	let orderbookQuotes: OrderbookQuote[]
+	let orderbookQuotes: OrderbookQuote[] | InvalidQuote[]
 	if (quotesQuery.type === 'invalid') {
-		orderbookQuotes = (
-			proxyResponse.data['invalidQuotes'] as InvalidQuote[]
-		).map((invalidQuote) => invalidQuote.quote)
+		orderbookQuotes = proxyResponse.data['invalidQuotes'] as InvalidQuote[]
 	} else {
 		orderbookQuotes = proxyResponse.data['validQuotes'] as OrderbookQuote[]
 	}
@@ -784,7 +784,20 @@ app.get('/orderbook/orders', async (req, res) => {
 	if (orderbookQuotes.length == 0) {
 		return res.status(200).json([])
 	}
-	const returnedQuotes = orderbookQuotes.map(createReturnedQuotes)
+
+	let returnedQuotes: ReturnedOrderbookQuote[] | ReturnedInvalidQuote[]
+	if (quotesQuery.type === 'invalid') {
+		returnedQuotes = (orderbookQuotes as InvalidQuote[]).map(
+			(invalidQuote) => ({
+				reason: invalidQuote.reason,
+				quote: createReturnedQuotes(invalidQuote.quote),
+			})
+		)
+	} else {
+		returnedQuotes = (orderbookQuotes as OrderbookQuote[]).map(
+			createReturnedQuotes
+		)
+	}
 
 	return res.status(200).json(returnedQuotes)
 })

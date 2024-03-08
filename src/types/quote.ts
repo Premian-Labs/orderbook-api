@@ -166,3 +166,8 @@ export interface InvalidQuote {
 	quote: OrderbookQuote
 	reason: string
 }
+
+export interface ReturnedInvalidQuote {
+	quote: ReturnedOrderbookQuote
+	reason: string
+}

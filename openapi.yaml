@@ -42,7 +42,7 @@ paths:
                         reason:
                           type: string
                           enum:
-                            - 'Quote deadline is invalid (cannot be less than 60 sec)'
+                            - 'Quote deadline is invalid (cannot be less than 10 sec)'
                             - 'Failed to fetch pool address'
                             - QuoteOBExpired
                             - QuoteOBCancelled
@@ -80,7 +80,7 @@ paths:
                         reason:
                           type: string
                           enum:
-                            - 'Quote deadline is invalid (cannot be less than 60 sec)'
+                            - 'Quote deadline is invalid (cannot be less than 10 sec)'
                             - 'Failed to fetch pool address'
                             - QuoteOBExpired
                             - QuoteOBCancelled
@@ -517,6 +517,13 @@ paths:
             type: string
             pattern: "^0x[a-fA-F0-9]{40}$"
             example: 0x3ba638...fb25e
+        - name: type
+          in: query
+          description: optional flag to get invalid quotes
+          required: false
+          schema:
+            type: string
+            pattern: "^invalid$"
       responses:
         '200':
           description: Successful operation
@@ -525,7 +532,9 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/ReturnedOrderbookQuote'
+                  oneOf:
+                    - $ref: '#/components/schemas/ReturnedOrderbookQuote'
+                    - $ref: '#/components/schemas/ReturnedInvalidQuote'
         '400':
           description: Invalid parameters supplied
           content:
@@ -1305,6 +1314,21 @@ components:
             - type: string
               pattern: ^max$
           example: max
+    ReturnedInvalidQuote:
+      required:
+        - quote
+        - reason
+      type: object
+      properties:
+        quote:
+          $ref: '#/components/schemas/ReturnedOrderbookQuote'
+        reason:
+          type: string
+          enum:
+            - InsufficientCollateralAllowance
+            - InsufficientCollateralBalance
+            - InsufficientLongBalance
+            - InsufficientShortBalance
     ReturnedOrderbookQuote:
       required:
         - base
