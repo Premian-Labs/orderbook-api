@@ -74,7 +74,7 @@ export const validatePostQuotes = ajv.compile({
 		additionalProperties: false,
 	},
 	minItems: 1,
-	maxItems: 200,
+	maxItems: 500,
 })
 
 export const validatePositionManagement = ajv.compile({
