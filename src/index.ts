@@ -176,9 +176,9 @@ app.post('/orderbook/quotes', async (req, res) => {
 		// 2.1 Check that deadline is valid and generate deadline timestamp
 		const ts = moment.utc().unix()
 		let deadline: number
-		if (quote.deadline < 60) {
+		if (quote.deadline < 30) {
 			return res.status(400).json({
-				message: 'Quote deadline is invalid (cannot be less than 60 sec)',
+				message: 'Quote deadline is invalid (cannot be less than 30 sec)',
 				quote: quote,
 			})
 		} else {
