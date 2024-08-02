@@ -55,7 +55,7 @@ The source code for the OpenAPI specification can be found in this repository.
 Nested reference of schemas do not translate to gitbook correctly, so the openAPI.yaml file must be modified prior 
 to uploading. Steps are as follows:
 
-1. Copy and paste the openAPi.yamle [here](https://editor-next.swagger.io/)
+1. Copy and paste the openAPi.yaml [here](https://editor-next.swagger.io/)
 2. File -> Download resolved yaml
 3. Upload yaml file to gitbook
 
