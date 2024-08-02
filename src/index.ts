@@ -86,7 +86,6 @@ import {
 	VaultTradeResponse,
 	GetBalance,
 	QuoteRequest,
-	RFQRequestResponse,
 } from './types/validate'
 import { OptionPositions } from './types/balances'
 import { checkTestApiKey } from './helpers/auth'
@@ -145,6 +144,8 @@ import {
 } from './types/ws'
 import { nextYearOfMaturities } from './helpers/maturities'
 import { getSurroundingStrikes } from './helpers/strikes'
+import { TypedContractEvent, TypedEventLog } from '@premia/v3-abi/typechain/common';
+import { PoolDeployedEvent } from '@premia/v3-abi/typechain/IPoolFactory';
 
 dotenv.config()
 checkEnv()
@@ -1114,17 +1115,29 @@ app.get('/pools', async (req, res) => {
 	}
 
 	const reqParams = req.query as GetPoolsParams
-
-	const ts90daysAgo = moment.utc().subtract(30, 'days').unix()
-	const blockNumber = await getBlockByTimestamp(ts90daysAgo)
+	const timePeriods = [30, 60, 90]
+	let allPoolDeployedEvents: TypedEventLog<TypedContractEvent<PoolDeployedEvent.InputTuple,
+		PoolDeployedEvent.OutputTuple, PoolDeployedEvent.OutputObject>>[] = []
 
 	const deploymentEventFilter = poolFactory.getEvent('PoolDeployed')
-	const events = await poolFactory.queryFilter(
-		deploymentEventFilter,
-		blockNumber
-	)
 
-	let deployedPools: PoolWithAddress[] = events
+	for (let i = 0; i < timePeriods.length; i++) {
+		const startTimestamp = moment.utc().subtract(timePeriods[i], 'days').unix()
+		const endTimestamp = i > 0 ? moment.utc().subtract(timePeriods[i - 1], 'days').unix() : undefined
+
+		const startBlock = await getBlockByTimestamp(startTimestamp)
+		const endBlock = endTimestamp ? await getBlockByTimestamp(endTimestamp) : undefined
+
+		const periodEvents = await poolFactory.queryFilter(
+			deploymentEventFilter,
+			startBlock,
+			endBlock ? endBlock - 1 : undefined
+		)
+
+		allPoolDeployedEvents = allPoolDeployedEvents.concat(periodEvents)
+	}
+
+	let deployedPools: PoolWithAddress[] = allPoolDeployedEvents
 		.filter((event) => Number(event.args.maturity) > moment.utc().unix() + 60)
 		.filter((event) => getTokenByAddress(tokenAddr, event.args.base) !== '')
 		.filter((event) => getTokenByAddress(tokenAddr, event.args.quote) !== '')
