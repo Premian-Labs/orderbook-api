@@ -1101,7 +1101,7 @@ app.post('/account/collateral_approval', async (req, res) => {
 	})
 })
 
-// NOTE: returns only pools up to 90 days old to optimise queryFilter time
+// NOTE: returns only pools up to 30 days old to optimise queryFilter time
 app.get('/pools', async (req, res) => {
 	const valid = validateGetPools(req.query)
 	if (!valid) {
@@ -1115,7 +1115,7 @@ app.get('/pools', async (req, res) => {
 
 	const reqParams = req.query as GetPoolsParams
 
-	const ts90daysAgo = moment.utc().subtract(90, 'days').unix()
+	const ts90daysAgo = moment.utc().subtract(30, 'days').unix()
 	const blockNumber = await getBlockByTimestamp(ts90daysAgo)
 
 	const deploymentEventFilter = poolFactory.getEvent('PoolDeployed')
