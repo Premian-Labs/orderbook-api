@@ -1115,7 +1115,7 @@ app.get('/pools', async (req, res) => {
 	}
 
 	const reqParams = req.query as GetPoolsParams
-	const timePeriods = [0, 30, 60, 90]
+	const timePeriods = [0, 30, 60, 90, 120]
 	let allPoolDeployedEvents: TypedEventLog<TypedContractEvent<PoolDeployedEvent.InputTuple,
 		PoolDeployedEvent.OutputTuple, PoolDeployedEvent.OutputObject>>[] = []
 
