@@ -56,9 +56,7 @@ export async function getBlockByTimestamp(ts: number) {
 
 		throw new Error('Failed to get block number')
 	} catch (e) {
-		const blockInADay = (24 * 60 * 60) / 0.3
-		const blockIn90Days = blockInADay * 90
-		const lastBlock = await provider.getBlockNumber()
-		return lastBlock - blockIn90Days
+		await delay(1000)
+		return getBlockByTimestamp(ts)
 	}
 }
