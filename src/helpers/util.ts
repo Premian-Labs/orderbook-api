@@ -53,9 +53,9 @@ export async function getBlockByTimestamp(ts: number) {
 		if (Number(status) === 1) {
 			return Number(blockRequest.data['result'])
 		}
-
 		throw new Error('Failed to get block number')
 	} catch (e) {
+		console.warn('Failed to get block number. Retrying in 1 sec...')
 		await delay(1000)
 		return getBlockByTimestamp(ts)
 	}
