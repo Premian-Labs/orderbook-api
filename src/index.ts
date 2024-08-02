@@ -1115,23 +1115,26 @@ app.get('/pools', async (req, res) => {
 	}
 
 	const reqParams = req.query as GetPoolsParams
-	const timePeriods = [30, 60, 90]
+	const timePeriods = [0, 30, 60, 90]
 	let allPoolDeployedEvents: TypedEventLog<TypedContractEvent<PoolDeployedEvent.InputTuple,
 		PoolDeployedEvent.OutputTuple, PoolDeployedEvent.OutputObject>>[] = []
 
 	const deploymentEventFilter = poolFactory.getEvent('PoolDeployed')
 
-	for (let i = 0; i < timePeriods.length; i++) {
-		const startTimestamp = moment.utc().subtract(timePeriods[i], 'days').unix()
-		const endTimestamp = i > 0 ? moment.utc().subtract(timePeriods[i - 1], 'days').unix() : undefined
+	for (let i = 0; i < timePeriods.length - 1; i++) {
+		const startTimestamp = moment.utc().subtract(timePeriods[i + 1], 'days').unix()
+		const endTimestamp = moment.utc().subtract(timePeriods[i], 'days').unix()
 
 		const startBlock = await getBlockByTimestamp(startTimestamp)
-		const endBlock = endTimestamp ? await getBlockByTimestamp(endTimestamp) : undefined
+		const endBlock = await getBlockByTimestamp(endTimestamp)
+
+		console.log('time period from-to', endTimestamp, startTimestamp)
+		console.log('endBlock, startBlock', endBlock, startBlock)
 
 		const periodEvents = await poolFactory.queryFilter(
 			deploymentEventFilter,
 			startBlock,
-			endBlock ? endBlock - 1 : undefined
+			endBlock
 		)
 
 		allPoolDeployedEvents = allPoolDeployedEvents.concat(periodEvents)
