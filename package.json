@@ -1,6 +1,6 @@
 {
   "name": "@premia/v3-api",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "Containerize API for Premia V3 Orderbook",
   "author": "research@premia.finance",
   "license": "BSD-3-Clause",
