@@ -1,7 +1,7 @@
 import express from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
-import WebSocket from 'ws'
+import { WebSocket } from 'ws'
 import moment from 'moment'
 import {
 	IPool__factory,
@@ -144,8 +144,11 @@ import {
 } from './types/ws'
 import { nextYearOfMaturities } from './helpers/maturities'
 import { getSurroundingStrikes } from './helpers/strikes'
-import { TypedContractEvent, TypedEventLog } from '@premia/v3-abi/typechain/common';
-import { PoolDeployedEvent } from '@premia/v3-abi/typechain/IPoolFactory';
+import {
+	TypedContractEvent,
+	TypedEventLog,
+} from '@premia/v3-abi/typechain/common'
+import { PoolDeployedEvent } from '@premia/v3-abi/typechain/IPoolFactory'
 
 dotenv.config()
 checkEnv()
@@ -1685,10 +1688,15 @@ const server = app.listen(process.env.HTTP_PORT, () => {
 const wsServer = new WebSocket.Server({ server })
 wsServer.on('connection', (wsLocalConnection) => {
 	const wsProxyCloudClient = new WebSocket(ws_url)
-	Logger.debug('WS connection opened')
 
 	wsLocalConnection.on('message', (clientMsg) => {
-		wsProxyCloudClient.send(clientMsg.toString())
+		if (wsProxyCloudClient.readyState === 1) {
+			wsProxyCloudClient.send(clientMsg.toString())
+		} else {
+			wsLocalConnection.send(JSON.stringify({
+				message: 'Proxy WS connection is not ready',
+			}))
+		}
 	})
 
 	wsLocalConnection.on('error', (error) => {
