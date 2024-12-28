@@ -2,7 +2,7 @@ import { difference, zipWith } from 'lodash'
 import axios from 'axios'
 
 import { Option } from '../types/validate'
-import { blockByTsEndpoint, provider } from '../config/constants'
+import { ARBISCAN_API_KEY, blockByTsEndpoint } from '../config/constants'
 
 export function requestDetailed(
 	promiseAll: PromiseSettledResult<Option>[],
@@ -46,6 +46,7 @@ export async function getBlockByTimestamp(ts: number) {
 				action: 'getblocknobytime',
 				closest: 'before',
 				timestamp: ts,
+				apikey: ARBISCAN_API_KEY,
 			},
 		})
 		const status = blockRequest.data['status']

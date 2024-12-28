@@ -99,6 +99,8 @@ export const blockByTsEndpoint =
 		? 'https://api.arbiscan.io/api'
 		: 'https://api-goerli.arbiscan.io/api'
 
+export const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY!
+
 export const SECONDS_IN_YEAR = 365 * 24 * 60 * 60
 
 export const INTERNAL_ERROR_MESSAGE =
